@@ -6,3 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+num = "0.4.1"
+rand = "0.8.5"
+
+[lib]
+name = "bridge"
+path = "src/lib/mod.rs"
+
+[[bin]]
+name = "leader"
+path = "src/leader/main.rs"
