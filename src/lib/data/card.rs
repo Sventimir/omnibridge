@@ -132,7 +132,7 @@ impl Display for Rank {
       11 => "J".to_string(),
       10 => "T".to_string(),
       2..=9 => self.0.to_string(),
-      _ => panic!("Invalid rank"),
+      i => panic!("Invalid rank({})", i),
     }
   }
 }
@@ -176,7 +176,7 @@ impl Iterator for Ranks {
 }
 
 pub fn ranks() -> Ranks {
-  Ranks(2)
+  Ranks(1)
 }
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
