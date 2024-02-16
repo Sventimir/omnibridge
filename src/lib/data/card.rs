@@ -1,7 +1,9 @@
-use std::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
+use std::cmp::{PartialEq, Eq, PartialOrd, Ord};
+use std::str::FromStr;
 use super::display::Display;
 use super::numeric::Numeric;
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Suit(u8);
 
 pub const CLUB : Suit = Suit(0);
@@ -51,25 +53,21 @@ impl Display for Suit {
   }
 }
 
-impl PartialEq for Suit {
-  fn eq(&self, other : &Suit) -> bool {
-    self.0 == other.0
+impl FromStr for Suit {
+  type Err = ();
+
+  fn from_str(s: &str) -> Result<Suit, ()> {
+    match s {
+      "C" | "c" | "♣" => Ok(CLUB),
+      "D" | "d" | "♦" => Ok(DIAMOND),
+      "H" | "h" | "♥" => Ok(HEART),
+      "S" | "s" | "♠" => Ok(SPADE),
+      "NT" | "nt" | "N" | "n" => Ok(NO_TRUMP),
+      _ => Err(()),
+    }
   }
 }
 
-impl Eq for Suit {}
-
-impl PartialOrd for Suit {
-  fn partial_cmp(&self, other : &Suit) -> Option<Ordering> {
-    self.0.partial_cmp(&other.0)
-  }
-}
-
-impl Ord for Suit {
-  fn cmp(&self, other : &Suit) -> Ordering {
-    self.0.cmp(&other.0)
-  }
-}
 
 pub struct Suits(u8);
 
@@ -90,6 +88,7 @@ pub fn suits() -> Suits {
   Suits(0)
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Rank(u8);
 
 pub const ACE : Rank = Rank(14);
@@ -138,23 +137,26 @@ impl Display for Rank {
   }
 }
 
-impl PartialEq for Rank {
-  fn eq(&self, other : &Rank) -> bool {
-    self.0 == other.0
-  }
-}
+impl FromStr for Rank {
+  type Err = ();
 
-impl Eq for Rank {}
-
-impl PartialOrd for Rank {
-  fn partial_cmp(&self, other : &Rank) -> Option<Ordering> {
-    self.0.partial_cmp(&other.0)
-  }
-}
-
-impl Ord for Rank {
-  fn cmp(&self, other : &Rank) -> Ordering {
-    self.0.cmp(&other.0)
+  fn from_str(s: &str) -> Result<Rank, ()> {
+    match s {
+      "A" | "a" => Ok(ACE),
+      "K" | "k" => Ok(KING),
+      "Q" | "q" => Ok(QUEEN),
+      "J" | "j" => Ok(JACK),
+      "T" | "t" | "10" | "1" | "0" => Ok(TEN),
+      "2" => Ok(TWO),
+      "3" => Ok(THREE),
+      "4" => Ok(FOUR),
+      "5" => Ok(FIVE),
+      "6" => Ok(SIX),
+      "7" => Ok(SEVEN),
+      "8" => Ok(EIGHT),
+      "9" => Ok(NINE),
+      _ => Err(()),
+    }
   }
 }
 
@@ -177,6 +179,7 @@ pub fn ranks() -> Ranks {
   Ranks(2)
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Card(u8);
 
 impl Card {
@@ -221,23 +224,22 @@ impl Numeric<u8> for Card {
   }
 }
 
-impl PartialEq for Card {
-  fn eq(&self, other : &Card) -> bool {
-    self.0 == other.0
-  }
-}
+impl FromStr for Card {
+  type Err = ();
 
-impl Eq for Card {}
-
-impl PartialOrd for Card {
-  fn partial_cmp(&self, other : &Card) -> Option<Ordering> {
-    self.0.partial_cmp(&other.0)
-  }
-}
-
-impl Ord for Card {
-  fn cmp(&self, other : &Card) -> Ordering {
-    self.0.cmp(&other.0)
+  fn from_str(s: &str) -> Result<Card, ()> {
+    let mut chars = s.chars();
+    let suit = match chars.next() {
+      Some(c) => c.to_string(),
+      None => return Err(()),
+    };
+    let rank = match chars.next() {
+      Some(c) => c.to_string(),
+      None => return Err(()),
+    };
+    Suit::from_str(&suit).and_then(|s| {
+      Rank::from_str(&rank).map(|r| Card::new(s, r))
+    })
   }
 }
 
