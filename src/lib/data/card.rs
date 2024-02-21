@@ -1,54 +1,33 @@
 use std::cmp::{PartialEq, Eq, PartialOrd, Ord};
 use std::str::FromStr;
+use num::FromPrimitive;
+use num_derive::FromPrimitive;
 use super::display::Display;
-use super::numeric::Numeric;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub struct Suit(u8);
-
-pub const CLUB : Suit = Suit(0);
-pub const DIAMOND : Suit = Suit(1);
-pub const HEART : Suit = Suit(2);
-pub const SPADE : Suit = Suit(3);
-pub const NO_TRUMP : Suit = Suit(4);
-
-impl Clone for Suit {
-  fn clone(&self) -> Suit {
-    Suit(self.0)
-  }
-}
-impl Copy for Suit {}
-
-impl Numeric<u8> for Suit {
-  fn to_int(&self) -> u8 {
-    self.0
-  }
-
-  fn from_int(i: u8) -> Suit {
-    Suit(i)
-  }
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
+pub enum Suit {
+  Club = 0,
+  Diamond = 1,
+  Heart = 2,
+  Spade = 3
 }
 
 impl Display for Suit {
   fn show(&self) -> String {
-    match self.0 {
-      0 => "C".to_string(),
-      1 => "D".to_string(),
-      2 => "H".to_string(),
-      3 => "S".to_string(),
-      4 => "NT".to_string(),
-      _ => panic!("Invalid suit"),
+    match self {
+      Suit::Club => "C".to_string(),
+      Suit::Diamond => "D".to_string(),
+      Suit::Heart => "H".to_string(),
+      Suit::Spade => "S".to_string(),
     }
   }
 
   fn display(&self) -> String {
-    match self.0 {
-      0 => "♣".to_string(),
-      1 => "♦".to_string(),
-      2 => "♥".to_string(),
-      3 => "♠".to_string(),
-      4 => "NT".to_string(),
-      _ => panic!("Invalid suit"),
+    match self {
+      Suit::Club => "♣".to_string(),
+      Suit::Diamond => "♦".to_string(),
+      Suit::Heart => "♥".to_string(),
+      Suit::Spade => "♠".to_string(),
     }
   }
 }
@@ -58,81 +37,43 @@ impl FromStr for Suit {
 
   fn from_str(s: &str) -> Result<Suit, ()> {
     match s {
-      "C" | "c" | "♣" => Ok(CLUB),
-      "D" | "d" | "♦" => Ok(DIAMOND),
-      "H" | "h" | "♥" => Ok(HEART),
-      "S" | "s" | "♠" => Ok(SPADE),
-      "NT" | "nt" | "N" | "n" => Ok(NO_TRUMP),
+      "C" | "c" | "♣" => Ok(Suit::Club),
+      "D" | "d" | "♦" => Ok(Suit::Diamond),
+      "H" | "h" | "♥" => Ok(Suit::Heart),
+      "S" | "s" | "♠" => Ok(Suit::Spade),
       _ => Err(()),
     }
   }
 }
 
 
-pub struct Suits(u8);
-
-impl Iterator for Suits {
-  type Item = Suit;
-
-  fn next(&mut self) -> Option<Suit> {
-    self.0 += 1;
-    if self.0 < 5 {
-      Some(Suit(self.0))
-    } else {
-      None
-    }
-  }
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
+pub enum Rank {
+  Two = 2,
+  Three = 3,
+  Four = 4,
+  Five = 5,
+  Six = 6,
+  Seven = 7,
+  Eight = 8,
+  Nine = 9,
+  Ten = 10,
+  Jack = 11,
+  Queen = 12,
+  King = 13,
+  Ace = 14,
 }
 
-pub fn suits() -> Suits {
-  Suits(0)
-}
-
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub struct Rank(u8);
-
-pub const ACE : Rank = Rank(14);
-pub const KING : Rank = Rank(13);
-pub const QUEEN : Rank = Rank(12);
-pub const JACK : Rank = Rank(11);
-pub const TEN : Rank = Rank(10);
-pub const NINE : Rank = Rank(9);
-pub const EIGHT : Rank = Rank(8);
-pub const SEVEN : Rank = Rank(7);
-pub const SIX : Rank = Rank(6);
-pub const FIVE : Rank = Rank(5);
-pub const FOUR : Rank = Rank(4);
-pub const THREE : Rank = Rank(3);
-pub const TWO : Rank = Rank(2);
-
-impl Clone for Rank {
-  fn clone(&self) -> Rank {
-    Rank(self.0)
-  }
-}
-
-impl Copy for Rank {}
-
-impl Numeric<u8> for Rank {
-  fn to_int(&self) -> u8 {
-    self.0
-  }
-
-  fn from_int(i: u8) -> Rank {
-    Rank(i)
-  }
-}
 
 impl Display for Rank {
   fn show(&self) -> String {
-    match self.0 {
-      14 => "A".to_string(),
-      13 => "K".to_string(),
-      12 => "Q".to_string(),
-      11 => "J".to_string(),
-      10 => "T".to_string(),
-      2..=9 => self.0.to_string(),
-      i => panic!("Invalid rank({})", i),
+    match self {
+      Rank::Ace => "A".to_string(),
+      Rank::King => "K".to_string(),
+      Rank::Queen => "Q".to_string(),
+      Rank::Jack => "J".to_string(),
+      Rank::Ten => "T".to_string(),
+      v => (*v as isize).to_string(),
     }
   }
 }
@@ -142,67 +83,47 @@ impl FromStr for Rank {
 
   fn from_str(s: &str) -> Result<Rank, ()> {
     match s {
-      "A" | "a" => Ok(ACE),
-      "K" | "k" => Ok(KING),
-      "Q" | "q" => Ok(QUEEN),
-      "J" | "j" => Ok(JACK),
-      "T" | "t" | "10" | "1" | "0" => Ok(TEN),
-      "2" => Ok(TWO),
-      "3" => Ok(THREE),
-      "4" => Ok(FOUR),
-      "5" => Ok(FIVE),
-      "6" => Ok(SIX),
-      "7" => Ok(SEVEN),
-      "8" => Ok(EIGHT),
-      "9" => Ok(NINE),
+      "A" | "a" => Ok(Rank::Ace),
+      "K" | "k" => Ok(Rank::King),
+      "Q" | "q" => Ok(Rank::Queen),
+      "J" | "j" => Ok(Rank::Jack),
+      "T" | "t" | "10" | "1" | "0" => Ok(Rank::Ten),
+      "2" => Ok(Rank::Two),
+      "3" => Ok(Rank::Three),
+      "4" => Ok(Rank::Four),
+      "5" => Ok(Rank::Five),
+      "6" => Ok(Rank::Six),
+      "7" => Ok(Rank::Seven),
+      "8" => Ok(Rank::Eight),
+      "9" => Ok(Rank::Nine),
       _ => Err(()),
     }
   }
 }
 
-pub struct Ranks(u8);
-
-impl Iterator for Ranks {
-  type Item = Rank;
-
-  fn next(&mut self) -> Option<Rank> {
-    self.0 += 1;
-    if self.0 < 15 {
-      Some(Rank(self.0))
-    } else {
-      None
-    }
+impl Rank {
+  pub fn from_int(i: u8) -> Rank {
+    FromPrimitive::from_u8(i).unwrap()
   }
 }
 
-pub fn ranks() -> Ranks {
-  Ranks(1)
-}
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Card(u8);
 
 impl Card {
   pub fn new(suit: Suit, rank: Rank) -> Card {
-    Card((suit.to_int() << 4) | rank.to_int())
+    Card(((suit as u8) << 4) | (rank as u8))
   }
 
   pub fn suit(&self) -> Suit {
-    Suit(self.0 >> 4)
+    FromPrimitive::from_u8(self.0 >> 4).unwrap()
   }
 
   pub fn rank(&self) -> Rank {
-    Rank(self.0 & 0x0F)
+    FromPrimitive::from_u8(self.0 & 0x0F).unwrap()
   }
 }
-
-impl Clone for Card {
-  fn clone(&self) -> Card {
-    Card(self.0)
-  }
-}
-
-impl Copy for Card {}
 
 impl Display for Card {
   fn show(&self) -> String {
@@ -211,16 +132,6 @@ impl Display for Card {
 
   fn display(&self) -> String {
     format!("{}{}", self.suit().display(), self.rank().display())
-  }
-}
-
-impl Numeric<u8> for Card {
-  fn to_int(&self) -> u8 {
-    self.0
-  }
-
-  fn from_int(i: u8) -> Card {
-    Card(i)
   }
 }
 

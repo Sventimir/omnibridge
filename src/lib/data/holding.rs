@@ -1,5 +1,5 @@
+use num::FromPrimitive;
 use rand::Rng;
-use super::numeric::Numeric;
 use super::card::Rank;
 use super::display::Display;
 
@@ -34,7 +34,7 @@ impl Iterator for IterHolding {
     } else {
       let rank = self.mask.trailing_zeros() as u8;
       self.mask >>= 1;
-      Some(Rank::from_int(rank))
+      Some(FromPrimitive::from_u8(rank).unwrap())
     }
   }
 } 
@@ -53,19 +53,19 @@ impl Holding {
   }
 
   pub fn singleton(rank: Rank) -> Holding {
-    Holding(1 << rank.to_int())
+    Holding(1 << (rank as u8))
   }
 
   pub fn add(&mut self, rank: Rank) {
-    self.0 |= 1 << rank.to_int()
+    self.0 |= 1 << (rank as u8)
   }
 
   pub fn remove(&mut self, rank: Rank) {
-    self.0 &= !(1 << rank.to_int())
+    self.0 &= !(1 << (rank as u8))
   }
 
   pub fn contains(&self, rank: Rank) -> bool {
-    self.0 & (1 << rank.to_int()) != 0
+    self.0 & (1 << (rank as u8)) != 0
   }
 
   // Returns true if the holding contains Ace, King, Queen or Jack.
@@ -95,15 +95,17 @@ impl Holding {
 
   pub fn best_sequence(&self) -> Holding {
     self.iter().fold(Holding::new(), |holding, rank| {
-      if holding.contains(Rank::from_int(rank.to_int() + 1)) {
-        let mut h = holding.clone();
-        h.add(rank);
-        return h
-      }
-      if holding.len() < 2 {
-        Holding::singleton(rank)
-      } else {
-        holding
+      match rank {
+        Rank::Ace => Holding::singleton(rank),
+        _ if holding.contains(Rank::from_int((rank as u8) + 1)) => {
+          let mut h = holding.clone();
+          h.add(rank);
+          h
+        },
+        _ if holding.len() < 2 => {
+          Holding::singleton(rank)
+        },
+        _ => holding
       }
     })
   }

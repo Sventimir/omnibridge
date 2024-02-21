@@ -1,7 +1,7 @@
 #[cfg(test)]
+use num::FromPrimitive;
 use super::super::card::*;
 use super::super::display::*;
-use super::super::numeric::*;
 use super::super::holding::Holding;
 
 #[test]
@@ -12,23 +12,23 @@ fn empty_has_no_high_cards() {
 
 #[test]
 fn added_high_card_detected() {
-  for rank in ranks().skip(9) {
-    assert!(Holding::singleton(rank).contains_high_card())
+  for rank in 11..14 {
+    assert!(Holding::singleton(Rank::from_int(rank)).contains_high_card())
   }
 }
 
 #[test]
 fn no_high_cards_contained() {
-  for rank in ranks().take(9) {
-    assert!(!Holding::singleton(rank).contains_high_card())
+  for rank in 2..9 {
+    assert!(!Holding::singleton(Rank::from_int(rank)).contains_high_card())
   }
 }
 
 #[test]
 fn many_high_cards_also_detected() {
   let mut holding = Holding::new();
-  for rank in ranks().skip(9) {
-    holding.add(rank);
+  for rank in 11..14 {
+    holding.add(Rank::from_int(rank));
   }
   assert!(holding.contains_high_card())
 }
@@ -40,33 +40,47 @@ fn no_sequence_in_empty_holding() {
 
 #[test]
 fn two_consecutive_ranks_form_a_sequence() {
-  let holding = Holding::from_iter(vec![FOUR, FIVE]);
+  let holding = Holding::from_iter(vec![Rank::Four, Rank::Five]);
   assert!(holding == holding.best_sequence())
 }
 
 #[test]
 fn sequence_can_be_long() {
-  let holding = Holding::from_iter(vec![JACK, TEN, NINE, EIGHT]);
+  let holding = Holding::from_iter(vec![Rank::Jack, Rank::Ten, Rank::Nine, Rank::Eight]);
   assert!(holding == holding.best_sequence())
 }
 
 #[test]
 fn sequence_discards_other_cards() {
-  let holding = Holding::from_iter(vec![ACE, QUEEN, JACK, TEN, SEVEN, FIVE]);
+  let holding = Holding::from_iter(vec![
+    Rank::Ace,
+    Rank::Queen,
+    Rank::Jack,
+    Rank::Ten,
+    Rank::Seven,
+    Rank::Five
+  ]);
   let mut expected = holding.clone();
-  expected.remove(ACE);
-  expected.remove(SEVEN);
-  expected.remove(FIVE);
+  expected.remove(Rank::Ace);
+  expected.remove(Rank::Seven);
+  expected.remove(Rank::Five);
   assert!(holding.best_sequence() == expected)
 }
 
 #[test]
 fn of_two_or_more_sequences_highest_one_prevails() {
-  let holding = Holding::from_iter(vec![ACE, QUEEN, JACK, SEVEN, SIX, FIVE]);
+  let holding = Holding::from_iter(vec![
+    Rank::Ace,
+    Rank::Queen,
+    Rank::Jack,
+    Rank::Seven,
+    Rank::Six,
+    Rank::Five
+  ]);
   let mut expected = holding.clone();
-  expected.remove(ACE);
-  expected.remove(SEVEN);
-  expected.remove(SIX);
-  expected.remove(FIVE);
+  expected.remove(Rank::Ace);
+  expected.remove(Rank::Seven);
+  expected.remove(Rank::Six);
+  expected.remove(Rank::Five);
   assert!(holding.best_sequence() == expected)
 }
