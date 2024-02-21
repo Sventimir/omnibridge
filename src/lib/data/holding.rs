@@ -5,16 +5,8 @@ use super::display::Display;
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
    The rest is unused. */
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub struct Holding(u16);
-
-impl Clone for Holding {
-  fn clone(&self) -> Holding {
-    Holding(self.0)
-  }
-}
-
-impl Copy for Holding {}
 
 pub struct IterHolding {
   holding: Holding,
@@ -56,6 +48,10 @@ impl Holding {
     Holding(1 << (rank as u8))
   }
 
+  pub fn union(&self, other: &Holding) -> Holding {
+    Holding(self.0 | other.0)
+  }
+
   pub fn add(&mut self, rank: Rank) {
     self.0 |= 1 << (rank as u8)
   }
@@ -94,20 +90,22 @@ impl Holding {
   }
 
   pub fn best_sequence(&self) -> Holding {
-    self.iter().fold(Holding::new(), |holding, rank| {
-      match rank {
-        Rank::Ace => Holding::singleton(rank),
-        _ if holding.contains(Rank::from_int((rank as u8) + 1)) => {
-          let mut h = holding.clone();
-          h.add(rank);
-          h
-        },
-        _ if holding.len() < 2 => {
-          Holding::singleton(rank)
-        },
-        _ => holding
-      }
-    })
+    let h = 
+      self.iter().fold(Holding::new(), |holding, rank| {
+        match rank {
+          Rank::Ace => Holding::singleton(rank),
+          _ if holding.contains(Rank::from_int((rank as u8) + 1)) => {
+            let mut h = holding.clone();
+            h.add(rank);
+            h
+          },
+          _ if holding.len() < 2 => {
+            Holding::singleton(rank)
+          },
+          _ => holding
+        }
+      });
+    if h.len() < 2 { Holding::new() } else { h }
   }
 }
 

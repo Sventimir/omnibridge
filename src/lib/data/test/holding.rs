@@ -39,6 +39,13 @@ fn no_sequence_in_empty_holding() {
 }
 
 #[test]
+fn no_sequence_in_singletons() {
+  for rank in 2..14 {
+    assert!(Holding::singleton(Rank::from_int(rank)).best_sequence().is_empty())
+  }
+}
+
+#[test]
 fn two_consecutive_ranks_form_a_sequence() {
   let holding = Holding::from_iter(vec![Rank::Four, Rank::Five]);
   assert!(holding == holding.best_sequence())
