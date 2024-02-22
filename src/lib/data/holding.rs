@@ -133,6 +133,6 @@ impl Display for Holding {
     for r in self.iter() {
       acc.push_str(&r.display());
     }
-    acc
+   acc
   }
 }
