@@ -29,7 +29,7 @@ impl Iterator for IterHolding {
       Some(FromPrimitive::from_u8(rank).unwrap())
     }
   }
-} 
+}
 
 impl Holding {
   pub fn new() -> Holding {
@@ -90,7 +90,7 @@ impl Holding {
   }
 
   pub fn best_sequence(&self) -> Holding {
-    let h = 
+    let h =
       self.iter().fold(Holding::new(), |holding, rank| {
         match rank {
           Rank::Ace => Holding::singleton(rank),

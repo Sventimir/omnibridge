@@ -31,6 +31,8 @@ impl Dir {
   }
 }
 
+pub const DIRS : [Dir; 4] = [Dir::North, Dir::East, Dir::South, Dir::West];
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Side {
   NS = 0,

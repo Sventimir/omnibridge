@@ -1,7 +1,7 @@
 use num::FromPrimitive;
 
 use super::card::Rank;
-use super::table::Dir;
+use super::table::{Dir, DIRS};
 use super::display::Display;
 
 /* Rightmost 4 bits represent N's card, next 4 represent E's card and so on. */
@@ -34,5 +34,30 @@ impl SuitlessTrick {
       None => Ok(SuitlessTrick(self.0 | SuitlessTrick::card_of(dir, rank))),
       Some(r) => Err(r)
     }
+  }
+
+  pub fn complete(&self) -> bool {
+    for dir in DIRS.iter() {
+      if self.0 & SuitlessTrick::mask_of(*dir) == 0 {
+        return false
+      }
+    }
+    true
+  }
+
+  pub fn winner(&self) -> Dir {
+    DIRS.iter().max_by_key(|dir| match self.played_by(**dir) {
+      None => 0,
+      Some(r) => r as u8
+    }).unwrap().clone()
+  }
+}
+
+impl Display for SuitlessTrick {
+  fn show(&self) -> String {
+    DIRS.iter().map(|dir| match self.played_by(*dir) {
+      None => format!("{}: -", dir.show()),
+      Some(r) => format!("{}: {}", dir.show(), r.show())
+    }).collect::<Vec<String>>().join(" ")
   }
 }
