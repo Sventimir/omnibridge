@@ -108,7 +108,7 @@ impl Rank {
 }
 
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub struct Card(u8);
 
 impl Card {
@@ -122,6 +122,22 @@ impl Card {
 
   pub fn rank(&self) -> Rank {
     FromPrimitive::from_u8(self.0 & 0x0F).unwrap()
+  }
+
+  pub fn ord(&self) -> u8 {
+    let suit = self.0 >> 4;
+    let rank = (self.0 & 0x0F) - 2;
+    suit * 13 + rank
+  }
+
+  pub fn from_ord(ord: u8) -> Card {
+    let suit = (ord / 13) << 4;
+    let rank = (ord % 13) + 2;
+    Card(suit | rank)
+  }
+
+  pub fn to_u8(&self) -> u8 {
+    self.0
   }
 }
 
@@ -160,11 +176,18 @@ impl Iterator for Deck {
   type Item = Card;
 
   fn next(&mut self) -> Option<Card> {
-    self.0 += 1;
     if self.0 < 52 {
-      Some(Card(self.0))
+      let c = Some(Card::from_ord(self.0));
+      self.0 += 1;
+      c
     } else {
       None
     }
+  }
+}
+
+impl Deck {
+  pub fn new() -> Deck {
+    Deck(0)
   }
 }

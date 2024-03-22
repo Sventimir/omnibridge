@@ -18,3 +18,7 @@ path = "src/lib/mod.rs"
 [[bin]]
 name = "leader"
 path = "src/leader/main.rs"
+
+[[bin]]
+name = "test"
+path = "src/test/main.rs"
