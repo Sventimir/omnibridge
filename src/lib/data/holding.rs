@@ -5,7 +5,8 @@ use super::card::Rank;
 use super::display::Display;
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
-   The rest is unused. */
+   The rest is unused. Layout:
+   _AKQ,JT98,7654,32__ */
 #[derive(PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub struct Holding(u16);
 

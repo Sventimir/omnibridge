@@ -29,6 +29,10 @@ impl Dir {
   pub fn from_int(i : u8) -> Dir {
     FromPrimitive::from_u8(i).unwrap()
   }
+
+  pub fn opponent_of(&self, other: &Dir) -> bool {
+    (*self as u8) | 0x1 != (*other as u8) | 0x1
+  }
 }
 
 pub const DIRS : [Dir; 4] = [Dir::North, Dir::East, Dir::South, Dir::West];

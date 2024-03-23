@@ -2,9 +2,12 @@ use num::FromPrimitive;
 use rand::seq::SliceRandom;
 use super::card::{Card, Deck, Suit, SUITS};
 use super::display::Display;
+use super::hand_eval::*;
 use super::holding::Holding;
 
 
+/* Layout:
+   _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__*/
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct Hand(u64);
 
@@ -81,6 +84,20 @@ impl Hand {
       hand.add(c);
     }
     hand
+  }
+
+  pub fn eval(&self) -> Eval {
+    let mut hcp = Milton(0);
+    let mut shape = Shape::empty();
+    for card in self.iter() {
+      hcp = hcp + hcp_per_rank(&card.rank());
+      shape.add_card(&card.suit());
+    }
+    let mut dist_points = Milton::from_int(0);
+    for l in shape.iter() {
+      dist_points = dist_points + initial_dist_points_per_length(l);
+    }
+    Eval { hcp, dist_points, shape }
   }
 }
 
