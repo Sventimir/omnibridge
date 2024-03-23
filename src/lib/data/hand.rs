@@ -1,6 +1,6 @@
 use num::FromPrimitive;
-// use rand::Rng;
-use super::card::{Card, Suit, SUITS};
+use rand::seq::SliceRandom;
+use super::card::{Card, Deck, Suit, SUITS};
 use super::display::Display;
 use super::holding::Holding;
 
@@ -47,15 +47,15 @@ impl Hand {
     self.0.count_ones() as usize
   }
 
-  pub fn add(&mut self, card: Card) {
+  pub fn add(&mut self, card: &Card) {
     self.0 |= 1 << card.to_u8() as u64;
   }
 
-  pub fn has_card(&self, card: Card) -> bool {
+  pub fn has_card(&self, card: &Card) -> bool {
     self.0 & (1 << card.to_u8() as u64) != 0
   }
 
-  pub fn remove(&mut self, card: Card) {
+  pub fn remove(&mut self, card: &Card) {
     self.0 &= !(1 << card.to_u8() as u64);
   }
 
@@ -70,6 +70,17 @@ impl Hand {
       Suit::Spade =>
         FromPrimitive::from_u64((self.0 & 0x7ffc000000000000) >> 48).unwrap(),
     }
+  }
+
+  pub fn random() -> Hand {
+    let mut rng = rand::thread_rng();
+    let mut hand = Hand::new();
+    let mut deck = Deck::new().collect::<Vec<Card>>();
+    deck.shuffle(&mut rng);
+    for c in deck.iter().take(13) {
+      hand.add(c);
+    }
+    hand
   }
 }
 

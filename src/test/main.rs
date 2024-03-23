@@ -10,7 +10,7 @@ fn main() {
   for i in 0..52 {
     let card = Card::from_ord(i);
     println!("{} : {} : {} : {}", i, card.to_u8(), card.ord(), card.display());
-    hand.add(card);
+    hand.add(&card);
   }
   println!("****");
   for card in hand.iter() {
