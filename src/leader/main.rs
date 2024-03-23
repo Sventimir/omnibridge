@@ -21,7 +21,7 @@ fn input_lead() -> Rank {
 // random.
 fn random_holding() -> Holding {
   let holding = Holding::random();
-  if holding.is_empty() || holding.len() > 5 {
+  if holding.is_empty() || holding.length() > 5 {
     random_holding()
   } else {
     holding
@@ -30,7 +30,7 @@ fn random_holding() -> Holding {
 
 fn correct_lead(holding : &Holding) -> Rank {
   let best_seq = holding.best_sequence();
-  match holding.len() {
+  match holding.length() {
     _ if best_seq.contains_high_card() => best_seq.iter().nth(0),
     1 => holding.iter().nth(0),
     2 if holding.contains_high_card() => holding.iter().nth(0),

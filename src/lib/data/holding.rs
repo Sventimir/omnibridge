@@ -1,11 +1,12 @@
 use num::FromPrimitive;
+use num_derive::FromPrimitive;
 use rand::Rng;
 use super::card::Rank;
 use super::display::Display;
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
    The rest is unused. */
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub struct Holding(u16);
 
 pub struct IterHolding {
@@ -73,8 +74,8 @@ impl Holding {
     self.0 == 0
   }
 
-  pub fn len(&self) -> u8 {
-    self.0.count_ones() as u8
+  pub fn length(&self) -> usize {
+    self.0.count_ones() as usize
   }
 
   pub fn clear(&mut self) {
@@ -99,13 +100,13 @@ impl Holding {
             h.add(rank);
             h
           },
-          _ if holding.len() < 2 => {
+          _ if holding.length() < 2 => {
             Holding::singleton(rank)
           },
           _ => holding
         }
       });
-    if h.len() < 2 { Holding::new() } else { h }
+    if h.length() < 2 { Holding::new() } else { h }
   }
 }
 

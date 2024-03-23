@@ -46,6 +46,8 @@ impl FromStr for Suit {
   }
 }
 
+pub const SUITS : [Suit; 4] = [Suit::Club, Suit::Diamond, Suit::Heart, Suit::Spade];
+
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Rank {
@@ -108,7 +110,7 @@ impl Rank {
 }
 
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub struct Card(u8);
 
 impl Card {

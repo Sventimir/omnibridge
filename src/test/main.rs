@@ -1,7 +1,7 @@
 extern crate bridge;
 
 use bridge::data::display::Display;
-use bridge::data::card::{Card, Deck};
+use bridge::data::card::Card;
 use bridge::data::hand::Hand;
 
 
