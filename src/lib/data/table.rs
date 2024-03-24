@@ -61,3 +61,26 @@ impl Side {
     FromPrimitive::from_u8(i).unwrap()
   }
 }
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum Vulnerability {
+  None,
+  NS,
+  EW,
+  Both
+}
+
+impl Display for Vulnerability {
+  fn display(&self) -> String {
+    match *self {
+      Vulnerability::None => "None".to_string(),
+      Vulnerability::NS => "NS".to_string(),
+      Vulnerability::EW => "EW".to_string(),
+      Vulnerability::Both => "Both".to_string()
+    }
+  }
+
+  fn show(&self) -> String {
+    self.display()
+  }
+}

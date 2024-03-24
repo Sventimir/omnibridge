@@ -1,5 +1,6 @@
-use std::ops::{Add, Sub};
-use super::card::{Rank, Suit};
+use std::iter::zip;
+use std::ops::{Add, Sub, Range};
+use super::card::{Rank, Suit, SUITS};
 use super::display::Display;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -43,6 +44,7 @@ impl Milton {
   }
 }
 
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum ShapeType {
   Balanced,
   Monosuiter,
@@ -50,7 +52,7 @@ pub enum ShapeType {
   Threesuiter
 }
 
-pub struct Shape([u8; 4]);
+pub struct Shape(pub [u8; 4]);
 
 impl Shape {
   pub fn empty() -> Shape {
@@ -98,6 +100,30 @@ impl Shape {
       }
     }
   }
+
+  pub fn longest_suit(&self) -> (Suit, u8) {
+    let mut best_length = 0;
+    let mut longest_suit = Suit::Club;
+    for (suit, length) in zip(SUITS, self.0.iter()) {
+      if *length >= best_length {
+        best_length = *length;
+        longest_suit = suit;
+      }
+    }
+    (longest_suit, best_length)
+  }
+
+  pub fn shortest_suit(&self) -> (Suit, u8) {
+    let mut best_length = 99;
+    let mut shortest_suit = Suit::Club;
+    for (suit, length) in zip(SUITS, self.0.iter()) {
+      if *length < best_length {
+        best_length = *length;
+        shortest_suit = suit;
+      }
+    }
+    (shortest_suit, best_length)
+  }
 }
 
 impl Display for ShapeType {
@@ -126,6 +152,12 @@ pub struct Eval {
   pub shape: Shape
 }
 
+impl Eval {
+  pub fn total_points(&self) -> Milton {
+    self.hcp + self.dist_points
+  }
+}
+
 pub fn hcp_per_rank(r: &Rank) -> Milton {
   match r {
     Rank::Ace => Milton(16),
@@ -139,3 +171,10 @@ pub fn hcp_per_rank(r: &Rank) -> Milton {
 pub fn initial_dist_points_per_length(l : &u8) -> Milton {
   if *l > 4 { Milton(4) } else { Milton(0) }
 }
+
+pub const OPENING_THRESHOLD : Milton = Milton(48);  // 12 HCP
+pub const ONE_NO_TRUMP_RANGE : Range<Milton> = Milton(60)..Milton(72); // 15-18 HCP
+pub const NO_TRUMP_THRESHOLD : Milton = Milton(60); // 15 HCP
+pub const STRONG_NO_TRUMP_THRESHOLD : Milton = Milton(72); // 18HCP
+pub const TWO_NO_TRUMP_RANGE : Range<Milton> = Milton(80)..Milton(92); // 20-22 HCP
+pub const GF_OPENING_THRESHOLD : Milton = Milton(92);   // 23 HCP

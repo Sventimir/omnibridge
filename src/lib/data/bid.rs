@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::str::FromStr;
 use super::card::Suit;
 use super::display::Display;
 use super::table::Dir;
@@ -6,11 +7,11 @@ use super::table::Dir;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub struct Call {
-  pub suit : Option<Suit>,
+  pub trump : Option<Suit>,
   pub level: u8
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub enum Bid {
   Pass,
   Double,
@@ -32,20 +33,22 @@ pub struct Contract {
   pub doubled: Doubled
 }
 
-impl Call {
-  pub fn from_str(s: &str) -> Option<Call> {
+impl FromStr for Call {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Call, String> {
     let mut chars = s.chars();
     let level = chars.next().unwrap().to_digit(10).unwrap() as u8;
-    if level > 7 { return None }
+    if level > 7 { return Err("Invalid level".to_string()) }
     let suit = match chars.next() {
-      Some('C') => Some(Suit::Club),
-      Some('D') => Some(Suit::Diamond),
-      Some('H') => Some(Suit::Heart),
-      Some('S') => Some(Suit::Spade),
-      Some('N') => None,
-      _ => return None
+      Some('C' | 'c') => Some(Suit::Club),
+      Some('D' | 'd') => Some(Suit::Diamond),
+      Some('H' | 'h') => Some(Suit::Heart),
+      Some('S' | 's') => Some(Suit::Spade),
+      Some('N' | 'n') => None,
+      _ => return Err("Invalid suit".to_string())
     };
-    Some(Call { suit, level })
+    Ok(Call { trump: suit, level })
   }
 }
 
@@ -66,12 +69,16 @@ impl Bid {
       _ => None
       }
   }
+}
 
-  pub fn from_str(s: &str) -> Option<Bid> {
+impl FromStr for Bid {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Bid, String> {
     match s {
-      "Pass" | "p" => Some(Bid::Pass),
-      "Dbl" | "x" => Some(Bid::Double),
-      "Rdbl" | "xx" => Some(Bid::Redouble),
+      "Pass" | "p" => Ok(Bid::Pass),
+      "Dbl" | "x" => Ok(Bid::Double),
+      "Rdbl" | "xx" => Ok(Bid::Redouble),
       _ => Call::from_str(s).map(Bid::Call)
     }
   }
@@ -79,14 +86,14 @@ impl Bid {
 
 impl Display for Call {
   fn show(&self) -> String {
-    match self.suit {
+    match self.trump {
       None => format!("{}NT", self.level),
       Some(suit) => format!("{}{}", self.level, suit.show())
     }
   }
 
   fn display(&self) -> String {
-    match self.suit {
+    match self.trump {
       None => format!("{}NT", self.level),
       Some(suit) => format!("{}{}", self.level, suit.display())
     }
@@ -150,7 +157,7 @@ impl PartialOrd for Call {
 impl Ord for Call {
   fn cmp(&self, other: &Call) -> Ordering {
     if self.level == other.level {
-      match (self.suit, other.suit) {
+      match (self.trump, other.trump) {
         (None, None) => Ordering::Equal,
         (None, Some(_)) => Ordering::Greater,
         (Some(_), None) => Ordering::Less,
