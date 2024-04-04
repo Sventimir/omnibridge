@@ -33,6 +33,12 @@ pub struct Contract {
   pub doubled: Doubled
 }
 
+impl Contract {
+    pub fn new(call: Call, doubled: Doubled, decl: Dir) -> Contract {
+        Contract { call, doubled, declarer: decl }
+    }
+}
+
 impl FromStr for Call {
   type Err = String;
 

@@ -1,63 +1,45 @@
+use std::num::Wrapping;
 use num::FromPrimitive;
 
-use super::card::Rank;
+use super::card::Card;
 use super::table::{Dir, DIRS};
 use super::display::Display;
 
-/* Rightmost 4 bits represent N's card, next 4 represent E's card and so on. */
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub struct SuitlessTrick(u16);
+/* Layout:
+   ____ |__|__| ____ __|__ ____| ____ __|__ ____
+   idle   l  c   card    card     card   l. card
+ where l = leader and c = curent */
+pub struct Trick(u32);
 
-impl SuitlessTrick {
-  pub fn new() -> SuitlessTrick {
-    SuitlessTrick(0)
-  }
-
-  fn shift(dir: Dir) -> u16 {
-    4 * (dir as u16)
-  }
-
-  fn mask_of(dir: Dir) -> u16 {
-    0xf << SuitlessTrick::shift(dir)
-  }
-
-  fn card_of(dir: Dir, rank: Rank) -> u16 {
-    (rank as u16) << SuitlessTrick::shift(dir)
-  }
-
-  pub fn played_by(&self, dir: Dir) -> Option<Rank> {
-    FromPrimitive::from_u16(SuitlessTrick::mask_of(dir) >> SuitlessTrick::shift(dir))
-  }
-
-  pub fn with_played(&self, dir: Dir, rank: Rank) -> Result<SuitlessTrick, Rank> {
-    match self.played_by(dir) {
-      None => Ok(SuitlessTrick(self.0 | SuitlessTrick::card_of(dir, rank))),
-      Some(r) => Err(r)
+impl Trick {
+    pub fn new(leader: &Dir) -> Trick {
+        Trick(((*leader as u32) << 24) | ((*leader as u32) << 26))
     }
-  }
 
-  pub fn complete(&self) -> bool {
-    for dir in DIRS.iter() {
-      if self.0 & SuitlessTrick::mask_of(*dir) == 0 {
-        return false
-      }
+    pub fn leader(&self) -> Dir {
+        FromPrimitive::from_u32(self.0 >> 26 & 0x4).expect("Invalid trick leader")
     }
-    true
-  }
 
-  pub fn winner(&self) -> Dir {
-    DIRS.iter().max_by_key(|dir| match self.played_by(**dir) {
-      None => 0,
-      Some(r) => r as u8
-    }).unwrap().clone()
-  }
-}
+    pub fn current_player(&self) -> Dir {
+        FromPrimitive::from_u32(self.0 >> 24 & 0x4).expect("Invalid trick current player")
+    }
 
-impl Display for SuitlessTrick {
-  fn show(&self) -> String {
-    DIRS.iter().map(|dir| match self.played_by(*dir) {
-      None => format!("{}: -", dir.show()),
-      Some(r) => format!("{}: {}", dir.show(), r.show())
-    }).collect::<Vec<String>>().join(" ")
-  }
+    pub fn card_played(&self, player: &Dir) -> Option<Card> {
+        let leader = Wrapping(self.leader() as u32);
+        let player = Wrapping(*player as u32);
+        let diff = (player - leader).0 % 4;
+        let shift = diff * 6;
+        let mask = 0x3f << shift;
+        let c = ((self.0 & mask) >> shift) as u8;
+        // Sadly, FromPrimitive does not understand which values are valid.
+        if c == 0 { None } else { FromPrimitive::from_u8(c) }
+    }
+
+    pub fn play_card(&mut self, card: &Card) {
+        let leader = Wrapping(self.leader() as u32);
+        let player = Wrapping(self.current_player() as u32);
+        let diff = (player - leader).0 % 4;
+        let shift = diff * 6;
+        self.0 |= (card.to_u8() as u32) << shift
+    }
 }
