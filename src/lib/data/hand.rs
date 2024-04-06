@@ -1,9 +1,14 @@
 use num::FromPrimitive;
 use rand::seq::SliceRandom;
-use super::card::{Card, Deck, Suit, SUITS};
+use sexp;
+use sexp::Sexp;
+
+use super::card::{Card, Deck, Rank, Suit, SUITS};
 use super::display::Display;
 use super::hand_eval::*;
 use super::holding::Holding;
+use super::sexpable;
+use super::sexpable::{Sexpable, SexpError};
 
 
 /* Layout:
@@ -132,5 +137,50 @@ impl Display for Hand {
       ret.push(' ');
     }
     ret.trim().to_string()
+  }
+}
+
+impl Sexpable for Hand {
+  fn to_sexp(&self) -> Sexp {
+      let mut hand_sexp = Vec::with_capacity(4);
+      let mut current_holding = Vec::with_capacity(13);
+      let mut current_suit = Suit::Spade;
+      for card in self.iter() {
+          if card.suit() == current_suit {
+              current_holding.push(card.rank().to_sexp())
+          } else {
+              hand_sexp.push(sexp::list(&[
+                  current_suit.to_sexp(),
+                  sexp::list(&current_holding)
+              ]));
+              current_holding.clear();
+              current_holding.push(card.rank().to_sexp());
+              current_suit = card.suit();
+          }
+      }
+      hand_sexp.push(sexp::list(&[
+          current_suit.to_sexp(),
+          sexp::list(&current_holding)
+      ]));
+      sexp::list(&hand_sexp)
+  }
+
+  fn from_sexp(sexp: &Sexp) -> Result<Hand, SexpError> {
+      let holdings = sexpable::list(sexp)?;
+      let mut hand = Hand::new();
+      for h in holdings.iter() {
+          let suit_and_holding = sexpable::list(h)?;
+          if let [suit, holding] = suit_and_holding {
+              let s = Suit::from_sexp(suit)?;
+              let rs = sexpable::list(holding)?;
+              for r in rs.iter() {
+                  let rank = Rank::from_sexp(r)?;
+                  hand.add(&Card::new(s, rank));
+              }
+          } else {
+              return Err(SexpError::UnexpectedValue(&h))
+          }
+      }
+      Ok(hand)
   }
 }

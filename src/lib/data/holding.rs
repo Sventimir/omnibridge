@@ -1,8 +1,13 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::Rng;
+use sexp;
+use sexp::Sexp;
+
 use super::card::Rank;
 use super::display::Display;
+use super::sexpable;
+use super::sexpable::{Sexpable, SexpError};
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
    The rest is unused. Layout:
@@ -136,5 +141,25 @@ impl Display for Holding {
       acc.push_str(&r.display());
     }
    acc
+  }
+}
+
+impl Sexpable for Holding {
+    fn to_sexp(&self) -> Sexp {
+        let mut acc = Vec::with_capacity(13);
+        for r in self.iter() {
+            acc.push(r.to_sexp());
+        }
+        sexp::list(&acc)
+    }
+    
+    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
+        let ranks = sexpable::list(sexp)?;
+        let mut holding = Holding::new();
+        for r in ranks.iter() {
+            let rank = Rank::from_sexp(r)?;
+            holding.add(rank);
+        }
+        Ok(holding)
   }
 }

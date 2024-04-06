@@ -5,6 +5,7 @@ pub mod display;
 pub mod hand;
 pub mod hand_eval;
 pub mod holding;
+pub mod sexpable;
 pub mod table;
 pub mod trick;
 mod test;
