@@ -87,12 +87,12 @@ impl Side {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, FromPrimitive)]
 pub enum Vulnerability {
-    None,
-    NS,
-    EW,
-    Both
+    None = 0,
+    NS = 1,
+    EW = 2,
+    Both = 3
 }
 
 impl Display for Vulnerability {

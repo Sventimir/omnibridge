@@ -1,4 +1,5 @@
 pub mod bid;
+pub mod board;
 pub mod card;
 pub mod display;
 pub mod hand;
