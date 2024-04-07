@@ -1,6 +1,7 @@
 use sexp::{Atom, Sexp};
 
 
+#[derive(Debug)]
 pub enum SexpError<'a> {
     UnexpectedList(&'a Sexp),
     UnexpectedAtom(&'a Atom),

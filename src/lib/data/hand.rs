@@ -1,3 +1,4 @@
+use num_derive::FromPrimitive;
 use num::FromPrimitive;
 use rand::seq::SliceRandom;
 use sexp;
@@ -13,7 +14,7 @@ use super::sexpable::{Sexpable, SexpError};
 
 /* Layout:
    _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__*/
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, FromPrimitive, Debug)]
 pub struct Hand(u64);
 
 pub struct IterHand {
@@ -146,6 +147,7 @@ impl Sexpable for Hand {
       let mut current_holding = Vec::with_capacity(13);
       let mut current_suit = Suit::Spade;
       for card in self.iter() {
+          println!("Card: {:?}", card);
           if card.suit() == current_suit {
               current_holding.push(card.rank().to_sexp())
           } else {
