@@ -2,8 +2,7 @@ use std::num::Wrapping;
 use num::FromPrimitive;
 
 use super::card::Card;
-use super::table::{Dir, DIRS};
-use super::display::Display;
+use super::table::Dir;
 
 /* Layout:
    ____ |__|__| ____ __|__ ____| ____ __|__ ____
