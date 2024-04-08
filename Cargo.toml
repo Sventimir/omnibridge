@@ -25,5 +25,9 @@ name = "bidder"
 path = "src/bidder/main.rs"
 
 [[bin]]
+name = "dealer"
+path = "src/dealer/main.rs"
+
+[[bin]]
 name = "test"
 path = "src/test/main.rs"

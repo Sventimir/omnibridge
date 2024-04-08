@@ -147,7 +147,6 @@ impl Sexpable for Hand {
       let mut current_holding = Vec::with_capacity(13);
       let mut current_suit = Suit::Spade;
       for card in self.iter() {
-          println!("Card: {:?}", card);
           if card.suit() == current_suit {
               current_holding.push(card.rank().to_sexp())
           } else {

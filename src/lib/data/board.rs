@@ -18,6 +18,16 @@ pub struct Board {
 }
 
 impl Board {
+    pub fn new(number: u8) -> Board {
+        Board {
+            number,
+            north: Hand::new(),
+            east: Hand::new(),
+            south: Hand::new(),
+            west: Hand::new()
+        }
+    }
+
     pub fn dealer(&self) -> Dir {
         FromPrimitive::from_u8(self.number % 4).unwrap()
     }
@@ -59,10 +69,10 @@ impl Sexpable for Board {
         sexp::list(&[
             sexp::atom_s("board"),
             sexp::atom_i(self.number as i64),
-            sexp::list(&[sexp::atom_s("n"), self.north.to_sexp()]),
-            sexp::list(&[sexp::atom_s("e"), self.east.to_sexp()]),
-            sexp::list(&[sexp::atom_s("s"), self.south.to_sexp()]),
-            sexp::list(&[sexp::atom_s("w"), self.west.to_sexp()])
+            sexp::list(&[sexp::atom_s("N"), self.north.to_sexp()]),
+            sexp::list(&[sexp::atom_s("E"), self.east.to_sexp()]),
+            sexp::list(&[sexp::atom_s("S"), self.south.to_sexp()]),
+            sexp::list(&[sexp::atom_s("W"), self.west.to_sexp()])
         ])
     }
 
