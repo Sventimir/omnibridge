@@ -4,9 +4,14 @@
 
 (require 'org)
 
-(defcustom bridge-suit-symbols '((s . "♠") (h . "♥") (d . "♦") (c . "♣"))
+(defcustom bridge-suit-symbols '((S . "♠") (H . "♥") (D . "♦") (C . "♣"))
   "Alist of suit symbols for bridge suits."
   :type '(alist :key-type string :value-type string)
+  :group 'bridge)
+
+(defcustom bridge-dealer-bin "/usr/local/bin/dealer"
+  "Path to the dealer binary."
+  :type 'string
   :group 'bridge)
 
 
@@ -16,11 +21,11 @@
 
 (defun bridge-board-hand (side b)
   "Return the contents of the hand SIDE in B."
-  (cdr (assoc side (cddr b))))
+  (cadr (assoc side (cddr b))))
 
 (defun bridge-hand-suit (suit hand)
   "Return the cards in the SUIT of the HAND."
-  (cdr (assoc suit hand)))
+  (cadr (assoc suit hand)))
 
 (defun bridge-holding-to-string (holding)
   "Return a string representation of the HOLDING."
@@ -46,7 +51,7 @@
 
 (defun bridge-put-hand (line column hand)
   "Put the HAND representation in LINE / COLUMN of the table."
-  (dolist (suit '(s h c d))
+  (dolist (suit '(S H C D))
           (org-table-put
            line
            column
@@ -56,6 +61,8 @@
 
 (defun bridge-board-display (board)
   "Display the BOARD as an org table."
+  (insert (format "Board %s\n\n" board))
+ 
   (org-table-create "3x12")
   (org-table-move-row-down)
   (org-table-goto-line 4)
@@ -69,11 +76,21 @@
   (org-table-put 2 1 (bridge-board-vulnerability board))
   (org-table-put 3 1 (format "Dealer: %s" (bridge-board-dealer board)))
 
-  (bridge-put-hand 1 2 (bridge-board-hand 'n board))
-  (bridge-put-hand 5 1 (bridge-board-hand 'w board))
-  (bridge-put-hand 5 3 (bridge-board-hand 'e board))
-  (bridge-put-hand 9 2 (bridge-board-hand 's board))
+  (bridge-put-hand 1 2 (bridge-board-hand 'N board))
+  (bridge-put-hand 5 1 (bridge-board-hand 'W board))
+  (bridge-put-hand 5 3 (bridge-board-hand 'E board))
+  (bridge-put-hand 9 2 (bridge-board-hand 'S board))
   (org-table-align))
+
+(defun bridge-insert-random-board (number)
+  "Insert a random board with NUMBER."
+  (interactive "nBoard number: ")
+  (with-current-buffer "*bridge-dealer*" (erase-buffer))
+  (call-process bridge-dealer-bin nil "*bridge-dealer*" nil)
+  (bridge-board-display
+   (with-current-buffer "*bridge-dealer*"
+     (goto-char (point-min))
+     (read (current-buffer)))))
 
 (provide 'bridge)
 ;;; bridge.el ends here
