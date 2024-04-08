@@ -61,8 +61,6 @@
 
 (defun bridge-board-display (board)
   "Display the BOARD as an org table."
-  (insert (format "Board %s\n\n" board))
- 
   (org-table-create "3x12")
   (org-table-move-row-down)
   (org-table-goto-line 4)
@@ -82,15 +80,26 @@
   (bridge-put-hand 9 2 (bridge-board-hand 'S board))
   (org-table-align))
 
-(defun bridge-insert-random-board (number)
-  "Insert a random board with NUMBER."
-  (interactive "nBoard number: ")
+(defun bridge-insert-random-board (numbers)
+  "Insert a random board with NUMBERS."
+  (interactive "sBoard number: ")
   (with-current-buffer "*bridge-dealer*" (erase-buffer))
-  (call-process bridge-dealer-bin nil "*bridge-dealer*" nil)
-  (bridge-board-display
-   (with-current-buffer "*bridge-dealer*"
-     (goto-char (point-min))
-     (read (current-buffer)))))
+  (call-process-shell-command
+   (format "%s %s" bridge-dealer-bin numbers)
+   nil
+   "*bridge-dealer*"
+   nil)
+  (with-current-buffer "*bridge-dealer*"
+    (goto-char (point-min)))
+  (while (with-current-buffer "*bridge-dealer*"
+           (not (equal (point) (point-max))))
+    (bridge-board-display
+     (with-current-buffer "*bridge-dealer*"
+       (read (current-buffer))))
+    (forward-line 2)
+    (insert "\n")
+    (with-current-buffer "*bridge-dealer*"
+      (forward-line 1))))
 
 (provide 'bridge)
 ;;; bridge.el ends here
