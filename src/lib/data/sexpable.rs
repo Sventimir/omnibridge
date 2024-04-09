@@ -9,6 +9,37 @@ pub enum SexpError<'a> {
     UnexpectedValue(&'a Sexp)
 }
 
+impl<'a> SexpError<'a> {
+    pub fn to_sexp(&self) -> Sexp {
+        match self {
+            SexpError::UnexpectedAtom(a) =>
+                sexp::list(&[
+                    sexp::atom_s("error"),
+                    mk_assoc_pair("type", sexp::atom_s("unexpected-atom")),
+                    mk_assoc_pair("atom", Sexp::Atom((*a).clone()))
+                ]),
+            SexpError::UnexpectedList(s) =>
+                sexp::list(&[
+                    sexp::atom_s("error"),
+                    mk_assoc_pair("type", sexp::atom_s("unexpected-list")),
+                    mk_assoc_pair("atom", (*s).clone())
+                ]),
+            SexpError::UnexpectedNegativeNumber(n) =>
+                sexp::list(&[
+                    sexp::atom_s("error"),
+                    mk_assoc_pair("type", sexp::atom_s("unexpected-negative-number")),
+                    mk_assoc_pair("atom", sexp::atom_i(*n))
+                ]),
+            SexpError::UnexpectedValue(v) =>
+                sexp::list(&[
+                    sexp::atom_s("error"),
+                    mk_assoc_pair("type", sexp::atom_s("unexpected-value")),
+                    mk_assoc_pair("atom", (*v).clone())
+                ])
+        }
+    }
+}
+
 pub trait Sexpable: Sized {
     fn to_sexp(&self) -> Sexp;
     fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError>;
@@ -56,4 +87,8 @@ pub fn uint(atom: &Atom) -> Result<u64, SexpError> {
     } else {
         Ok(i as u64)
     }
+}
+
+pub fn mk_assoc_pair(key: &str, value: Sexp) -> Sexp {
+    Sexp::List(vec![ sexp::atom_s(key), value ])
 }
