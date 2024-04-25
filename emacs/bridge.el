@@ -51,7 +51,7 @@
 
 (defun bridge-put-hand (line column hand)
   "Put the HAND representation in LINE / COLUMN of the table."
-  (dolist (suit '(S H C D))
+  (dolist (suit '(S H D C))
           (org-table-put
            line
            column
