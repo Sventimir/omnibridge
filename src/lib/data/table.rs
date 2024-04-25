@@ -9,7 +9,7 @@ pub enum Dir {
     North = 0,
     East = 1,
     South = 2,
-    West = 3
+    West = 3,
 }
 
 impl Display for Dir {
@@ -18,9 +18,9 @@ impl Display for Dir {
             Dir::North => "N".to_string(),
             Dir::East => "E".to_string(),
             Dir::South => "S".to_string(),
-            Dir::West => "W".to_string()
+            Dir::West => "W".to_string(),
         }
-  }
+    }
 
     fn show(&self) -> String {
         self.display()
@@ -28,7 +28,7 @@ impl Display for Dir {
 }
 
 impl Dir {
-    pub fn from_int(i : u8) -> Dir {
+    pub fn from_int(i: u8) -> Dir {
         FromPrimitive::from_u8(i).unwrap()
     }
 
@@ -39,7 +39,8 @@ impl Dir {
     pub fn iter(&self) -> IterDir {
         IterDir {
             current: *self,
-            last: FromPrimitive::from_u8((*self as u8 + 3) % 4).unwrap() }
+            last: FromPrimitive::from_u8((*self as u8 + 3) % 4).unwrap(),
+        }
     }
 }
 
@@ -52,14 +53,14 @@ impl FromStr for Dir {
             "E" | "e" => Ok(Dir::East),
             "S" | "s" => Ok(Dir::South),
             "W" | "w" => Ok(Dir::West),
-            _ => Err(format!("Invalid direction: {}", s))
+            _ => Err(format!("Invalid direction: {}", s)),
         }
     }
 }
 
 pub struct IterDir {
     current: Dir,
-    last: Dir
+    last: Dir,
 }
 
 impl Iterator for IterDir {
@@ -76,19 +77,19 @@ impl Iterator for IterDir {
     }
 }
 
-pub const DIRS : [Dir; 4] = [Dir::North, Dir::East, Dir::South, Dir::West];
+pub const DIRS: [Dir; 4] = [Dir::North, Dir::East, Dir::South, Dir::West];
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Side {
     NS = 0,
-    EW = 1
+    EW = 1,
 }
 
 impl Display for Side {
     fn display(&self) -> String {
         match *self {
             Side::NS => "NS".to_string(),
-            Side::EW => "EW".to_string()
+            Side::EW => "EW".to_string(),
         }
     }
 
@@ -98,7 +99,7 @@ impl Display for Side {
 }
 
 impl Side {
-    pub fn from_int(i : u8) -> Side {
+    pub fn from_int(i: u8) -> Side {
         FromPrimitive::from_u8(i).unwrap()
     }
 }
@@ -108,7 +109,7 @@ pub enum Vulnerability {
     None = 0,
     NS = 1,
     EW = 2,
-    Both = 3
+    Both = 3,
 }
 
 impl Display for Vulnerability {
@@ -117,7 +118,7 @@ impl Display for Vulnerability {
             Vulnerability::None => "None".to_string(),
             Vulnerability::NS => "NS".to_string(),
             Vulnerability::EW => "EW".to_string(),
-            Vulnerability::Both => "Both".to_string()
+            Vulnerability::Both => "Both".to_string(),
         }
     }
 

@@ -1,13 +1,13 @@
-use std::num::Wrapping;
 use num::FromPrimitive;
+use std::num::Wrapping;
 
 use super::card::Card;
 use super::table::Dir;
 
 /* Layout:
-   ____ |__|__| ____ __|__ ____| ____ __|__ ____
-   idle   l  c   card    card     card   l. card
- where l = leader and c = curent */
+  ____ |__|__| ____ __|__ ____| ____ __|__ ____
+  idle   l  c   card    card     card   l. card
+where l = leader and c = curent */
 pub struct Trick(u32);
 
 impl Trick {
@@ -31,7 +31,11 @@ impl Trick {
         let mask = 0x3f << shift;
         let c = ((self.0 & mask) >> shift) as u8;
         // Sadly, FromPrimitive does not understand which values are valid.
-        if c == 0 { None } else { FromPrimitive::from_u8(c) }
+        if c == 0 {
+            None
+        } else {
+            FromPrimitive::from_u8(c)
+        }
     }
 
     pub fn play_card(&mut self, card: &Card) {

@@ -6,7 +6,6 @@ use std::io;
 
 use command::Cmd;
 
-
 // fn interpret(expr: &str) -> Result<sexp::Sexp, sexp::Sexp> {
 //     let s = sexp::parse(expr).map_err(format_read_error)?;
 //     let cmd = Cmd::from_sexp(&s).map_err(|e| e.to_sexp())?;
