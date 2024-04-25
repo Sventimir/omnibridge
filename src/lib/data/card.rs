@@ -1,5 +1,6 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
+use serde::{Deserialize, Serialize};
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 use std::str::FromStr;
 
@@ -44,6 +45,25 @@ impl FromStr for Suit {
             "S" | "s" | "♠" => Ok(Suit::Spade),
             _ => Err(()),
         }
+    }
+}
+
+impl Serialize for Suit {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.show())
+    }
+}
+
+impl<'de> Deserialize<'de> for Suit {
+    fn deserialize<D>(deserializer: D) -> Result<Suit, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Suit::from_str(&s).map_err(|_| serde::de::Error::unknown_variant(&s, &["C", "D", "H", "S"]))
     }
 }
 
@@ -108,6 +128,32 @@ impl Rank {
     }
 }
 
+impl Serialize for Rank {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.show())
+    }
+}
+
+impl<'de> Deserialize<'de> for Rank {
+    fn deserialize<D>(deserializer: D) -> Result<Rank, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Rank::from_str(&s).map_err(|_| {
+            serde::de::Error::unknown_variant(
+                &s,
+                &[
+                    "A", "K", "Q", "J", "T", "2", "3", "4", "5", "6", "7", "8", "9",
+                ],
+            )
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub struct Card(u8);
 
@@ -165,6 +211,30 @@ impl FromStr for Card {
             None => return Err(()),
         };
         Suit::from_str(&suit).and_then(|s| Rank::from_str(&rank).map(|r| Card::new(s, r)))
+    }
+}
+
+impl Serialize for Card {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.show())
+    }
+}
+
+impl<'de> Deserialize<'de> for Card {
+    fn deserialize<D>(deserializer: D) -> Result<Card, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Card::from_str(&s).map_err(|_| {
+            serde::de::Error::invalid_value(
+                serde::de::Unexpected::Str(&s),
+                &"a string in format: '<suit><rank>'",
+            )
+        })
     }
 }
 
