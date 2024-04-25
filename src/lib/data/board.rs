@@ -1,10 +1,6 @@
 use num::FromPrimitive;
-use sexp;
-use sexp::Sexp;
 
 use super::hand::Hand;
-use super::sexpable;
-use super::sexpable::Sexpable;
 use super::table::{Dir, Vulnerability};
 
 
@@ -61,41 +57,5 @@ impl Board {
             Dir::South => self.south = hand,
             Dir::West => self.west = hand
         }
-    }
-}
-
-impl Sexpable for Board {
-    fn to_sexp(&self) -> Sexp {
-        sexp::list(&[
-            sexp::atom_s("board"),
-            sexp::atom_i(self.number as i64),
-            sexp::list(&[sexp::atom_s("N"), self.north.to_sexp()]),
-            sexp::list(&[sexp::atom_s("E"), self.east.to_sexp()]),
-            sexp::list(&[sexp::atom_s("S"), self.south.to_sexp()]),
-            sexp::list(&[sexp::atom_s("W"), self.west.to_sexp()])
-        ])
-    }
-
-    fn from_sexp(sexp: &Sexp) -> Result<Self, sexpable::SexpError> {
-        let list = sexpable::list(sexp)?;
-        if list[0] != sexp::atom_s("board") {
-            return Err(sexpable::SexpError::UnexpectedValue(&list[0]));
-        }
-        let num_atom = sexpable::atom(&list[1])?;
-        let number = sexpable::uint(num_atom)?;
-        let mut board = Board {
-            number: number as u8,
-            north: Hand::new(),
-            east: Hand::new(),
-            south: Hand::new(),
-            west: Hand::new()
-        };
-        for h in list[2..].iter() {
-            let l = sexpable::list(h)?;
-            let dir = Dir::from_sexp(&l[0])?;
-            let hand = Hand::from_sexp(&l[1])?;
-            board.set_hand(dir, hand);
-        }
-        Ok(board)
     }
 }

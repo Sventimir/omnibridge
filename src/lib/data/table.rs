@@ -1,12 +1,8 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use sexp;
-use sexp::Sexp;
 use std::str::FromStr;
 
 use super::display::Display;
-use super::sexpable;
-use super::sexpable::{Sexpable, SexpError};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Dir {
@@ -58,18 +54,6 @@ impl FromStr for Dir {
             "W" | "w" => Ok(Dir::West),
             _ => Err(format!("Invalid direction: {}", s))
         }
-    }
-}
-
-impl Sexpable for Dir {
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(&self.display())
-    }
-
-    fn from_sexp(sexp: &Sexp) -> Result<Dir, SexpError> {
-        let atm = sexpable::atom(sexp)?;
-        let s = sexpable::string(atm)?;
-        Dir::from_str(&s).map_err(|_| SexpError::UnexpectedValue(sexp))
     }
 }
 

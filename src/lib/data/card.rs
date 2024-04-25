@@ -1,13 +1,9 @@
-use std::cmp::{PartialEq, Eq, PartialOrd, Ord};
-use std::str::FromStr;
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use sexp;
-use sexp::Sexp;
+use std::cmp::{PartialEq, Eq, PartialOrd, Ord};
+use std::str::FromStr;
 
 use super::display::Display;
-use super::sexpable;
-use super::sexpable::{Sexpable, SexpError};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Suit {
@@ -49,18 +45,6 @@ impl FromStr for Suit {
       _ => Err(()),
     }
   }
-}
-
-impl Sexpable for Suit {
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(&self.show())
-    }
-    
-    fn from_sexp(sexp: &Sexp) -> Result<Suit, SexpError> {
-        let atom = sexpable::atom(sexp)?;
-        let s = sexpable::string(atom)?;
-        s.parse().map_err(|_| SexpError::UnexpectedValue(sexp))
-    }
 }
 
 pub const SUITS : [Suit; 4] = [Suit::Club, Suit::Diamond, Suit::Heart, Suit::Spade];
@@ -118,27 +102,6 @@ impl FromStr for Rank {
       _ => Err(()),
     }
   }
-}
-
-impl Sexpable for Rank {
-    fn to_sexp(&self) -> Sexp {
-        match self {
-            Rank::Ace | Rank::King | Rank::Queen | Rank::Jack => sexp::atom_s(&self.show()),
-            _ => sexp::atom_i(*self as i64)
-        }
-    }
-
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        let atom = sexpable::atom(sexp)?;
-        match atom {
-            sexp::Atom::S(s) =>
-                Rank::from_str(&s).map_err(|_| SexpError::UnexpectedValue(&sexp)),
-            sexp::Atom::I(i) =>
-                Rank::from_i64(*i).ok_or(SexpError::UnexpectedValue(&sexp)),
-            sexp::Atom::F(f) =>
-                Rank::from_f64(*f).ok_or(SexpError::UnexpectedValue(&sexp))
-        }
-    }
 }
 
 impl Rank {

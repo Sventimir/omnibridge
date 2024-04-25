@@ -11,7 +11,8 @@ num = "0.4.1"
 num-derive = "0.4.1"
 num-traits = "0.2"
 rand = "0.8.5"
-sexp = "1.1.4"
+serde = {version = "1.0.198", features = ["derive"]}
+serde_sexpr = "0.1.0"
 
 [lib]
 name = "bridge"
@@ -24,10 +25,6 @@ path = "src/leader/main.rs"
 [[bin]]
 name = "bidder"
 path = "src/bidder/main.rs"
-
-[[bin]]
-name = "dealer"
-path = "src/dealer/main.rs"
 
 [[bin]]
 name = "server"
