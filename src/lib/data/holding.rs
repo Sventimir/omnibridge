@@ -1,6 +1,9 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::Rng;
+use serde::ser::SerializeSeq;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use super::card::Rank;
 use super::display::Display;
@@ -138,5 +141,48 @@ impl Display for Holding {
             acc.push_str(&r.display());
         }
         acc
+    }
+}
+
+impl Serialize for Holding {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.length()))?;
+        for rank in self.iter() {
+            seq.serialize_element(&rank)?;
+        }
+        seq.end()
+    }
+}
+
+struct HoldingVisitor;
+
+impl<'de> serde::de::Visitor<'de> for HoldingVisitor {
+    type Value = Holding;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a sequence of ranks")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Holding, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+    {
+        let mut holding = Holding::new();
+        while let Some(rank) = seq.next_element()? {
+            holding.add(rank);
+        }
+        Ok(holding)
+    }
+}
+
+impl<'de> Deserialize<'de> for Holding {
+    fn deserialize<D>(deserializer: D) -> Result<Holding, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_seq(HoldingVisitor)
     }
 }

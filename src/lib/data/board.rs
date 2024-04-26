@@ -1,14 +1,20 @@
 use num::FromPrimitive;
+use serde::{Deserialize, Serialize};
 
 use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Board {
+    #[serde(rename(serialize = "board", deserialize = "board"))]
     pub number: u8,
+    #[serde(rename(serialize = "N", deserialize = "N"))]
     pub north: Hand,
+    #[serde(rename(serialize = "E", deserialize = "E"))]
     pub east: Hand,
+    #[serde(rename(serialize = "S", deserialize = "S"))]
     pub south: Hand,
+    #[serde(rename(serialize = "W", deserialize = "W"))]
     pub west: Hand,
 }
 

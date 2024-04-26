@@ -4,6 +4,7 @@ mod command;
 
 use std::io;
 
+use bridge::dealer::deal;
 use command::Cmd;
 
 // fn interpret(expr: &str) -> Result<sexp::Sexp, sexp::Sexp> {
@@ -17,6 +18,8 @@ fn main() -> Result<(), String> {
     println!("Hello, this is your Bridge Mentor server. Awaiting orders!");
     let mut cmd = String::new();
     let stdin = io::stdin();
+    let board = deal(13);
+    println!("{}", &serde_sexpr::to_string(&board).unwrap());
     // loop {
     //     cmd.clear();
     //     match stdin.read_line(&mut cmd) {

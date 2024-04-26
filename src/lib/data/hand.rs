@@ -1,6 +1,8 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::seq::SliceRandom;
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Serialize};
 
 use super::card::{Card, Deck, Suit, SUITS};
 use super::display::Display;
@@ -133,5 +135,59 @@ impl Display for Hand {
             ret.push(' ');
         }
         ret.trim().to_string()
+    }
+}
+
+impl Serialize for Hand {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        let mut obj = serializer.serialize_struct("hand", 4)?;
+        obj.serialize_field("C", &self.holding(&Suit::Club))?;
+        obj.serialize_field("D", &self.holding(&Suit::Diamond))?;
+        obj.serialize_field("H", &self.holding(&Suit::Heart))?;
+        obj.serialize_field("S", &self.holding(&Suit::Spade))?;
+        obj.end()
+    }
+}
+
+struct HandVisitor;
+
+impl<'de> serde::de::Visitor<'de> for HandVisitor {
+    type Value = Hand;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a hand")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Hand, A::Error>
+    where
+        A: serde::de::MapAccess<'de>,
+    {
+        let mut hand = Hand::new();
+        while let Some((key, value)) = map.next_entry()? {
+            let suit = match key {
+                "C" => Suit::Club,
+                "D" => Suit::Diamond,
+                "H" => Suit::Heart,
+                "S" => Suit::Spade,
+                _ => return Err(serde::de::Error::custom("invalid suit")),
+            };
+            let holding: Holding = value;
+            for rank in holding.iter() {
+                hand.add(&Card::new(suit, rank));
+            }
+        }
+        Ok(hand)
+    }
+}
+
+impl<'de> Deserialize<'de> for Hand {
+    fn deserialize<D>(deserializer: D) -> Result<Hand, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        deserializer.deserialize_map(HandVisitor)
     }
 }
