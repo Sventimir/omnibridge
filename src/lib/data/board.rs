@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Debug)]
 pub struct Board {
     #[serde(rename(serialize = "board", deserialize = "board"))]
     pub number: u8,
