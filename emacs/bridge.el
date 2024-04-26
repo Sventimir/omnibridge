@@ -17,11 +17,11 @@
 
 (defun bridge-board-number (b)
   "Return the board number of the bridge board B."
-  (cadr b))
+  (cadr (assoc 'board b)))
 
 (defun bridge-board-hand (side b)
   "Return the contents of the hand SIDE in B."
-  (cadr (assoc side (cddr b))))
+  (cadr (assoc side b)))
 
 (defun bridge-hand-suit (suit hand)
   "Return the cards in the SUIT of the HAND."
@@ -79,27 +79,6 @@
   (bridge-put-hand 5 3 (bridge-board-hand 'E board))
   (bridge-put-hand 9 2 (bridge-board-hand 'S board))
   (org-table-align))
-
-(defun bridge-insert-random-board (numbers)
-  "Insert a random board with NUMBERS."
-  (interactive "sBoard number: ")
-  (with-current-buffer "*bridge-dealer*" (erase-buffer))
-  (call-process-shell-command
-   (format "%s %s" bridge-dealer-bin numbers)
-   nil
-   "*bridge-dealer*"
-   nil)
-  (with-current-buffer "*bridge-dealer*"
-    (goto-char (point-min)))
-  (while (with-current-buffer "*bridge-dealer*"
-           (not (equal (point) (point-max))))
-    (bridge-board-display
-     (with-current-buffer "*bridge-dealer*"
-       (read (current-buffer))))
-    (forward-line 2)
-    (insert "\n")
-    (with-current-buffer "*bridge-dealer*"
-      (forward-line 1))))
 
 (provide 'bridge)
 ;;; bridge.el ends here
