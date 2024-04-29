@@ -18,6 +18,10 @@ pub struct Board {
     pub west: Hand,
 }
 
+pub fn vulnerability(board: &u8) -> Vulnerability {
+    FromPrimitive::from_u8(((board / 4) + (board % 4)) % 4).unwrap()
+}
+
 impl Board {
     pub fn new(number: u8) -> Board {
         Board {
@@ -34,7 +38,7 @@ impl Board {
     }
 
     pub fn vulnerability(&self) -> Vulnerability {
-        FromPrimitive::from_u8(((self.number / 4) + (self.number % 4)) % 4).unwrap()
+        vulnerability(&self.number)
     }
 
     pub fn hand(&self, dir: Dir) -> &Hand {
