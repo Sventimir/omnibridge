@@ -29,10 +29,7 @@ fn main() -> Result<(), String> {
         match stdin.read_line(&mut cmd) {
             Ok(0) => break,
             Ok(_) => {
-                let resp = match interpret(&cmd) {
-                    Ok(resp) => serde_sexpr::to_string(&resp).expect("error serializing response"),
-                    Err(e) => serde_sexpr::to_string(&e).expect("error serializing error")
-                };
+                let resp = serde_sexpr::to_string(&interpret(&cmd)).expect("error serializing response");
                 println!("{}", resp);
             }
             Err(e) => return Err(format!("Error reading from stdin: {}", e))

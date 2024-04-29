@@ -27,6 +27,7 @@
   "Return the cards in the SUIT of the HAND."
   (cadr (assoc suit hand)))
 
+
 (defun bridge-holding-to-string (holding)
   "Return a string representation of the HOLDING."
   (mapconcat (lambda (x)

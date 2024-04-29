@@ -5,6 +5,7 @@ use bridge::dealer::deal;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Cmd {
+    #[serde(rename = "deal")]
     Deal(u8),
 }
 
@@ -12,6 +13,7 @@ pub enum Cmd {
 pub enum CommandError {}
 
 #[derive(Debug, Serialize)]
+#[serde(untagged)]
 pub enum CommandResult {
     Deal(Board)
 }
