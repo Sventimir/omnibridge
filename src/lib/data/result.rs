@@ -1,9 +1,10 @@
+use std::fmt::{self, Debug, Display, Formatter};
+
 use super::bid::{Call, Contract, Doubled};
 use super::board;
 use super::card::{Card, Suit};
 use super::table::Dir;
 
-#[derive(Debug)]
 pub struct ContractResult {
     pub board: u8,
     pub contract: Contract,
@@ -107,5 +108,27 @@ impl ContractResult {
                 Doubled::Redoubled => score + 100
             }
         }
+    }
+}
+
+impl Debug for ContractResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}: {:?}", self.board, self.contract)?;
+        match self.lead {
+            None => Ok(()),
+            Some(card) => write!(f, "{:?}", card)
+        }?;
+        write!(f, " {:+?}", self.tricks)
+    }
+}
+
+impl Display for ContractResult {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{:}: {:}", self.board, self.contract)?;
+        match self.lead {
+            None => Ok(()),
+            Some(card) => write!(f, "{}", card)
+        }?;
+        write!(f, " {:+}", self.tricks)
     }
 }
