@@ -7,10 +7,12 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.4", features = ["cargo"] }
+hex = "0.4.3"
 num = "0.4.1"
 num-derive = "0.4.1"
 num-traits = "0.2"
 rand = "0.8.5"
+ring = "0.17.8"
 serde = {version = "1.0.198", features = ["derive"]}
 serde_sexpr = "0.1.0"
 
