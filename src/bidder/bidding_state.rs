@@ -32,18 +32,18 @@ pub fn normalize_bid_scores(bids: ProposedBids) -> ProposedBids {
 
 pub struct Opening {
     dir: Dir,
-    hand: Hand,
-    vuln: Vulnerability,
+    // hand: Hand,
+    // vuln: Vulnerability,
     hand_eval: Eval,
 }
 
 impl Opening {
-    pub fn new(dir: Dir, vuln: Vulnerability, hand: Hand) -> Opening {
+    pub fn new(dir: Dir, _vuln: Vulnerability, hand: Hand) -> Opening {
         let hand_eval = hand.eval();
         Opening {
             dir,
-            hand,
-            vuln,
+            // hand,
+            // vuln,
             hand_eval,
         }
     }
