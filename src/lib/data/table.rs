@@ -1,8 +1,7 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
+use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
-
-use super::display::Display;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Dir {
@@ -12,18 +11,20 @@ pub enum Dir {
     West = 3,
 }
 
-impl Display for Dir {
-    fn display(&self) -> String {
+impl Debug for Dir {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match *self {
-            Dir::North => "N".to_string(),
-            Dir::East => "E".to_string(),
-            Dir::South => "S".to_string(),
-            Dir::West => "W".to_string(),
+            Dir::North => write!(f, "N"),
+            Dir::East => write!(f, "E"),
+            Dir::South => write!(f, "S"),
+            Dir::West => write!(f, "W"),
         }
     }
+}
 
-    fn show(&self) -> String {
-        self.display()
+impl Display for Dir {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        Debug::fmt(self, f)
     }
 }
 
@@ -85,16 +86,18 @@ pub enum Side {
     EW = 1,
 }
 
-impl Display for Side {
-    fn display(&self) -> String {
+impl Debug for Side {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match *self {
-            Side::NS => "NS".to_string(),
-            Side::EW => "EW".to_string(),
+            Side::NS => write!(f, "NS"),
+            Side::EW => write!(f, "EW"),
         }
     }
+}
 
-    fn show(&self) -> String {
-        self.display()
+impl Display for Side {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        Debug::fmt(self, f)
     }
 }
 
@@ -104,7 +107,7 @@ impl Side {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug, FromPrimitive)]
+#[derive(PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub enum Vulnerability {
     None = 0,
     NS = 1,
@@ -112,17 +115,19 @@ pub enum Vulnerability {
     Both = 3,
 }
 
-impl Display for Vulnerability {
-    fn display(&self) -> String {
+impl Debug for Vulnerability {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match *self {
-            Vulnerability::None => "None".to_string(),
-            Vulnerability::NS => "NS".to_string(),
-            Vulnerability::EW => "EW".to_string(),
-            Vulnerability::Both => "Both".to_string(),
+            Vulnerability::None => write!(f, "None"),
+            Vulnerability::NS => write!(f, "NS"),
+            Vulnerability::EW => write!(f, "EW"),
+            Vulnerability::Both => write!(f, "Both"),
         }
     }
+}
 
-    fn show(&self) -> String {
-        self.display()
-    }
+impl Display for Vulnerability {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    Debug::fmt(self, f)
+}
 }

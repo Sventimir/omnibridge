@@ -3,15 +3,15 @@ use num_derive::FromPrimitive;
 use rand::seq::SliceRandom;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
+use std::fmt::{self, Debug, Display, Formatter};
 
 use super::card::{Card, Deck, Suit, SUITS};
-use super::display::Display;
 use super::hand_eval::*;
 use super::holding::Holding;
 
 /* Layout:
 _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__*/
-#[derive(PartialEq, Eq, Clone, Copy, FromPrimitive, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, FromPrimitive)]
 pub struct Hand(u64);
 
 pub struct IterHand {
@@ -104,37 +104,30 @@ impl Hand {
     }
 }
 
-impl Display for Hand {
-    fn show(&self) -> String {
-        let mut ret = String::with_capacity(self.length() + 12);
+impl Debug for Hand {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for s in SUITS.iter().rev() {
-            ret.push_str(&s.show());
-            ret.push(' ');
+            write!(f, "{:?} ", s)?;
             let h = self.holding(s);
-            if h.length() == 0 {
-                ret.push('-');
-            } else {
-                ret.push_str(h.show().as_str());
+            write!(f, "{:?}", h)?;
+            if s != &Suit::Club {
+                write!(f, " ")?;
             }
-            ret.push(' ');
         }
-        ret.trim().to_string()
+        Ok(())
     }
+}
 
-    fn display(&self) -> String {
-        let mut ret = String::with_capacity(self.length() + 12);
+impl Display for Hand {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for s in SUITS.iter().rev() {
-            ret.push_str(&s.display());
-            ret.push(' ');
-            let h = self.holding(s);
-            if h.length() == 0 {
-                ret.push('-');
-            } else {
-                ret.push_str(h.display().as_str());
+            write!(f, "{} ", s)?;
+            write!(f, "{}", self.holding(s))?;
+            if s != &Suit::Club {
+                write!(f, " ")?;
             }
-            ret.push(' ');
         }
-        ret.trim().to_string()
+        Ok(())
     }
 }
 

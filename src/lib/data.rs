@@ -1,7 +1,6 @@
 pub mod bid;
 pub mod board;
 pub mod card;
-pub mod display;
 pub mod hand;
 pub mod hand_eval;
 pub mod holding;

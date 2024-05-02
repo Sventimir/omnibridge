@@ -3,10 +3,9 @@ use num_derive::FromPrimitive;
 use rand::Rng;
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
-use std::fmt;
+use std::fmt::{self, Debug, Display, Formatter};
 
 use super::card::Rank;
-use super::display::Display;
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
 The rest is unused. Layout:
@@ -126,21 +125,29 @@ impl FromIterator<Rank> for Holding {
     }
 }
 
-impl Display for Holding {
-    fn show(&self) -> String {
-        let mut acc = String::new();
-        for r in self.iter() {
-            acc.push_str(&r.show());
+impl Debug for Holding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.is_empty() {
+            write!(f, "-")
+        } else {
+            for r in self.iter() {
+                write!(f, "{:?}", r)?;
+            }
+            Ok(())
         }
-        acc
     }
+}
 
-    fn display(&self) -> String {
-        let mut acc = String::new();
-        for r in self.iter() {
-            acc.push_str(&r.display());
+impl Display for Holding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.is_empty() {
+            write!(f, "-")
+        } else {
+            for r in self.iter() {
+                write!(f, "{}", r)?;
+            }
+            Ok(())
         }
-        acc
     }
 }
 
@@ -162,8 +169,8 @@ struct HoldingVisitor;
 impl<'de> serde::de::Visitor<'de> for HoldingVisitor {
     type Value = Holding;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a sequence of ranks")
+    fn expecting(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "a sequence of ranks")
     }
 
     fn visit_seq<A>(self, mut seq: A) -> Result<Holding, A::Error>

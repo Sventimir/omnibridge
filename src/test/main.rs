@@ -1,7 +1,6 @@
 extern crate bridge;
 
 use bridge::data::card::Card;
-use bridge::data::display::Display;
 use bridge::data::hand::Hand;
 
 fn main() {
@@ -13,7 +12,7 @@ fn main() {
             i,
             card.to_u8(),
             card.ord(),
-            card.display()
+            card
         );
         hand.add(&card);
     }
@@ -25,7 +24,7 @@ fn main() {
             card.to_u8(),
             ord,
             Card::from_ord(ord).ord(),
-            card.display()
+            card
         );
     }
 }

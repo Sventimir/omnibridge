@@ -1,7 +1,7 @@
 use super::card::Suit;
-use super::display::Display;
 use super::table::Dir;
 use std::cmp::Ordering;
+use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -10,34 +10,26 @@ pub struct Call {
     pub level: u8,
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
-pub enum Bid {
-    Pass,
-    Double,
-    Redouble,
-    Call(Call),
+impl Debug for Call {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.level)?;
+        match self.trump {
+            None => write!(f, "NT"),
+            Some(suit) => {
+                write!(f, "{} ", suit)
+            }
+        }
+    }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub enum Doubled {
-    Undoubled,
-    Doubled,
-    Redoubled,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub struct Contract {
-    pub declarer: Dir,
-    pub call: Call,
-    pub doubled: Doubled,
-}
-
-impl Contract {
-    pub fn new(call: Call, doubled: Doubled, decl: Dir) -> Contract {
-        Contract {
-            call,
-            doubled,
-            declarer: decl,
+impl Display for Call {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.level)?;
+        match self.trump {
+            None => write!(f, "NT"),
+            Some(suit) => {
+                write!(f, "{} ", suit)
+            }
         }
     }
 }
@@ -61,6 +53,14 @@ impl FromStr for Call {
         };
         Ok(Call { trump: suit, level })
     }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+pub enum Bid {
+    Pass,
+    Double,
+    Redouble,
+    Call(Call),
 }
 
 impl Bid {
@@ -110,77 +110,77 @@ impl FromStr for Bid {
     }
 }
 
-impl Display for Call {
-    fn show(&self) -> String {
-        match self.trump {
-            None => format!("{}NT", self.level),
-            Some(suit) => format!("{}{}", self.level, suit.show()),
-        }
-    }
-
-    fn display(&self) -> String {
-        match self.trump {
-            None => format!("{}NT", self.level),
-            Some(suit) => format!("{}{}", self.level, suit.display()),
+impl Debug for Bid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Pass => write!(f, "pass"),
+            Self::Double => write!(f, "x"),
+            Self::Redouble => write!(f, "xx"),
+            Self::Call(call) => write!(f, "{}", call)
         }
     }
 }
 
 impl Display for Bid {
-    fn show(&self) -> String {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Bid::Pass => "Pass".to_string(),
-            Bid::Double => "Dbl".to_string(),
-            Bid::Redouble => "Rdbl".to_string(),
-            Bid::Call(call) => call.show(),
+            Self::Pass => write!(f, "pass"),
+            Self::Double => write!(f, "x"),
+            Self::Redouble => write!(f, "xx"),
+            Self::Call(call) => write!(f, "{}", call)
         }
     }
+}
 
-    fn display(&self) -> String {
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum Doubled {
+    Undoubled,
+    Doubled,
+    Redoubled,
+}
+
+impl Debug for Doubled {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Bid::Pass => "Pass".to_string(),
-            Bid::Double => "x".to_string(),
-            Bid::Redouble => "xx".to_string(),
-            Bid::Call(call) => call.display(),
+            Self::Undoubled => Ok(()),
+            Self::Doubled => write!(f, "x"),
+            Self::Redoubled => write!(f, "xx")
         }
     }
 }
 
 impl Display for Doubled {
-    fn show(&self) -> String {
-        match self {
-            Doubled::Undoubled => "".to_string(),
-            Doubled::Doubled => "Dbl".to_string(),
-            Doubled::Redoubled => "Rdbl".to_string(),
-        }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Debug::fmt(self, f)
     }
+}
 
-    fn display(&self) -> String {
-        match self {
-            Doubled::Undoubled => "".to_string(),
-            Doubled::Doubled => "x".to_string(),
-            Doubled::Redoubled => "xx".to_string(),
+#[derive(PartialEq, Eq, Clone)]
+pub struct Contract {
+    pub declarer: Dir,
+    pub call: Call,
+    pub doubled: Doubled,
+}
+
+impl Contract {
+    pub fn new(call: Call, doubled: Doubled, decl: Dir) -> Contract {
+        Contract {
+            call,
+            doubled,
+            declarer: decl,
         }
     }
 }
 
-impl Display for Contract {
-    fn show(&self) -> String {
-        format!(
-            "{}{}{}",
-            self.call.show(),
-            self.doubled.show(),
-            self.declarer.show()
-        )
+impl Debug for Contract {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}{}", self.call, self.doubled, self.declarer)
     }
+}
 
-    fn display(&self) -> String {
-        format!(
-            "{}{}{}",
-            self.call.display(),
-            self.doubled.display(),
-            self.declarer.display()
-        )
+impl Display for Contract {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Debug::fmt(self, f)
     }
 }
 

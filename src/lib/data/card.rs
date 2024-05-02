@@ -2,9 +2,8 @@ use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
+use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
-
-use super::display::Display;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Suit {
@@ -14,22 +13,24 @@ pub enum Suit {
     Spade = 3,
 }
 
-impl Display for Suit {
-    fn show(&self) -> String {
+impl Debug for Suit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
-            Suit::Club => "C".to_string(),
-            Suit::Diamond => "D".to_string(),
-            Suit::Heart => "H".to_string(),
-            Suit::Spade => "S".to_string(),
+            Suit::Club => write!(f, "C"),
+            Suit::Diamond => write!(f, "D"),
+            Suit::Heart => write!(f, "H"),
+            Suit::Spade => write!(f, "S"),
         }
     }
+}
 
-    fn display(&self) -> String {
+impl Display for Suit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
-            Suit::Club => "♣".to_string(),
-            Suit::Diamond => "♦".to_string(),
-            Suit::Heart => "♥".to_string(),
-            Suit::Spade => "♠".to_string(),
+            Suit::Club => write!(f, "♣"),
+            Suit::Diamond => write!(f, "♦"),
+            Suit::Heart => write!(f, "♥"),
+            Suit::Spade => write!(f, "♠"),
         }
     }
 }
@@ -53,7 +54,7 @@ impl Serialize for Suit {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&self.show())
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -86,15 +87,28 @@ pub enum Rank {
     Ace = 14,
 }
 
-impl Display for Rank {
-    fn show(&self) -> String {
+impl Debug for Rank {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
-            Rank::Ace => "A".to_string(),
-            Rank::King => "K".to_string(),
-            Rank::Queen => "Q".to_string(),
-            Rank::Jack => "J".to_string(),
-            Rank::Ten => "T".to_string(),
-            v => (*v as isize).to_string(),
+            Rank::Ace => write!(f, "A"),
+            Rank::King => write!(f, "K"),
+            Rank::Queen => write!(f, "Q"),
+            Rank::Jack => write!(f, "J"),
+            Rank::Ten => write!(f, "T"),
+            v => write!(f, "{}", *v as isize),
+        }
+    }
+}
+
+impl Display for Rank {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        match self {
+            Rank::Ace => write!(f, "A"),
+            Rank::King => write!(f, "K"),
+            Rank::Queen => write!(f, "Q"),
+            Rank::Jack => write!(f, "J"),
+            Rank::Ten => write!(f, "T"),
+            v => write!(f, "{}", *v as isize),
         }
     }
 }
@@ -133,7 +147,7 @@ impl Serialize for Rank {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&self.show())
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -154,7 +168,7 @@ impl<'de> Deserialize<'de> for Rank {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub struct Card(u8);
 
 impl Card {
@@ -187,13 +201,15 @@ impl Card {
     }
 }
 
-impl Display for Card {
-    fn show(&self) -> String {
-        format!("{}{}", self.suit().show(), self.rank().show())
+impl Debug for Card {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{:?}{:?}", self.suit(), self.rank())
     }
+}
 
-    fn display(&self) -> String {
-        format!("{}{}", self.suit().display(), self.rank().display())
+impl Display for Card {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{}{}", self.suit(), self.rank())
     }
 }
 
@@ -210,7 +226,9 @@ impl FromStr for Card {
             Some(c) => c.to_string(),
             None => return Err(()),
         };
-        Suit::from_str(&suit).and_then(|s| Rank::from_str(&rank).map(|r| Card::new(s, r)))
+        let s = Suit::from_str(&suit)?;
+        let r = Rank::from_str(&rank)?;
+        Ok(Card::new(s, r))
     }
 }
 
@@ -219,7 +237,7 @@ impl Serialize for Card {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&self.show())
+        serializer.serialize_str(&self.to_string())
     }
 }
 

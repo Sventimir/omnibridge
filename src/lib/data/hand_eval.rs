@@ -1,22 +1,9 @@
 use super::card::{Rank, Suit, SUITS};
-use super::display::Display;
 use std::iter::zip;
 use std::ops::{Add, Range, Sub};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Milton(pub u8);
-
-impl Display for Milton {
-    fn show(&self) -> String {
-        format!("{}", self.0)
-    }
-
-    fn display(&self) -> String {
-        let int = self.0 >> 2;
-        let frac = self.0 & 0x03;
-        format!("{}.{}", int, frac * 25)
-    }
-}
 
 impl Add for Milton {
     type Output = Milton;
@@ -123,26 +110,6 @@ impl Shape {
             }
         }
         (shortest_suit, best_length)
-    }
-}
-
-impl Display for ShapeType {
-    fn show(&self) -> String {
-        match self {
-            ShapeType::Balanced => "Balanced".to_string(),
-            ShapeType::Monosuiter => "Monosuiter".to_string(),
-            ShapeType::Twosuiter => "Twosuiter".to_string(),
-            ShapeType::Threesuiter => "Threesuiter".to_string(),
-        }
-    }
-
-    fn display(&self) -> String {
-        match self {
-            ShapeType::Balanced => "Balanced".to_string(),
-            ShapeType::Monosuiter => "Mono-suiter".to_string(),
-            ShapeType::Twosuiter => "Two-suiter".to_string(),
-            ShapeType::Threesuiter => "Three-suiter".to_string(),
-        }
     }
 }
 

@@ -1,7 +1,6 @@
 extern crate bridge;
 
 use bridge::data::card::Rank;
-use bridge::data::display::Display;
 use bridge::data::holding::Holding;
 
 fn input_lead() -> Rank {
@@ -50,7 +49,7 @@ fn main() {
         let holding = random_holding();
         println!(
             "This is your suit holding: {}.\nWhich card do you lead?",
-            holding.display()
+            holding
         );
         let lead = input_lead();
         let correct_lead = correct_lead(&holding);
@@ -60,7 +59,7 @@ fn main() {
         } else {
             println!(
                 "Incorrect! You should have led a {}.",
-                correct_lead.display()
+                correct_lead
             )
         }
         max_score += 1;

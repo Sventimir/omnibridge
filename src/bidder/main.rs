@@ -3,7 +3,6 @@ mod bidding_state;
 
 use bidding_state::*;
 use bridge::data::bid::Bid;
-use bridge::data::display::Display;
 use bridge::data::hand::Hand;
 use bridge::data::table::{Dir, Vulnerability};
 
@@ -25,20 +24,20 @@ fn show_expected_bids(expected: &ProposedBids) {
     }
     println!("Other options include:");
     for (bid, score) in expected.iter() {
-        println!("* {}({})", bid.display(), score);
+        println!("* {}({})", bid, score);
     }
 }
 
 fn main() {
     let h = Hand::random();
-    println!("Your hand: {}", h.display());
+    println!("Your hand: {}", h);
     let state = Opening::new(Dir::North, Vulnerability::None, h);
     let mut expected = state.next_bid();
     println!("What is your opening bid?");
     let bid = input_bid();
     match expected.pop_last() {
         Some((best, score)) if best == bid => {
-            println!("Perfect, {} is the best bid!", bid.display());
+            println!("Perfect, {} is the best bid!", bid);
             show_expected_bids(&expected);
             println!("Score: {}.", score)
         }
@@ -46,9 +45,9 @@ fn main() {
             Some(score) => {
                 println!(
                     "Good bid. {} scores: {}.\n{}({}) was the best.",
-                    bid.display(),
+                    bid,
                     score,
-                    best.display(),
+                    best,
                     best_score
                 );
                 show_expected_bids(&expected)
@@ -56,8 +55,8 @@ fn main() {
             None => {
                 println!(
                     "{} is not the best bid. {}({}) was best.",
-                    bid.display(),
-                    best.display(),
+                    bid,
+                    best,
                     best_score
                 );
                 show_expected_bids(&expected);

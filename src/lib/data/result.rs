@@ -3,6 +3,7 @@ use super::board;
 use super::card::{Card, Suit};
 use super::table::Dir;
 
+#[derive(Debug)]
 pub struct ContractResult {
     pub board: u8,
     pub contract: Contract,
@@ -47,7 +48,7 @@ fn trick_score(call: Call) -> i16 {
         + if call.trump.is_none() { 10 } else { 0 }
 }
 
-fn overtrick_score(contract: Contract, tricks: u8, vulnerable: bool) -> i16 {
+fn overtrick_score(contract: &Contract, tricks: u8, vulnerable: bool) -> i16 {
     match contract.doubled {
         Doubled::Undoubled => trick_value(contract.call.trump) * tricks as i16,
         Doubled::Doubled => (if vulnerable { 200 } else { 100 }) * tricks as i16,
@@ -92,7 +93,7 @@ impl ContractResult {
                 score += 50;
             }
             score += overtrick_score(
-                self.contract,
+                &self.contract,
                 self.tricks as u8,
                 self.vulnerable()
             );
