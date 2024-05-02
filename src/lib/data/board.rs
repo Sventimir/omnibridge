@@ -1,6 +1,8 @@
 use num::FromPrimitive;
+use sexp::Sexp;
 use serde::{Deserialize, Serialize};
 
+use crate::sexpr::*;
 use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
 
@@ -66,5 +68,36 @@ impl Board {
             Dir::South => self.south = hand,
             Dir::West => self.west = hand,
         }
+    }
+}
+
+impl Sexpable for Board {
+    fn to_sexp(&self) -> Sexp {
+        sexp::list(&[
+            (sexp::atom_s("board"), self.number as u64).to_sexp(),
+            (sexp::atom_s("N"), self.north).to_sexp(),
+            (sexp::atom_s("E"), self.east).to_sexp(),
+            (sexp::atom_s("S"), self.south).to_sexp(),
+            (sexp::atom_s("W"), self.west).to_sexp(),
+        ])
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Board, SexpError> {
+        let mut board = Board::new(0);
+        for elem in iter_sexp(sexp)? {
+            let (tag, v): (String, Sexp) = Sexpable::from_sexp(elem)?;
+            match tag.as_str() {
+                "board" => {
+                    let b: u64 = Sexpable::from_sexp(&v)?;
+                    board.number = b as u8
+                },
+                "N" => board.north = Hand::from_sexp(&v)?,
+                "E" => board.east = Hand::from_sexp(&v)?,
+                "S" => board.south = Hand::from_sexp(&v)?,
+                "W" => board.west = Hand::from_sexp(&v)?,
+                _ => return Err(SexpError::InvalidTag(tag.to_string()))
+            }
+        };
+        Ok(board)
     }
 }

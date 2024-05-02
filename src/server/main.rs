@@ -4,46 +4,52 @@ mod command;
 
 use hex::ToHex;
 use ring::digest::{Digest, SHA256, digest};
-use serde::Serialize;
+use sexp::Sexp;
 use std::io;
+
+use bridge::sexpr::*;
 
 use command::{Cmd, CommandResult, CommandError};
 
 
-#[derive(Debug, Serialize)]
 enum ServerError {
     CommandError(CommandError),
-    SexprError(String)
+    SexprError(SexpError)
 }
 
-#[derive(Debug)]
+impl ServerError {
+    fn to_sexp(&self) -> Sexp {
+        match self {
+            ServerError::CommandError(err) => err.to_sexp(),
+            ServerError::SexprError(err) => err.to_sexp()
+        }
+    }
+}
+
 struct Response {
     result: Result<CommandResult, ServerError>,
     request_id: Digest
 }
 
-impl Serialize for Response {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer
-    {
-        use serde::ser::SerializeStruct;
-        let mut state = serializer.serialize_struct("Response", 2)?;
+impl Response {
+    fn to_sexp(&self) -> Sexp {
         let req_id: String = ToHex::encode_hex(&self.request_id);
-        state.serialize_field("request_id", &req_id)?;
-        match &self.result {
-            Ok(result) => state.serialize_field("ok", result)?,
-            Err(err) => state.serialize_field("error", err)?,
-        }
-        state.end()
+        sexp::list(&[
+            (sexp::atom_s("request_id"), sexp::atom_s(&req_id)).to_sexp(),
+            match &self.result {
+                Ok(result) => (sexp::atom_s("ok"), result.clone()).to_sexp(),
+                Err(err) => sexp::list(&[sexp::atom_s("error"), err.to_sexp()])
+}
+        ])
     }
 }
 
 fn interpret(expr: &str) -> Response {
     let request_id = digest(&SHA256, expr.as_bytes());     
     let result = 
-        serde_sexpr::from_str::<Cmd>(&expr)
-        .map_err(|e| ServerError::SexprError(e.to_string()))
+        sexp::parse(&expr)
+        .map_err(|e| ServerError::SexprError(SexpError::ParseError(*e)))
+        .and_then(|cmd| Cmd::from_sexp(&cmd).map_err(ServerError::SexprError))
         .and_then(|cmd| cmd.execute().map_err(ServerError::CommandError));
     Response { result, request_id }
 }
@@ -57,7 +63,7 @@ fn main() -> Result<(), String> {
         match stdin.read_line(&mut cmd) {
             Ok(0) => break,
             Ok(_) => {
-                let resp = serde_sexpr::to_string(&interpret(&cmd)).expect("error serializing response");
+                let resp = interpret(&cmd).to_sexp();
                 println!("{}", resp);
             }
             Err(e) => return Err(format!("Error reading from stdin: {}", e))

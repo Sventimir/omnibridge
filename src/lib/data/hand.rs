@@ -1,10 +1,12 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::seq::SliceRandom;
+use sexp::{self, Sexp};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 
+use crate::sexpr::*;
 use super::card::{Card, Deck, Suit, SUITS};
 use super::hand_eval::*;
 use super::holding::Holding;
@@ -128,6 +130,28 @@ impl Display for Hand {
             }
         }
         Ok(())
+    }
+}
+
+impl Sexpable for Hand {
+    fn to_sexp(&self) -> Sexp {
+        let mut v = Vec::with_capacity(4);
+        for s in SUITS.iter().rev() {
+            let h = self.holding(s);
+            v.push(Sexp::List(vec![s.to_sexp(), h.to_sexp()]));
+        }
+        Sexp::List(v)
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Hand, SexpError> {
+        let mut hand = Hand::new();
+        for elem in iter_sexp(sexp)? {
+            let (s, h): (Suit, Holding) = Sexpable::from_sexp(elem)?;
+            for r in h.iter() {
+                hand.add(&Card::new(s, r));
+            }
+        };
+        Ok(hand)
     }
 }
 

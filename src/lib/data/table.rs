@@ -1,7 +1,10 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
+use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
+
+use crate::sexpr::*;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Dir {
@@ -25,6 +28,17 @@ impl Debug for Dir {
 impl Display for Dir {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         Debug::fmt(self, f)
+    }
+}
+
+impl Sexpable for Dir {
+    fn to_sexp(&self) -> Sexp {
+        sexp::atom_s(&self.to_string())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
+        let s = expect_string(sexp)?;
+        Dir::from_str(s).map_err(SexpError::Custom)
     }
 }
 
@@ -83,14 +97,14 @@ pub const DIRS: [Dir; 4] = [Dir::North, Dir::East, Dir::South, Dir::West];
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Side {
     NS = 0,
-    EW = 1,
+    WE = 1,
 }
 
 impl Debug for Side {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         match *self {
             Side::NS => write!(f, "NS"),
-            Side::EW => write!(f, "EW"),
+            Side::WE => write!(f, "WE"),
         }
     }
 }
@@ -101,9 +115,32 @@ impl Display for Side {
     }
 }
 
+impl Sexpable for Side {
+    fn to_sexp(&self) -> Sexp {
+        sexp::atom_s(&self.to_string())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Side, SexpError> {
+        let s = expect_string(sexp)?;
+        Side::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
+    }
+}
+
 impl Side {
     pub fn from_int(i: u8) -> Side {
         FromPrimitive::from_u8(i).unwrap()
+    }
+}
+
+impl FromStr for Side {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Side, ()> {
+        match s {
+            "NS" | "ns" => Ok(Side::NS),
+            "WE" | "we" => Ok(Side::WE),
+            _ => Err(())
+        }
     }
 }
 
@@ -111,7 +148,7 @@ impl Side {
 pub enum Vulnerability {
     None = 0,
     NS = 1,
-    EW = 2,
+    WE = 2,
     Both = 3,
 }
 
@@ -120,7 +157,7 @@ impl Debug for Vulnerability {
         match *self {
             Vulnerability::None => write!(f, "None"),
             Vulnerability::NS => write!(f, "NS"),
-            Vulnerability::EW => write!(f, "EW"),
+            Vulnerability::WE => write!(f, "WE"),
             Vulnerability::Both => write!(f, "Both"),
         }
     }
@@ -129,5 +166,19 @@ impl Debug for Vulnerability {
 impl Display for Vulnerability {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
     Debug::fmt(self, f)
+    }
 }
+
+impl FromStr for Vulnerability {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Vulnerability, ()> {
+        match s {
+            "None" | "none" => Ok(Vulnerability::None),
+            "NS" | "ns" => Ok(Vulnerability::NS),
+            "WE" | "we" => Ok(Vulnerability::WE),
+            "Both" | "both" => Ok(Vulnerability::Both),
+            _ => Err(())
+        }
+    }
 }

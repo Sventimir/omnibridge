@@ -1,11 +1,13 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::Rng;
+use sexp::{self, Sexp};
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 
 use super::card::Rank;
+use crate::sexpr::*;
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
 The rest is unused. Layout:
@@ -148,6 +150,16 @@ impl Display for Holding {
             }
             Ok(())
         }
+    }
+}
+
+impl Sexpable for Holding {
+    fn to_sexp(&self) -> Sexp {
+        iter_into_sexp(self.iter())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
+        iter_sexp(sexp)?.map(Rank::from_sexp).collect()
     }
 }
 

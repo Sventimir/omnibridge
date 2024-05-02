@@ -1,9 +1,12 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
+use sexp::{self, Sexp};
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
+
+use crate::sexpr::*;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Suit {
@@ -11,6 +14,17 @@ pub enum Suit {
     Diamond = 1,
     Heart = 2,
     Spade = 3,
+}
+
+impl Suit {
+    pub fn symbol(&self) -> &str {
+        match self {
+            Suit::Club => "C",
+            Suit::Diamond => "D",
+            Suit::Heart => "H",
+            Suit::Spade => "S"
+        }
+    }
 }
 
 impl Debug for Suit {
@@ -46,6 +60,17 @@ impl FromStr for Suit {
             "S" | "s" | "♠" => Ok(Suit::Spade),
             _ => Err(()),
         }
+    }
+}
+
+impl Sexpable for Suit {
+    fn from_sexp(sexp: &Sexp) -> Result<Suit, SexpError> {
+        let s = expect_string(sexp)?;
+        Suit::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
+    }
+
+    fn to_sexp(&self) -> Sexp {
+        sexp::atom_s(format!("{:?}", self).as_str())
     }
 }
 
@@ -142,6 +167,22 @@ impl Rank {
     }
 }
 
+impl Sexpable for Rank {
+    fn to_sexp(&self) -> Sexp {
+        match self {
+            Rank::Ace | Rank::King | Rank::Queen | Rank::Jack =>
+                sexp::atom_s(&self.to_string()),
+            _ => sexp::atom_i(*self as i64)
+        }
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Rank, SexpError> {
+        let s = expect_string(sexp)?;
+        Rank::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
+        
+    }
+}
+
 impl Serialize for Rank {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -229,6 +270,22 @@ impl FromStr for Card {
         let s = Suit::from_str(&suit)?;
         let r = Rank::from_str(&rank)?;
         Ok(Card::new(s, r))
+    }
+}
+
+impl Sexpable for Card {
+    fn to_sexp(&self) -> Sexp {
+        sexp::list(&[self.suit().to_sexp(), self.rank().to_sexp()])
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Card, SexpError> {
+        let l = expect_list(sexp)?;
+        match l {
+            [suit, rank] =>
+                Ok(Card::new(Suit::from_sexp(suit)?, Rank::from_sexp(rank)?)),
+            _ =>
+                Err(SexpError::InvalidValue(sexp.clone(), "card".to_string()))
+        }
     }
 }
 

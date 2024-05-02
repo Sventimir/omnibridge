@@ -1,5 +1,8 @@
+use crate::sexpr::*;
 use super::card::Suit;
 use super::table::Dir;
+
+use sexp::{self, Sexp};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
@@ -52,6 +55,37 @@ impl FromStr for Call {
             _ => return Err("Invalid suit".to_string()),
         };
         Ok(Call { trump: suit, level })
+    }
+}
+
+fn trump_to_sexp(trump: &Option<Suit>) -> Sexp {
+    match trump {
+        None => sexp::atom_s("NT"),
+        Some(suit) => suit.to_sexp(),
+    }
+}
+
+fn trump_from_sexp(sexp: &Sexp) -> Result<Option<Suit>, SexpError> {
+    let s = expect_string(sexp)?;
+    match s {
+        "NT" => Ok(None),
+        _ => Suit::from_str(&s).map_err(|()| SexpError::InvalidTag(s.to_string())).map(Some),
+    }
+}
+
+impl Sexpable for Call {
+    fn to_sexp(&self) -> Sexp {
+        sexp::list(&[
+            sexp::atom_i(self.level as i64),
+            trump_to_sexp(&self.trump)
+        ])
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
+        let (l, t): (u64, Sexp) = Sexpable::from_sexp(sexp)?;
+        let level = l as u8;
+        let trump = trump_from_sexp(&t)?;
+        Ok(Call { level, trump })
     }
 }
 
@@ -132,6 +166,17 @@ impl Display for Bid {
     }
 }
 
+impl Sexpable for Bid {
+    fn to_sexp(&self) -> Sexp {
+        sexp::atom_s(&self.to_string())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
+        let s = expect_string(sexp)?;
+        Bid::from_str(s).map_err(|_| SexpError::InvalidTag(s.to_string()))
+    }
+}
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Doubled {
     Undoubled,
@@ -152,6 +197,33 @@ impl Debug for Doubled {
 impl Display for Doubled {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Debug::fmt(self, f)
+    }
+}
+
+impl FromStr for Doubled {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Doubled, String> {
+        match s {
+            "" => Ok(Doubled::Undoubled),
+            "x" => Ok(Doubled::Doubled),
+            "xx" => Ok(Doubled::Redoubled),
+            _ => Err("Invalid doubled".to_string()),
+        }
+    }
+}
+
+impl Sexpable for Doubled {
+    fn to_sexp(&self) -> Sexp {
+        sexp::atom_s(&self.to_string())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Doubled, SexpError> {
+        expect_nil(sexp).map(|()| Doubled::Undoubled)
+            .or_else(|_| {
+                let s = expect_string(sexp)?;
+                Doubled::from_str(s).map_err(|_| SexpError::InvalidTag(s.to_string()))
+            })
     }
 }
 
@@ -181,6 +253,43 @@ impl Debug for Contract {
 impl Display for Contract {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Debug::fmt(self, f)
+    }
+}
+
+impl Sexpable for Contract {
+    fn to_sexp(&self) -> Sexp {
+        let mut contents = Vec::with_capacity(4);
+        contents.push((self.call.level as u64).to_sexp());
+        contents.push(trump_to_sexp(&self.call.trump));
+        match self.doubled {
+            Doubled::Undoubled => (),
+            d => contents.push(d.to_sexp())
+        };
+        contents.push(self.declarer.to_sexp());
+        sexp::list(contents.as_slice())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<Contract, SexpError> {
+        let l = expect_list(sexp)?;
+        match l {
+            [lvl, tr, dbl, dcl] => {
+                let level: u64 = Sexpable::from_sexp(lvl)?;
+                Ok(Contract {
+                    call: Call { level: level as u8, trump: trump_from_sexp(tr)? },
+                    doubled: Doubled::from_sexp(dbl)?,
+                    declarer: Dir::from_sexp(dcl)?
+                })
+            },
+            [lvl, tr, dcl] => {
+                let level: u64 = Sexpable::from_sexp(lvl)?;
+                Ok(Contract {
+                    call: Call { level: level as u8, trump: trump_from_sexp(tr)? },
+                    doubled: Doubled::Undoubled,
+                    declarer: Dir::from_sexp(dcl)?
+                })
+            },
+            _ => Err(SexpError::InvalidValue(sexp.clone(), "contract".to_string()))
+        }
     }
 }
 

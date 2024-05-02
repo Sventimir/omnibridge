@@ -14,7 +14,7 @@ num-traits = "0.2"
 rand = "0.8.5"
 ring = "0.17.8"
 serde = {version = "1.0.198", features = ["derive"]}
-serde_sexpr = "0.1.0"
+sexp = "1.1.4"
 
 [lib]
 name = "bridge"
