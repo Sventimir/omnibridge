@@ -1,5 +1,6 @@
 use sexp::*;
 
+#[derive(Debug)]
 pub enum SexpError {
     InvalidTag(String),
     InvalidValue(Sexp, String),

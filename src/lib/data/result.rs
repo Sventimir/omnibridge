@@ -34,7 +34,7 @@ fn undertricks_doubled(lacking_tricks: u8, vulnerable: bool) -> i16 {
     score
 }
 
-fn undertrick_score(lacking_tricks: u8, double: Doubled, vulnerable: bool) -> i16 {
+fn undertrick_score(lacking_tricks: u8, double: &Doubled, vulnerable: bool) -> i16 {
     match double {
         Doubled::Undoubled => (if vulnerable { 100 } else { 50 }) * (lacking_tricks as i16),
         Doubled::Doubled => undertricks_doubled(lacking_tricks, vulnerable),
@@ -42,21 +42,21 @@ fn undertrick_score(lacking_tricks: u8, double: Doubled, vulnerable: bool) -> i1
     }
 }
 
-fn trick_value(trump: Option<Suit>) -> i16 {
+fn trick_value(trump: &Option<Suit>) -> i16 {
     match trump {
         None | Some(Suit::Spade | Suit::Heart) => 30,
         Some(Suit::Club | Suit::Diamond) => 20
     }
 }
 
-fn trick_score(call: Call) -> i16 {
-    trick_value(call.trump) * call.level as i16
+fn trick_score(call: &Call) -> i16 {
+    trick_value(&call.trump) * call.level as i16
         + if call.trump.is_none() { 10 } else { 0 }
 }
 
-fn overtrick_score(contract: &Contract, tricks: u8, vulnerable: bool) -> i16 {
-    match contract.doubled {
-        Doubled::Undoubled => trick_value(contract.call.trump) * tricks as i16,
+fn overtrick_score(call: &Call, doubled: &Doubled, tricks: u8, vulnerable: bool) -> i16 {
+    match doubled {
+        Doubled::Undoubled => trick_value(&call.trump) * tricks as i16,
         Doubled::Doubled => (if vulnerable { 200 } else { 100 }) * tricks as i16,
         Doubled::Redoubled => (if vulnerable { 400 } else { 200 }) * tricks as i16
     }
@@ -70,47 +70,60 @@ fn slam_bonus(level: u8, vulnerable: bool) -> i16 {
     }
 }
 
+fn score_base(call: &Call, doubled: &Doubled, vulnerable: bool, tricks: i8) -> i16 {
+    if tricks < 0 {
+        undertrick_score(
+            -tricks as u8,
+            doubled,
+            vulnerable
+        )
+    } else {
+        let mut score = trick_score(call);
+        if score >= 100 {
+            score += if vulnerable { 500 } else { 300 }; 
+        } else {
+            score += 50;
+        }
+        score += overtrick_score(
+            call,
+            doubled,
+            tricks as u8,
+            vulnerable
+        );
+        score += slam_bonus(
+            call.level,
+            vulnerable
+        );
+        match doubled {
+            Doubled::Undoubled => score,
+            Doubled::Doubled => score + 50,
+            Doubled::Redoubled => score + 100
+        }
+    }
+}
+
 impl ContractResult {
     pub fn total_ticks(&self) -> u8 {
-        ((self.contract.call.level as i8) + 6 + self.tricks) as u8
-    }
-
-    pub fn vulnerable(&self) -> bool {
-        match self.contract.declarer {
-            Dir::North | Dir::South =>
-                board::vulnerability(&self.board) as u8 & 1 != 0,
-            Dir::East | Dir::West =>
-                board::vulnerability(&self.board) as u8 & 2 != 0
+        match self.contract {
+            Contract::Passed => 0,
+            Contract::Contract { call, .. } =>
+                ((call.level as i8) + 6 + self.tricks) as u8
         }
     }
 
     pub fn score(&self) -> i16 {
-        if self.tricks < 0 {
-            undertrick_score(
-                -self.tricks as u8,
-                self.contract.doubled,
-                self.vulnerable()
-            )
-        } else {
-            let mut score = trick_score(self.contract.call);
-            if score >= 100 {
-                score += if self.vulnerable() { 500 } else { 300 }; 
-            } else {
-                score += 50;
-            }
-            score += overtrick_score(
-                &self.contract,
-                self.tricks as u8,
-                self.vulnerable()
-            );
-            score += slam_bonus(
-                self.contract.call.level,
-                self.vulnerable()
-            );
-            match self.contract.doubled {
-                Doubled::Undoubled => score,
-                Doubled::Doubled => score + 50,
-                Doubled::Redoubled => score + 100
+        match self.contract {
+            Contract::Passed => 0,
+            Contract::Contract { call, doubled, declarer } => {
+                let (vulnerable, side_multiplier) =
+                    match declarer {
+                        Dir::North | Dir::South =>
+                            (board::vulnerability(&self.board) as u8 & 1 != 0, 1),
+                        Dir::East | Dir::West =>
+                            (board::vulnerability(&self.board) as u8 & 2 != 0, -1)
+                    };
+                let score = score_base(&call, &doubled, vulnerable, self.tricks);
+                score * side_multiplier
             }
         }
     }

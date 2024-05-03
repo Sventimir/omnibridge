@@ -101,32 +101,40 @@ pub enum Bid {
 impl Bid {
     /* Check if the bid can be made by the declarer given the current
     contract. Return the new contract if so, or None otherwise. */
-    pub fn apply(&self, declarer: &Dir, contract: Contract) -> Option<Contract> {
-        match self {
-            Bid::Pass => Some(contract),
-            Bid::Double
-                if contract.doubled == Doubled::Undoubled
-                    && contract.declarer.opponent_of(declarer) =>
+    pub fn apply(&self, bidder: &Dir, contract: Contract) -> Option<Contract> {
+        match (self, &contract) {
+            (Bid::Pass, _) => Some(contract),
+            (Bid::Double, Contract::Contract { doubled: Doubled::Undoubled, call, declarer })
+                    if declarer.opponent_of(bidder) =>
             {
-                Some(Contract {
+                Some(Contract::Contract {
+                    call: *call,
                     doubled: Doubled::Doubled,
-                    ..contract
+                    declarer: *declarer
                 })
             }
-            Bid::Redouble
-                if contract.doubled == Doubled::Doubled
-                    && (!contract.declarer.opponent_of(declarer)) =>
+            (Bid::Redouble, Contract::Contract { doubled: Doubled::Doubled, call, declarer })
+                    if (!declarer.opponent_of(bidder)) =>
             {
-                Some(Contract {
+                Some(Contract::Contract {
+                    call: *call,
                     doubled: Doubled::Redoubled,
-                    ..contract
+                    declarer: *declarer
                 })
             }
-            Bid::Call(call) if call > &contract.call => Some(Contract {
-                call: *call,
-                declarer: *declarer,
-                doubled: Doubled::Undoubled,
-            }),
+            (Bid::Call(call), Contract::Passed) =>
+                Some(Contract::Contract {
+                    call: *call,
+                    doubled: Doubled::Undoubled,
+                    declarer: *bidder
+                }),
+            (Bid::Call(overcall), Contract::Contract { call, .. })
+                if overcall > &call =>
+                Some(Contract::Contract {
+                    call: *overcall,
+                    doubled: Doubled::Undoubled,
+                    declarer: *bidder
+                }),
             _ => None,
         }
     }
@@ -229,15 +237,18 @@ impl Sexpable for Doubled {
 }
 
 #[derive(PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct Contract {
-    pub declarer: Dir,
-    pub call: Call,
-    pub doubled: Doubled,
+pub enum Contract {
+    Passed,
+    Contract {
+        declarer: Dir,
+        call: Call,
+        doubled: Doubled
+    }
 }
 
 impl Contract {
     pub fn new(call: Call, doubled: Doubled, decl: Dir) -> Contract {
-        Contract {
+        Contract::Contract {
             call,
             doubled,
             declarer: decl,
@@ -246,20 +257,31 @@ impl Contract {
 
     pub fn as_sexp_list(&self) -> Vec<Sexp> {
         let mut contents = Vec::with_capacity(4);
-        contents.push((self.call.level as u64).to_sexp());
-        contents.push(trump_to_sexp(&self.call.trump));
-        match self.doubled {
-            Doubled::Undoubled => (),
-            d => contents.push(d.to_sexp())
-        };
-        contents.push(self.declarer.to_sexp());
+        match self {
+            Contract::Passed =>
+                contents.push(sexp::atom_s("pass")),
+            Contract::Contract { call, doubled, declarer } => {
+                contents.push((call.level as u64).to_sexp());
+                contents.push(trump_to_sexp(&call.trump));
+                match doubled {
+                    Doubled::Undoubled => (),
+                    d => contents.push(d.to_sexp())
+                };
+                contents.push(declarer.to_sexp());
+            }
+        }
         contents
     }
 }
 
 impl Debug for Contract {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}{}", self.call, self.doubled, self.declarer)
+        match self {
+            Contract::Passed =>
+                write!(f, "pass"),
+            Contract::Contract { call, doubled, declarer } =>
+                write!(f, "{}{}{}", call, doubled, declarer)
+        }
     }
 }
 
@@ -277,9 +299,11 @@ impl Sexpable for Contract {
     fn from_sexp(sexp: &Sexp) -> Result<Contract, SexpError> {
         let l = expect_list(sexp)?;
         match l {
+            [] | [_] =>
+                Ok(Contract::Passed),
             [lvl, tr, dbl, dcl] => {
                 let level: u64 = Sexpable::from_sexp(lvl)?;
-                Ok(Contract {
+                Ok(Contract::Contract {
                     call: Call { level: level as u8, trump: trump_from_sexp(tr)? },
                     doubled: Doubled::from_sexp(dbl)?,
                     declarer: Dir::from_sexp(dcl)?
@@ -287,7 +311,7 @@ impl Sexpable for Contract {
             },
             [lvl, tr, dcl] => {
                 let level: u64 = Sexpable::from_sexp(lvl)?;
-                Ok(Contract {
+                Ok(Contract::Contract {
                     call: Call { level: level as u8, trump: trump_from_sexp(tr)? },
                     doubled: Doubled::Undoubled,
                     declarer: Dir::from_sexp(dcl)?
