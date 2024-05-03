@@ -79,11 +79,16 @@ fn score_base(call: &Call, doubled: &Doubled, vulnerable: bool, tricks: i8) -> i
         )
     } else {
         let mut score = trick_score(call);
-        if score >= 100 {
-            score += if vulnerable { 500 } else { 300 }; 
+        score *= match doubled {
+            Doubled::Undoubled => 1,
+            Doubled::Doubled => 2,
+            Doubled::Redoubled => 4
+        };
+        score += if score >= 100 {
+            if vulnerable { 500 } else { 300 }
         } else {
-            score += 50;
-        }
+            50
+        };
         score += overtrick_score(
             call,
             doubled,
@@ -115,13 +120,14 @@ impl ContractResult {
         match self.contract {
             Contract::Passed => 0,
             Contract::Contract { call, doubled, declarer } => {
-                let (vulnerable, side_multiplier) =
+                let (vulnerability_mask, side_multiplier) =
                     match declarer {
                         Dir::North | Dir::South =>
-                            (board::vulnerability(&self.board) as u8 & 1 != 0, 1),
+                            (2, 1),
                         Dir::East | Dir::West =>
-                            (board::vulnerability(&self.board) as u8 & 2 != 0, -1)
+                            (1, -1)
                     };
+                let vulnerable = vulnerability_mask & board::vulnerability(&self.board) as u8 != 0;
                 let score = score_base(&call, &doubled, vulnerable, self.tricks);
                 score * side_multiplier
             }

@@ -21,7 +21,8 @@ pub struct Board {
 }
 
 pub fn vulnerability(board: &u8) -> Vulnerability {
-    FromPrimitive::from_u8(((board / 4) + (board % 4)) % 4).unwrap()
+    let b = board - 1;
+    FromPrimitive::from_u8(((b/ 4) + (b % 4)) % 4).unwrap()
 }
 
 impl Board {
