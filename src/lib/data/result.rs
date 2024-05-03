@@ -83,7 +83,7 @@ fn slam_bonus(level: u8, vulnerable: bool) -> i16 {
 
 fn score_base(call: &Call, doubled: &Doubled, vulnerable: bool, tricks: i8) -> i16 {
     if tricks < 0 {
-        undertrick_score(-tricks as u8, doubled, vulnerable)
+        - undertrick_score(-tricks as u8, doubled, vulnerable)
     } else {
         let mut score = trick_score(call);
         score *= match doubled {
@@ -127,8 +127,8 @@ impl ContractResult {
                 declarer,
             } => {
                 let (vulnerability_mask, side_multiplier) = match declarer {
-                    Dir::North | Dir::South => (2, 1),
-                    Dir::East | Dir::West => (1, -1),
+                    Dir::North | Dir::South => (1, 1),
+                    Dir::East | Dir::West => (2, -1),
                 };
                 let vulnerable = vulnerability_mask & board::vulnerability(&self.board) as u8 != 0;
                 let score = score_base(&call, &doubled, vulnerable, self.tricks);
