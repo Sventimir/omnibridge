@@ -45,19 +45,14 @@ fn main() {
             Some(score) => {
                 println!(
                     "Good bid. {} scores: {}.\n{}({}) was the best.",
-                    bid,
-                    score,
-                    best,
-                    best_score
+                    bid, score, best, best_score
                 );
                 show_expected_bids(&expected)
             }
             None => {
                 println!(
                     "{} is not the best bid. {}({}) was best.",
-                    bid,
-                    best,
-                    best_score
+                    bid, best, best_score
                 );
                 show_expected_bids(&expected);
                 println!("Score: 0.")

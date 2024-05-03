@@ -57,10 +57,7 @@ fn main() {
             println!("Correct!");
             score += 1;
         } else {
-            println!(
-                "Incorrect! You should have led a {}.",
-                correct_lead
-            )
+            println!("Incorrect! You should have led a {}.", correct_lead)
         }
         max_score += 1;
         println!("Your score is: {}/{}", score, max_score);

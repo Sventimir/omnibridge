@@ -7,13 +7,7 @@ fn main() {
     let mut hand = Hand::new();
     for i in 0..52 {
         let card = Card::from_ord(i);
-        println!(
-            "{} : {} : {} : {}",
-            i,
-            card.to_u8(),
-            card.ord(),
-            card
-        );
+        println!("{} : {} : {} : {}", i, card.to_u8(), card.ord(), card);
         hand.add(&card);
     }
     println!("****");

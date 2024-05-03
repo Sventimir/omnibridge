@@ -3,32 +3,31 @@ extern crate bridge;
 mod command;
 
 use hex::ToHex;
-use ring::digest::{Digest, SHA256, digest};
+use ring::digest::{digest, Digest, SHA256};
 use sexp::Sexp;
 use std::io;
 
 use bridge::sexpr::*;
 
-use command::{Cmd, CommandResult, CommandError};
-
+use command::{Cmd, CommandError, CommandResult};
 
 enum ServerError {
     CommandError(CommandError),
-    SexprError(SexpError)
+    SexprError(SexpError),
 }
 
 impl ServerError {
     fn to_sexp(&self) -> Sexp {
         match self {
             ServerError::CommandError(err) => err.to_sexp(),
-            ServerError::SexprError(err) => err.to_sexp()
+            ServerError::SexprError(err) => err.to_sexp(),
         }
     }
 }
 
 struct Response {
     result: Result<CommandResult, ServerError>,
-    request_id: Digest
+    request_id: Digest,
 }
 
 impl Response {
@@ -38,16 +37,15 @@ impl Response {
             (sexp::atom_s("request_id"), sexp::atom_s(&req_id)).to_sexp(),
             match &self.result {
                 Ok(result) => (sexp::atom_s("ok"), result.clone()).to_sexp(),
-                Err(err) => sexp::list(&[sexp::atom_s("error"), err.to_sexp()])
-}
+                Err(err) => sexp::list(&[sexp::atom_s("error"), err.to_sexp()]),
+            },
         ])
     }
 }
 
 fn interpret(expr: &str) -> Response {
-    let request_id = digest(&SHA256, expr.as_bytes());     
-    let result = 
-        sexp::parse(&expr)
+    let request_id = digest(&SHA256, expr.as_bytes());
+    let result = sexp::parse(&expr)
         .map_err(|e| ServerError::SexprError(SexpError::ParseError(*e)))
         .and_then(|cmd| Cmd::from_sexp(&cmd).map_err(ServerError::SexprError))
         .and_then(|cmd| cmd.execute().map_err(ServerError::CommandError));
@@ -66,7 +64,7 @@ fn main() -> Result<(), String> {
                 let resp = interpret(&cmd).to_sexp();
                 println!("{}", resp);
             }
-            Err(e) => return Err(format!("Error reading from stdin: {}", e))
+            Err(e) => return Err(format!("Error reading from stdin: {}", e)),
         }
     }
     Ok(())

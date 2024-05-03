@@ -22,7 +22,7 @@ impl Suit {
             Suit::Club => "C",
             Suit::Diamond => "D",
             Suit::Heart => "H",
-            Suit::Spade => "S"
+            Suit::Spade => "S",
         }
     }
 }
@@ -170,16 +170,14 @@ impl Rank {
 impl Sexpable for Rank {
     fn to_sexp(&self) -> Sexp {
         match self {
-            Rank::Ace | Rank::King | Rank::Queen | Rank::Jack =>
-                sexp::atom_s(&self.to_string()),
-            _ => sexp::atom_i(*self as i64)
+            Rank::Ace | Rank::King | Rank::Queen | Rank::Jack => sexp::atom_s(&self.to_string()),
+            _ => sexp::atom_i(*self as i64),
         }
     }
 
     fn from_sexp(sexp: &Sexp) -> Result<Rank, SexpError> {
         let s = expect_string(sexp)?;
         Rank::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
-        
     }
 }
 
@@ -281,10 +279,8 @@ impl Sexpable for Card {
     fn from_sexp(sexp: &Sexp) -> Result<Card, SexpError> {
         let l = expect_list(sexp)?;
         match l {
-            [suit, rank] =>
-                Ok(Card::new(Suit::from_sexp(suit)?, Rank::from_sexp(rank)?)),
-            _ =>
-                Err(SexpError::InvalidValue(sexp.clone(), "card".to_string()))
+            [suit, rank] => Ok(Card::new(Suit::from_sexp(suit)?, Rank::from_sexp(rank)?)),
+            _ => Err(SexpError::InvalidValue(sexp.clone(), "card".to_string())),
         }
     }
 }

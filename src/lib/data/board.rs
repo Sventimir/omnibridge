@@ -1,10 +1,10 @@
 use num::FromPrimitive;
-use sexp::Sexp;
 use serde::{Deserialize, Serialize};
+use sexp::Sexp;
 
-use crate::sexpr::*;
 use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
+use crate::sexpr::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Debug)]
 pub struct Board {
@@ -22,7 +22,7 @@ pub struct Board {
 
 pub fn vulnerability(board: &u8) -> Vulnerability {
     let b = board - 1;
-    FromPrimitive::from_u8(((b/ 4) + (b % 4)) % 4).unwrap()
+    FromPrimitive::from_u8(((b / 4) + (b % 4)) % 4).unwrap()
 }
 
 impl Board {
@@ -91,14 +91,14 @@ impl Sexpable for Board {
                 "board" => {
                     let b: u64 = Sexpable::from_sexp(&v)?;
                     board.number = b as u8
-                },
+                }
                 "N" => board.north = Hand::from_sexp(&v)?,
                 "E" => board.east = Hand::from_sexp(&v)?,
                 "S" => board.south = Hand::from_sexp(&v)?,
                 "W" => board.west = Hand::from_sexp(&v)?,
-                _ => return Err(SexpError::InvalidTag(tag.to_string()))
+                _ => return Err(SexpError::InvalidTag(tag.to_string())),
             }
-        };
+        }
         Ok(board)
     }
 }

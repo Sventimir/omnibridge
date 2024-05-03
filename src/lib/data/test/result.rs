@@ -3,7 +3,7 @@ use crate::data::result::*;
 use crate::sexpr::*;
 
 #[cfg(test)]
-fn sexp_contract(s: &str) -> ContractResult  {
+fn sexp_contract(s: &str) -> ContractResult {
     ContractResult::from_sexp(&sexp::parse(s).unwrap()).unwrap()
 }
 

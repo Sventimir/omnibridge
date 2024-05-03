@@ -1,15 +1,15 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::seq::SliceRandom;
-use sexp::{self, Sexp};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
+use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 
-use crate::sexpr::*;
 use super::card::{Card, Deck, Suit, SUITS};
 use super::hand_eval::*;
 use super::holding::Holding;
+use crate::sexpr::*;
 
 /* Layout:
 _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__*/
@@ -150,7 +150,7 @@ impl Sexpable for Hand {
             for r in h.iter() {
                 hand.add(&Card::new(s, r));
             }
-        };
+        }
         Ok(hand)
     }
 }

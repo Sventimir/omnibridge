@@ -1,9 +1,9 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use rand::Rng;
-use sexp::{self, Sexp};
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
+use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 
 use super::card::Rank;

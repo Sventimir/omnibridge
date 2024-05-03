@@ -1,6 +1,6 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
@@ -140,7 +140,7 @@ impl FromStr for Side {
         match s {
             "NS" | "ns" => Ok(Side::NS),
             "WE" | "we" => Ok(Side::WE),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -166,7 +166,7 @@ impl Debug for Vulnerability {
 
 impl Display for Vulnerability {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-    Debug::fmt(self, f)
+        Debug::fmt(self, f)
     }
 }
 
@@ -179,7 +179,7 @@ impl FromStr for Vulnerability {
             "NS" | "ns" => Ok(Vulnerability::NS),
             "WE" | "we" => Ok(Vulnerability::WE),
             "Both" | "both" => Ok(Vulnerability::Both),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
