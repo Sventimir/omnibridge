@@ -2,12 +2,13 @@ use crate::sexpr::*;
 use super::card::Suit;
 use super::table::Dir;
 
+use serde::{Serialize, Deserialize};
 use sexp::{self, Sexp};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct Call {
     pub trump: Option<Suit>,
     pub level: u8,
@@ -89,7 +90,7 @@ impl Sexpable for Call {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Bid {
     Pass,
     Double,
@@ -177,7 +178,7 @@ impl Sexpable for Bid {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub enum Doubled {
     Undoubled,
     Doubled,
@@ -227,7 +228,7 @@ impl Sexpable for Doubled {
     }
 }
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Contract {
     pub declarer: Dir,
     pub call: Call,
@@ -241,6 +242,18 @@ impl Contract {
             doubled,
             declarer: decl,
         }
+    }
+
+    pub fn as_sexp_list(&self) -> Vec<Sexp> {
+        let mut contents = Vec::with_capacity(4);
+        contents.push((self.call.level as u64).to_sexp());
+        contents.push(trump_to_sexp(&self.call.trump));
+        match self.doubled {
+            Doubled::Undoubled => (),
+            d => contents.push(d.to_sexp())
+        };
+        contents.push(self.declarer.to_sexp());
+        contents
     }
 }
 
@@ -258,15 +271,7 @@ impl Display for Contract {
 
 impl Sexpable for Contract {
     fn to_sexp(&self) -> Sexp {
-        let mut contents = Vec::with_capacity(4);
-        contents.push((self.call.level as u64).to_sexp());
-        contents.push(trump_to_sexp(&self.call.trump));
-        match self.doubled {
-            Doubled::Undoubled => (),
-            d => contents.push(d.to_sexp())
-        };
-        contents.push(self.declarer.to_sexp());
-        sexp::list(contents.as_slice())
+        sexp::list(self.as_sexp_list().as_slice())
     }
 
     fn from_sexp(sexp: &Sexp) -> Result<Contract, SexpError> {

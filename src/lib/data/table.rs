@@ -1,12 +1,13 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
+use serde::{Serialize, Deserialize};
 use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
 use crate::sexpr::*;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive, Serialize, Deserialize)]
 pub enum Dir {
     North = 0,
     East = 1,

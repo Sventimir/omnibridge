@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+use sexp::Sexp;
 use std::fmt::{self, Debug, Display, Formatter};
 
 use super::bid::{Call, Contract, Doubled};
@@ -5,6 +7,9 @@ use super::board;
 use super::card::{Card, Suit};
 use super::table::Dir;
 
+use crate::sexpr::*;
+
+#[derive(Serialize, Deserialize)]
 pub struct ContractResult {
     pub board: u8,
     pub contract: Contract,
@@ -130,5 +135,43 @@ impl Display for ContractResult {
             Some(card) => write!(f, "{}", card)
         }?;
         write!(f, " {:+}", self.tricks)
+    }
+}
+
+impl Sexpable for ContractResult {
+    fn to_sexp(&self) -> Sexp {
+        let lead : Vec<Sexp> = self.lead.iter().map(Sexpable::to_sexp).collect();
+        sexp::list(&[
+            &[ (self.board as u64).to_sexp() ],
+            self.contract.as_sexp_list().as_slice(),
+            lead.as_slice(),
+            &[ (self.tricks as i64).to_sexp() ]
+        ].concat())
+    }
+
+    fn from_sexp(sexp: &Sexp) -> Result<ContractResult, SexpError> {
+        let contents = expect_list(sexp)?;
+        let (b, rem) = contents.split_first()
+            .ok_or(SexpError::InvalidValue(sexp.clone(), "result".to_string()))?;
+        let board = expect_int(b)? as u8;
+        let (tricks, rem) = rem.split_last()
+            .ok_or(SexpError::InvalidValue(sexp.clone(), "result".to_string()))?;
+        let tricks = expect_int(tricks)? as i8;
+        let (lead, contract) = rem.split_last()
+            .ok_or(SexpError::InvalidValue(sexp.clone(), "result".to_string()))?;
+        match Card::from_sexp(lead) {
+            Ok(lead) => Ok(ContractResult {
+                board,
+                contract: Contract::from_sexp(&sexp::list(contract))?,
+                lead: Some(lead),
+                tricks
+            }),
+            Err(_) => Ok(ContractResult {
+                board,
+                contract: Contract::from_sexp(&sexp::list(rem))?,
+                lead: None,
+                tricks
+            })
+        }
     }
 }
