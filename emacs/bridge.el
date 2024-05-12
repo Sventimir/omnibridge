@@ -4,7 +4,7 @@
 
 (require 'org)
 
-(defcustom bridge-suit-symbols '((S . "♠") (H . "♥") (D . "♦") (C . "♣"))
+(defcustom bridge-suit-symbols '((NT . "NT") (S . "♠") (H . "♥") (D . "♦") (C . "♣"))
   "Alist of suit symbols for bridge suits."
   :type '(alist :key-type string :value-type string)
   :group 'bridge)
@@ -80,6 +80,79 @@
   (bridge-put-hand 5 3 (bridge-board-hand 'E board))
   (bridge-put-hand 9 2 (bridge-board-hand 'S board))
   (org-table-align))
+
+;; contract is a list (board level trump double? declarer lead? tricks)
+(defun bridge-contract-board (contract)
+  "Get the board number of a CONTRACT."
+  (car contract))
+
+(defun bridge-contract-level (contract)
+  "Get the level of a CONTRACT.
+A number between 1 and 7."
+  (nth 1 contract))
+
+(defun bridge-contract-trump (contract)
+  "Get the trump suit of a CONTRACT.
+A symbol C D H S or NT."
+  (nth 2 contract))
+
+(defun bridge-is-valid-double (dbl)
+  "Return t if DBL is a valid value for double."
+  (cond ((null dbl) t)
+        ((equal dbl 'x) t)
+        ((equal dbl 'xx) t)
+        (t nil)))
+
+(defun bridge-contract-double (contract)
+  "Get the double status of a CONTRACT.
+A symbol: x xx or nil."
+  (let ((elem (nth 3 contract)))
+    (if (bridge-is-valid-double elem) elem nil)))
+
+(defun bridge-contract-declarer (contract)
+  "Get the declarer of a CONTRACT.
+A symbol N E S or W."
+  (if (bridge-is-valid-double (nth 3 contract))
+      (nth 4 contract)
+    (nth 3 contract)))
+
+(defun bridge-card-p (obj)
+  "Return t if OBJ is a valid card.
+That is a pair of a suit and a rank."
+  (and (listp obj)
+       (eq 2 (length obj))
+       (member (car obj) '(C D H S NT c d h s nt))
+       (member (cadr obj) '(2 3 4 5 6 7 8 9 10 T t J j Q q K k A a))))
+
+(defun bridge-contract-lead (contract)
+  "Get the lead card of a CONTRACT.
+Expressed as pair (SUIT RANK)."
+  (let ((idx 3))
+    (progn
+      (if (bridge-is-valid-double (nth 3 contract))
+          (setq idx (+ idx 1)))
+      (let ((lead (nth idx contract)))
+        (if (bridge-card-p lead) lead nil)))))
+
+(defun bridge-contract-tricks-taken (contract)
+  "Get the number of tricks taken in a CONTRACT."
+  (car (last contract)))
+
+(defun bridge-trump-format (trump)
+  "Return a string representation of the TRUMP suit."
+  (cdr (assoc (intern (upcase (symbol-name trump))) bridge-suit-symbols)))
+
+(defun bridge-card-format (card)
+  "Return a string representation of the CARD."
+  (if (null card) ""
+    (format "%s%s"
+            (bridge-trump-format (car card))
+            (cadr card))))
+
+(defun bridge-double-format (dbl)
+  "Return a string representation of the DBL status."
+  (if (null dbl) ""
+    (symbol-name dbl)))
 
 (provide 'bridge)
 ;;; bridge.el ends here
