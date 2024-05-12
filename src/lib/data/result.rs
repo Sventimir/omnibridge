@@ -5,6 +5,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use super::bid::{Call, Contract, Doubled};
 use super::board;
 use super::card::{Card, Suit};
+use super::scoring::Score;
 use super::table::Dir;
 
 use crate::sexpr::*;
@@ -118,9 +119,9 @@ impl ContractResult {
         }
     }
 
-    pub fn score(&self) -> i16 {
+    pub fn score(&self) -> Score {
         match self.contract {
-            Contract::Passed => 0,
+            Contract::Passed => Score::ZERO,
             Contract::Contract {
                 call,
                 doubled,
@@ -132,7 +133,7 @@ impl ContractResult {
                 };
                 let vulnerable = vulnerability_mask & board::vulnerability(&self.board) as u8 != 0;
                 let score = score_base(&call, &doubled, vulnerable, self.tricks);
-                score * side_multiplier
+                Score::from_i16(score * side_multiplier)
             }
         }
     }

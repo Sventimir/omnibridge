@@ -3,6 +3,7 @@ use sexp::Sexp;
 
 use bridge::data::board::{Board, BoardNumber};
 use bridge::data::result::ContractResult;
+use bridge::data::scoring::{Score, Scorable};
 use bridge::dealer::deal;
 use bridge::sexpr::*;
 
@@ -64,14 +65,14 @@ impl Sexpable for CommandError {
 #[serde(untagged)]
 pub enum CommandResult {
     Deal(Board),
-    Score(i16),
+    Score(Score),
 }
 
 impl Sexpable for CommandResult {
     fn to_sexp(&self) -> Sexp {
         match self {
             CommandResult::Deal(board) => board.to_sexp(),
-            CommandResult::Score(score) => (*score as i64).to_sexp(),
+            CommandResult::Score(score) => score.to_sexp(),
         }
     }
 
