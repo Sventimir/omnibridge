@@ -4,6 +4,7 @@ pub mod card;
 pub mod hand;
 pub mod hand_eval;
 pub mod holding;
+pub mod match_protocol;
 pub mod result;
 pub mod scoring;
 pub mod table;

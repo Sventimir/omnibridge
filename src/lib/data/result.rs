@@ -5,7 +5,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use super::bid::{Call, Contract, Doubled};
 use super::board;
 use super::card::{Card, Suit};
-use super::scoring::Score;
+use super::scoring::{Scorable, Score};
 use super::table::Dir;
 
 use crate::sexpr::*;
@@ -118,8 +118,10 @@ impl ContractResult {
             Contract::Contract { call, .. } => ((call.level as i8) + 6 + self.tricks) as u8,
         }
     }
+}
 
-    pub fn score(&self) -> Score {
+impl Scorable for ContractResult {
+    fn score(&self) -> Score {
         match self.contract {
             Contract::Passed => Score::ZERO,
             Contract::Contract {

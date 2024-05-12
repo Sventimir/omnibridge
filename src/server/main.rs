@@ -1,6 +1,7 @@
 extern crate bridge;
 #[macro_use]
 mod command;
+mod protocol;
 
 use hex::ToHex;
 use ring::digest::{digest, Digest, SHA256};

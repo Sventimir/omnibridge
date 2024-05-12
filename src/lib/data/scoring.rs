@@ -1,8 +1,8 @@
-use derive_more::{Add, Neg, Sub};
-use serde::{Serialize, Deserialize};
+use derive_more::{Add, Neg, Sub, Sum};
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
-use crate::sexpr::{self, Sexpable, SexpError};
+use crate::sexpr::{self, SexpError, Sexpable};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub)]
 pub struct Score(i16);
@@ -31,8 +31,34 @@ impl Sexpable for Score {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub)]
+impl Scorable for Score {
+    fn score(&self) -> Score {
+        self.clone()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub, Sum)]
 pub struct IMP(i8);
+
+impl IMP {
+    const TABLE: [i16; 24] = [
+        20, 50, 90, 130, 170, 220, 270, 320, 370, 430, 500, 600, 750, 900, 1100, 1300, 1500, 1750,
+        2000, 2250, 2500, 3000, 3500, 4000,
+    ];
+
+    pub fn from_scores(open: &Score, closed: &Score) -> IMP {
+        let diff = (open.0 - closed.0) as i16;
+        let abs_score = diff.abs();
+        let mut imp = 0;
+        for boundary in IMP::TABLE {
+            if abs_score < boundary {
+                break;
+            }
+            imp += 1;
+        }
+        IMP(imp)
+    }
+}
 
 impl Display for IMP {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -67,4 +93,8 @@ impl Sexpable for Matchpoints {
     fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
         Ok(Matchpoints(sexpr::expect_int(sexp)? as u16))
     }
+}
+
+pub trait Scorable {
+    fn score(&self) -> Score;
 }
