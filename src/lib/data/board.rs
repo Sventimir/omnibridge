@@ -6,10 +6,12 @@ use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
 use crate::sexpr::*;
 
+pub type BoardNumber = usize;
+
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Debug)]
 pub struct Board {
     #[serde(rename(serialize = "board", deserialize = "board"))]
-    pub number: u8,
+    pub number: BoardNumber,
     #[serde(rename(serialize = "N", deserialize = "N"))]
     pub north: Hand,
     #[serde(rename(serialize = "E", deserialize = "E"))]
@@ -26,7 +28,7 @@ pub fn vulnerability(board: &u8) -> Vulnerability {
 }
 
 impl Board {
-    pub fn new(number: u8) -> Board {
+    pub fn new(number: BoardNumber) -> Board {
         Board {
             number,
             north: Hand::new(),
@@ -37,11 +39,11 @@ impl Board {
     }
 
     pub fn dealer(&self) -> Dir {
-        FromPrimitive::from_u8(self.number % 4).unwrap()
+        FromPrimitive::from_u8(self.number as u8 % 4).unwrap()
     }
 
     pub fn vulnerability(&self) -> Vulnerability {
-        vulnerability(&self.number)
+        vulnerability(&(self.number as u8))
     }
 
     pub fn hand(&self, dir: Dir) -> &Hand {
@@ -90,7 +92,7 @@ impl Sexpable for Board {
             match tag.as_str() {
                 "board" => {
                     let b: u64 = Sexpable::from_sexp(&v)?;
-                    board.number = b as u8
+                    board.number = b as BoardNumber
                 }
                 "N" => board.north = Hand::from_sexp(&v)?,
                 "E" => board.east = Hand::from_sexp(&v)?,

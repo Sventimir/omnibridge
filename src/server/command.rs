@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sexp::Sexp;
 
-use bridge::data::board::Board;
+use bridge::data::board::{Board, BoardNumber};
 use bridge::data::result::ContractResult;
 use bridge::dealer::deal;
 use bridge::sexpr::*;
@@ -9,7 +9,7 @@ use bridge::sexpr::*;
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Cmd {
     #[serde(rename = "deal")]
-    Deal(u8),
+    Deal(BoardNumber),
     #[serde(rename = "score")]
     Score(ContractResult),
 }
@@ -33,7 +33,7 @@ impl Sexpable for Cmd {
         match tag {
             "deal" => {
                 let board = expect_int(&rem[0])?;
-                Ok(Cmd::Deal(board as u8))
+                Ok(Cmd::Deal(board as BoardNumber))
             }
             "score" => {
                 let result = ContractResult::from_sexp(&sexp::list(&rem))?;

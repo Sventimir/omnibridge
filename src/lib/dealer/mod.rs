@@ -1,9 +1,9 @@
 use rand::seq::SliceRandom;
 
-use crate::data::board::Board;
+use crate::data::board::{Board, BoardNumber};
 use crate::data::card::{Card, Deck};
 
-pub fn deal(number: u8) -> Board {
+pub fn deal(number: BoardNumber) -> Board {
     let mut rng = rand::thread_rng();
     let mut deck = Deck::new().collect::<Vec<Card>>();
     deck.shuffle(&mut rng);
