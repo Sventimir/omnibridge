@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use super::{
     board::{Board, BoardNumber},
     scoring::{Scorable, Score, IMP},
 };
+use crate::sexpr::{expect_string, SexpError, Sexpable};
 
 pub struct Match<R: Sized> {
-    pub id: u64,
     pub home: String,
     pub visitors: String,
     pub boards: Vec<MatchBoard<R>>,
@@ -16,9 +18,28 @@ pub struct MatchBoard<R: Sized> {
     results: [Option<R>; 2],
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Room {
     Open = 0,   // Home: NS, Visitors: WE
     Closed = 1, // Home: WE, Visitors: NS
+}
+
+impl Sexpable for Room {
+    fn to_sexp(&self) -> sexp::Sexp {
+        match self {
+            Room::Open => sexp::atom_s("open"),
+            Room::Closed => sexp::atom_s("closed"),
+        }
+    }
+
+    fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
+        let tag = expect_string(sexp)?;
+        match tag {
+            "open" => Ok(Room::Open),
+            "closed" => Ok(Room::Closed),
+            _ => Err(SexpError::InvalidTag(tag.to_string())),
+        }
+    }
 }
 
 impl<R> MatchBoard<R> {
@@ -29,7 +50,7 @@ impl<R> MatchBoard<R> {
             results: [None, None],
         }
     }
-
+    
     pub fn number(&self) -> BoardNumber {
         self.number
     }
@@ -60,7 +81,6 @@ impl<R> Match<R> {
         let mut boards = Vec::with_capacity(board_count);
         boards.extend((0..board_count).map(|n| MatchBoard::new(n, None)));
         Match {
-            id: 0,
             home,
             visitors,
             boards,
@@ -77,6 +97,10 @@ impl<R> Match<R> {
 }
 
 impl<R: Scorable> Match<R> {
+    pub fn imp(&self, board: BoardNumber) -> Option<IMP> {
+        self.boards[board as usize].imp()
+    }
+   
     pub fn total_imp(&self) -> IMP {
         self.boards.iter().filter_map(MatchBoard::imp).sum()
     }
