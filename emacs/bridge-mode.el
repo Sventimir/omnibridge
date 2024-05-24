@@ -4,66 +4,32 @@
 ;;; Code:
 (require 'subr-x)
 (require 'bridge)
+(require 'omnibridge-server-interface)
 
-;; (defcustom bridge-mode-server-bin "/usr/local/bin/bridge-mentor"
-(defcustom bridge-mode-server-bin "/home/sven/code/rust/bridge-mentor/target/debug/server"
-  "Path to the bridge-mentor server binary."
-  :type 'string
-  :group 'bridge)
-
-(defcustom bridge-mentor-server-process "bridge-mentor-server"
-  "Name of the bridge-mentor server process."
-  :type 'string
-  :group 'bridge)
-
-(defcustom bridge-mentor-log-buffer nil
-  "Buffer to log communication with bridge-mentor server."
-  :type '(choice string (const nil))
-  :group 'bridge)
-
-(defvar bridge-mode-response-handlers (make-hash-table :test 'equal)
-  "Mapping from request identifiers to callbacks meant to handle responses to these requests.")
-
-(defun bridge-mentor ()
-  "Open a new buffer connected to a bridge-mentor server instance."
+(defun omnibridge ()
+  "Open a new buffer connected to a omnibridge server instance."
   (interactive)
-  (pop-to-buffer "*bridge-mentor*")
-  (let ((proc (get-buffer-process "*bridge-mentor*")))
+  (pop-to-buffer "*omnibridge*")
+  (let ((proc (get-buffer-process "*omnibridge*")))
     (if proc (delete-process proc)))
   (bridge-mode))
-
-(defun bridge-mode-log-comm (side msg)
-  "Log MSG from SIDE in the bridge-mentor-log-buffer."
-  (if bridge-mentor-log-buffer
-      (with-current-buffer bridge-mentor-log-buffer
-        (let ((inhibit-read-only t))
-          (goto-char (point-max))
-          (insert (format "%s> %s\n" side (string-trim msg)))))))
-
-(defun bridge-mode-send-request (request callback)
-  "Send the REQUEST to server and register CALLBACK as response handler."
-  (let ((msg (format "%s\n" request)))
-    (progn
-      (bridge-mode-log-comm 'client msg)
-      (puthash (secure-hash 'sha256 msg) callback bridge-mode-response-handlers)
-      (process-send-string nil msg))))
 
 (define-derived-mode bridge-mode special-mode
   "Bridge Mentor client."
   (let ((inhibit-read-only t))
     (erase-buffer))
-  (clrhash bridge-mode-response-handlers)
-  (make-process :name bridge-mentor-server-process
+  (clrhash omnibridge-server-response-handlers)
+  (make-process :name omnibridge-server-process
                 :buffer (current-buffer)
                 :command (list bridge-mode-server-bin)
                 :connection-type 'pipe
                 :filter 'bridge-mode-filter)
-  (if bridge-mentor-log-buffer
+  (if omnibridge-log-buffer
       (progn
-        (pop-to-buffer bridge-mentor-log-buffer)
+        (pop-to-buffer omnibridge-log-buffer)
         (erase-buffer)
         (read-only-mode)
-        (switch-to-buffer (process-buffer (get-process bridge-mentor-server-process))))))
+        (switch-to-buffer (process-buffer (get-process omnibridge-server-process))))))
 
 (defun bridge-mode-filter (process msg)
   "Pass MSG to the first callback from the queue; ignore PROCESS."
@@ -72,13 +38,13 @@
     (condition-case e
         (let* ((expr (read msg))
                (request-id (symbol-name (cadr (assoc 'request_id expr))))
-               (callback (gethash request-id bridge-mode-response-handlers))
+               (callback (gethash request-id omnibridge-server-response-handlers))
                (result (or (assoc 'error expr) (assoc 'ok expr))))
           (progn
             (cond ((eq (car result) 'err) (message result))
                   ((eq (car result) 'ok)
                    (funcall callback (cadr result))))
-            (remhash request-id bridge-mode-response-handlers)))
+            (remhash request-id omnibridge-server-response-handlers)))
       ('error (progn
                 (message "%s" (string-trim msg))
                 (bridge-mode-log-comm 'error e))))))
