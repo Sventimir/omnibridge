@@ -7,7 +7,7 @@ use super::table::Dir;
 /* Layout:
   ____ |__|__| ____ __|__ ____| ____ __|__ ____
   idle   l  c   card    card     card   l. card
-where l = leader and c = curent */
+where l = leader and c = current */
 pub struct Trick(u32);
 
 impl Trick {
@@ -16,11 +16,11 @@ impl Trick {
     }
 
     pub fn leader(&self) -> Dir {
-        FromPrimitive::from_u32(self.0 >> 26 & 0x4).expect("Invalid trick leader")
+        FromPrimitive::from_u32(self.0 >> 26 & 0x3).expect("Invalid trick leader")
     }
 
     pub fn current_player(&self) -> Dir {
-        FromPrimitive::from_u32(self.0 >> 24 & 0x4).expect("Invalid trick current player")
+        FromPrimitive::from_u32(self.0 >> 24 & 0x3).expect("Invalid trick current player")
     }
 
     pub fn card_played(&self, player: &Dir) -> Option<Card> {
@@ -43,6 +43,11 @@ impl Trick {
         let player = Wrapping(self.current_player() as u32);
         let diff = (player - leader).0 % 4;
         let shift = diff * 6;
-        self.0 |= (card.to_u8() as u32) << shift
+        self.0 |= (card.to_u8() as u32) << shift;
+        if player == Wrapping(3) {
+            self.0 &= 0xfcffffff
+        } else {
+            self.0 += 0x01000000
+        }
     }
 }
