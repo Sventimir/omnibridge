@@ -1,5 +1,3 @@
-#![allow(unused_imports)]
-#[cfg(test)]
 use super::super::card::*;
 use super::super::holding::Holding;
 

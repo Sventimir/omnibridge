@@ -1,9 +1,7 @@
-#![allow(unused_imports)]
 use crate::data::result::*;
 use crate::data::scoring::{Scorable, Score};
 use crate::sexpr::*;
 
-#[cfg(test)]
 fn sexp_contract(s: &str) -> ContractResult {
     ContractResult::from_sexp(&sexp::parse(s).unwrap()).unwrap()
 }

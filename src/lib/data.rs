@@ -8,5 +8,7 @@ pub mod match_protocol;
 pub mod result;
 pub mod scoring;
 pub mod table;
-mod test;
 pub mod trick;
+
+#[cfg(test)]
+mod test;

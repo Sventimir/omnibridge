@@ -1,8 +1,4 @@
-#[cfg(test)]
-// use num::FromPrimitive;
 use super::super::card::*;
-// use super::super::display::*;
-// use super::super::holding::Holding;
 
 #[test]
 fn int_to_card_roundtrip() {

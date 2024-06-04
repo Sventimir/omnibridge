@@ -1,8 +1,5 @@
-#![allow(unused_imports)]
 use super::super::card::*;
 use super::super::hand::Hand;
-#[cfg(test)]
-use num::FromPrimitive;
 
 #[test]
 fn display_empty_hand() {
