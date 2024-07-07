@@ -16,6 +16,8 @@ rand = "0.8.5"
 ring = "0.17.8"
 serde = {version = "1.0.198", features = ["derive"]}
 sexp = "1.1.4"
+tree-sitter = "0.20"
+tree-sitter-commonlisp = "0.3.3"
 
 [lib]
 name = "bridge"
