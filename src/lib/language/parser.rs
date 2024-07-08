@@ -1,0 +1,108 @@
+use std::{
+    fmt::{self, Debug, Display, Formatter},
+    str::Utf8Error,
+};
+use super::Lisp;
+
+#[derive(Clone, PartialEq)]
+pub enum ParseError {
+    SyntaxError,
+    UtfError(Utf8Error),
+    UnexpectedNode(&'static str),
+    InvalidNumber(String),
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            ParseError::SyntaxError => write!(f, "Syntax error"),
+            ParseError::UtfError(e) => write!(f, "UTF-8 error: {}", e),
+            ParseError::UnexpectedNode(node) => write!(f, "Unexpected node: '{}'", node),
+            ParseError::InvalidNumber(s) => write!(f, "Invalid number: '{}'", s),
+        }
+    }
+}
+
+impl Debug for ParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+
+struct ParserState<'a> {
+    cursor: tree_sitter::TreeCursor<'a>,
+    source: &'a [u8],
+}
+
+fn parse_node<'a, L: Lisp>(
+    node: &'a tree_sitter::Node,
+    state: &ParserState<'a>,
+) -> Result<L, ParseError> {
+    match node.kind() {
+        "sym_lit" => node
+            .utf8_text(&state.source)
+            .map_err(ParseError::UtfError)
+            .map(|s| L::symbol(s.to_string())),
+        "num_lit" => node
+            .utf8_text(&state.source)
+            .map_err(ParseError::UtfError)
+            .and_then(|s| {
+                // Negative numbers shoud be created with `-` function.
+                if s.starts_with('-') {
+                    return Err(ParseError::InvalidNumber(s.to_string()));
+                }
+                s.parse::<u64>()
+                    .map(L::nat)
+                    .or_else(|_| s.parse::<f64>().map(L::float))
+                    .map_err(|_| ParseError::InvalidNumber(s.to_string()))
+            }),
+        "str_lit" => node
+            .utf8_text(&state.source)
+            .map_err(ParseError::UtfError)
+            .map(|s| L::string(s[1..s.len() - 1].to_string())),
+        "quoting_lit" => {
+            let quoted = parse_node(&node.child(1).unwrap(), state)?;
+            Ok(L::quoted(quoted))
+        }
+        "syn_quoting_lit" => {
+            let quoted = parse_node(&node.child(1).unwrap(), state)?;
+            Ok(L::quasiquoted(quoted))
+        }
+        "unquoting_lit" => {
+            let quoted = parse_node(&node.child(1).unwrap(), state)?;
+            Ok(L::unquoted(quoted))
+        }
+        "list_lit" => {
+            let mut items: Vec<L> = Vec::with_capacity(node.child_count());
+            let mut cursor = state.cursor.clone();
+            let children = node
+                .children(&mut cursor)
+                .skip(1)
+                .take_while(|n| n.kind() != ")");
+            for child in children {
+                items.push(parse_node(&child, state)?);
+            }
+            Ok(L::list(items))
+        }
+        k => Err(ParseError::UnexpectedNode(k)),
+    }
+}
+
+pub fn parse<L: Lisp>(s: &str) -> Result<Vec<L>, ParseError> {
+    let mut parser = tree_sitter::Parser::new();
+    parser
+        .set_language(tree_sitter_commonlisp::language())
+        .expect("Error loading Lisp grammar.");
+    let expr = parser.parse(s, None).ok_or(ParseError::SyntaxError)?;
+    let state = ParserState {
+        cursor: expr.walk(),
+        source: s.as_bytes(),
+    };
+    // The root does not contain any uselful info.
+    let mut result = Vec::with_capacity(expr.root_node().child_count());
+    for child in expr.root_node().children(&mut state.cursor.clone()) {
+        result.push(parse_node(&child, &state)?);
+    }
+    Ok(result)
+}
