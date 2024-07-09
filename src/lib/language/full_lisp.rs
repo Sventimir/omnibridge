@@ -1,4 +1,4 @@
-use super::core_lisp::CoreLisp;
+use super::CoreLisp;
 
 /// Implementors of this trait represent full Lisp expressions.
 /// A Lisp expression can contain macros which need to be expanded
