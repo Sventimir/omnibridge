@@ -4,7 +4,7 @@ mod full_lisp;
 mod sexp;
 pub mod parser;
 
-pub use sexp::Sexp;
+pub use sexp::{Sexp, IntoSexp, SexpError};
 pub use core_lisp::CoreLisp;
 pub use full_lisp::Lisp;
 pub use ast::AST;

@@ -1,12 +1,11 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
-use sexp::{self, Sexp};
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
-use crate::sexpr::*;
+use crate::language::{Sexp, IntoSexp, SexpError};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Suit {
@@ -63,14 +62,52 @@ impl FromStr for Suit {
     }
 }
 
-impl Sexpable for Suit {
-    fn from_sexp(sexp: &Sexp) -> Result<Suit, SexpError> {
-        let s = expect_string(sexp)?;
-        Suit::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
+impl IntoSexp for Suit {
+    fn into_sexp<S: Sexp + Sized>(self) -> S {
+        S::symbol(self.symbol().to_string())
+    }
+}
+
+impl Sexp for Result<Suit, SexpError> {
+    fn symbol(s: String) -> Self {
+        match s.as_str() {
+            "C" | "c" => Ok(Suit::Club),
+            "D" | "d" => Ok(Suit::Diamond),
+            "H" | "h" => Ok(Suit::Heart),
+            "S" | "s" => Ok(Suit::Spade),
+            _ => Err(SexpError::Unexpected {
+                expected: "a suit (c|d|h|s)".to_string(),
+                found: s,
+            }),
+        }
     }
 
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(format!("{:?}", self).as_str())
+    fn string(s: String) -> Self {
+        Err(SexpError::Unexpected {
+            expected: "a suit (c|d|h|s)".to_string(),
+            found: s,
+        })
+    }
+
+    fn nat(n: u64) -> Self {
+        Err(SexpError::Unexpected {
+            expected: "a suit (c|d|h|s)".to_string(),
+            found: n.to_string(),
+        })
+    }
+
+    fn float(f: f64) -> Self {
+        Err(SexpError::Unexpected {
+            expected: "a suit (c|d|h|s)".to_string(),
+            found: f.to_string(),
+        })
+    }
+
+    fn list(l: Vec<Self>) -> Self {
+        Err(SexpError::Unexpected {
+            expected: "a suit (c|d|h|s)".to_string(),
+            found: format!("{:?}", l),
+        })
     }
 }
 

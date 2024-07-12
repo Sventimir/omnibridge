@@ -40,3 +40,10 @@ impl Sexp for String {
     }
 }
 
+pub trait IntoSexp {
+    fn into_sexp<S: Sexp + Sized>(self) -> S;
+}
+
+pub enum SexpError {
+    Unexpected { expected: String, found: String },
+}
