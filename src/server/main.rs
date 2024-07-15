@@ -4,26 +4,27 @@ mod command;
 mod protocol;
 mod state;
 
+use bridge::language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
 use hex::ToHex;
 use ring::digest::{digest, Digest, SHA256};
-use sexp::Sexp;
 use state::State;
 use std::{io, sync::Mutex};
 
-use bridge::sexpr::*;
-
 use command::{Cmd, CommandError, CommandResult};
 
+#[derive(Debug, Clone)]
 enum ServerError {
     CommandError(CommandError),
-    SexprError(SexpError),
+    LexerError(language::parser::ParseError),
+    SexprError(ExpectError),
 }
 
-impl ServerError {
-    fn to_sexp(&self) -> Sexp {
+impl IntoSexp for ServerError {
+    fn into_sexp<S: Sexp>(self) -> S {
         match self {
-            ServerError::CommandError(err) => err.to_sexp(),
-            ServerError::SexprError(err) => err.to_sexp(),
+            ServerError::CommandError(err) => err.into_sexp(),
+            ServerError::LexerError(err) => err.into_sexp(),
+            ServerError::SexprError(err) => err.into_sexp(),
         }
     }
 }
@@ -33,14 +34,17 @@ struct Response {
     request_id: Digest,
 }
 
-impl Response {
-    fn to_sexp(&self) -> Sexp {
+impl IntoSexp for Response {
+    fn into_sexp<S: Sexp>(self) -> S {
         let req_id: String = ToHex::encode_hex(&self.request_id);
-        sexp::list(&[
-            (sexp::atom_s("request_id"), sexp::atom_s(&req_id)).to_sexp(),
+        S::list(vec![
+            pair(S::symbol("request_id".to_string()), S::symbol(req_id)),
             match &self.result {
-                Ok(result) => (sexp::atom_s("ok"), result.clone()).to_sexp(),
-                Err(err) => sexp::list(&[sexp::atom_s("error"), err.to_sexp()]),
+                Ok(result) => pair(S::symbol("ok".to_string()), result.clone().into_sexp()),
+                Err(err) => S::list(vec![
+                    S::symbol("error".to_string()),
+                    err.clone().into_sexp(),
+                ]),
             },
         ])
     }
@@ -48,9 +52,15 @@ impl Response {
 
 fn interpret(expr: &str, state: &mut Mutex<State>) -> Response {
     let request_id = digest(&SHA256, expr.as_bytes());
-    let result = sexp::parse(&expr)
-        .map_err(|e| ServerError::SexprError(SexpError::ParseError(*e)))
-        .and_then(|cmd| Cmd::from_sexp(&cmd).map_err(ServerError::SexprError))
+    let result = bridge::language::parser::parse(expr)
+        .map_err(|e| ServerError::LexerError(e))
+        .and_then(|sexp| match sexp.as_slice() {
+            [s] => Cmd::try_from(s).map_err(ServerError::SexprError),
+            _ => Err(ServerError::SexprError(ExpectError::WrongLength(
+                0,
+                sexp.clone(),
+            ))),
+        })
         .and_then(|cmd| cmd.execute(state).map_err(ServerError::CommandError));
     Response { result, request_id }
 }
@@ -65,7 +75,7 @@ fn main() -> Result<(), String> {
         match stdin.read_line(&mut cmd) {
             Ok(0) => break,
             Ok(_) => {
-                let resp = interpret(&cmd, &mut state).to_sexp();
+                let resp: String = interpret(&cmd, &mut state).into_sexp();
                 println!("{}", resp);
             }
             Err(e) => return Err(format!("Error reading from stdin: {}", e)),

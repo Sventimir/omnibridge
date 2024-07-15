@@ -2,7 +2,13 @@ use derive_more::{Add, Neg, Sub, Sum};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
-use crate::sexpr::{self, SexpError, Sexpable};
+use crate::language::{
+    ast::{
+        expect::{self, ExpectError},
+        AST,
+    },
+    int, IntoSexp, Sexp,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub)]
 pub struct Score(i16);
@@ -21,13 +27,17 @@ impl Display for Score {
     }
 }
 
-impl Sexpable for Score {
-    fn to_sexp(&self) -> sexp::Sexp {
-        sexp::atom_i(self.0 as i64)
+impl IntoSexp for Score {
+    fn into_sexp<S: Sexp>(self) -> S {
+        int(self.0 as i64)
     }
+}
 
-    fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
-        Ok(Score::from_i16(sexpr::expect_int(sexp)? as i16))
+impl TryFrom<&AST> for Score {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        Ok(Score::from_i16(expect::int(ast)? as i16))
     }
 }
 
@@ -37,7 +47,9 @@ impl Scorable for Score {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub, Sum)]
+#[derive(
+    Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub, Sum,
+)]
 pub struct IMP(i8);
 
 impl IMP {
@@ -66,13 +78,17 @@ impl Display for IMP {
     }
 }
 
-impl Sexpable for IMP {
-    fn to_sexp(&self) -> sexp::Sexp {
-        sexp::atom_i(self.0 as i64)
+impl IntoSexp for IMP {
+    fn into_sexp<S: Sexp>(self) -> S {
+        int(self.0 as i64)
     }
+}
 
-    fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
-        Ok(IMP(sexpr::expect_int(sexp)? as i8))
+impl TryFrom<&AST> for IMP {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        Ok(IMP(expect::int(ast)? as i8))
     }
 }
 
@@ -85,13 +101,17 @@ impl Matchpoints {
     }
 }
 
-impl Sexpable for Matchpoints {
-    fn to_sexp(&self) -> sexp::Sexp {
-        sexp::atom_i(self.0 as i64)
+impl IntoSexp for Matchpoints {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::nat(self.0 as u64)
     }
+}
 
-    fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
-        Ok(Matchpoints(sexpr::expect_int(sexp)? as u16))
+impl TryFrom<&AST> for Matchpoints {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        Ok(Matchpoints(expect::nat(ast)? as u16))
     }
 }
 

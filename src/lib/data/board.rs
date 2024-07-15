@@ -1,10 +1,11 @@
 use num::FromPrimitive;
 use serde::{Deserialize, Serialize};
-use sexp::Sexp;
 
 use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
-use crate::sexpr::*;
+use crate::language::ast::expect::{self, ExpectError};
+use crate::language::ast::AST;
+use crate::language::{pair, IntoSexp, Sexp};
 
 pub type BoardNumber = usize;
 
@@ -74,31 +75,37 @@ impl Board {
     }
 }
 
-impl Sexpable for Board {
-    fn to_sexp(&self) -> Sexp {
-        sexp::list(&[
-            (sexp::atom_s("board"), self.number as u64).to_sexp(),
-            (sexp::atom_s("N"), self.north).to_sexp(),
-            (sexp::atom_s("E"), self.east).to_sexp(),
-            (sexp::atom_s("S"), self.south).to_sexp(),
-            (sexp::atom_s("W"), self.west).to_sexp(),
+impl IntoSexp for Board {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![
+            pair(S::symbol("board".to_string()), S::nat(self.number as u64)),
+            pair(S::symbol("N".to_string()), self.north.into_sexp()),
+            pair(S::symbol("E".to_string()), self.east.into_sexp()),
+            pair(S::symbol("S".to_string()), self.south.into_sexp()),
+            pair(S::symbol("W".to_string()), self.west.into_sexp()),
         ])
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Board, SexpError> {
+impl TryFrom<&AST> for Board {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Board, ExpectError> {
         let mut board = Board::new(0);
-        for elem in iter_sexp(sexp)? {
-            let (tag, v): (String, Sexp) = Sexpable::from_sexp(elem)?;
-            match tag.as_str() {
+        let l = expect::list(ast)?;
+        for elem in l.iter() {
+            let (t, v) = expect::pair(elem)?;
+            let tag = expect::symbol(t)?;
+            match tag {
                 "board" => {
-                    let b: u64 = Sexpable::from_sexp(&v)?;
+                    let b: u64 = expect::nat(v)?;
                     board.number = b as BoardNumber
                 }
-                "N" => board.north = Hand::from_sexp(&v)?,
-                "E" => board.east = Hand::from_sexp(&v)?,
-                "S" => board.south = Hand::from_sexp(&v)?,
-                "W" => board.west = Hand::from_sexp(&v)?,
-                _ => return Err(SexpError::InvalidTag(tag.to_string())),
+                "N" => board.north = Hand::try_from(v)?,
+                "E" => board.east = Hand::try_from(v)?,
+                "S" => board.south = Hand::try_from(v)?,
+                "W" => board.west = Hand::try_from(v)?,
+                _ => return Err(ExpectError::InvalidSymbol(tag.to_string())),
             }
         }
         Ok(board)

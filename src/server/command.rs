@@ -1,14 +1,15 @@
 use std::sync::Mutex;
 
 use bridge::data::match_protocol::Room;
+use bridge::language::ast::expect::{self, ExpectError};
+use bridge::language::ast::AST;
+use bridge::language::{nil, IntoSexp, Sexp};
 use serde::{Deserialize, Serialize};
-use sexp::Sexp;
 
 use bridge::data::board::{Board, BoardNumber};
 use bridge::data::result::ContractResult;
 use bridge::data::scoring::{Scorable, Score, IMP};
 use bridge::dealer::deal;
-use bridge::sexpr::*;
 
 use crate::protocol::{Protocol, ProtocolType};
 use crate::state::{Id, State};
@@ -35,80 +36,108 @@ pub enum Cmd {
     },
 }
 
-impl Sexpable for Cmd {
-    fn to_sexp(&self) -> Sexp {
+impl IntoSexp for Cmd {
+    fn into_sexp<S: Sexp>(self) -> S {
         match self {
-            Cmd::Deal(board) => 
-                sexp::list(&[sexp::atom_s("deal"), sexp::atom_s(&board.to_string())]),
-            Cmd::Score(result) => sexp::list(&[sexp::atom_s("score"), result.to_sexp()]),
-            Cmd::NewMatch {kind, boards, home, visitors} =>
-                sexp::list(&[
-                    sexp::atom_s("new--atch"),
-                    kind.to_sexp(),
-                    sexp::atom_i(*boards as i64),
-                    sexp::atom_s(home),
-                    sexp::atom_s(visitors),
-                ]),
-            Cmd::InsertScore {id, room, board, score} =>
-                sexp::list(&[
-                    sexp::atom_s("insert-score"),
-                    id.to_sexp(),
-                    room.to_sexp(),
-                    sexp::atom_i(*board as i64),
-                    score.to_sexp(),
-                ]),
+            Cmd::Deal(board) => S::list(vec![S::symbol("deal".to_string()), S::nat(board as u64)]),
+            Cmd::Score(result) => S::list(vec![S::symbol("score".to_string()), result.into_sexp()]),
+            Cmd::NewMatch {
+                kind,
+                boards,
+                home,
+                visitors,
+            } => S::list(vec![
+                S::symbol("new-match".to_string()),
+                kind.into_sexp(),
+                S::nat(boards as u64),
+                S::string(home),
+                S::string(visitors),
+            ]),
+            Cmd::InsertScore {
+                id,
+                room,
+                board,
+                score,
+            } => S::list(vec![
+                S::symbol("insert-score".to_string()),
+                S::nat(id),
+                room.into_sexp(),
+                S::nat(board as u64),
+                score.into_sexp(),
+            ]),
         }
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        let cmd = expect_list(sexp)?;
+impl TryFrom<&AST> for Cmd {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let cmd = expect::list(ast)?;
         let (t, rem) = cmd
             .split_first()
-            .ok_or(SexpError::InvalidValue(sexp.clone(), "command".to_string()))?;
-        let tag = expect_string(t)?;
+            .ok_or(ExpectError::WrongLength(5, cmd.to_vec()))?;
+        let tag = expect::symbol(t)?;
         match tag {
             "deal" => {
-                let board = expect_int(&rem[0])?;
+                let board = expect::nat(&rem[0])?;
                 Ok(Cmd::Deal(board as BoardNumber))
             }
             "score" => {
-                let result = ContractResult::from_sexp(&sexp::list(&rem))?;
+                let result = ContractResult::try_from(&AST::List(rem.to_vec()))?;
                 Ok(Cmd::Score(result))
             }
             "new-match" => {
-                let kind = ProtocolType::from_sexp(&rem[0])?;
-                let boards = expect_int(&rem[1])? as usize;
-                let home = expect_string(&rem[2]).map(str::to_string)?;
-                let visitors = expect_string(&rem[3]).map(str::to_string)?;
-                Ok(Cmd::NewMatch { kind, boards, home, visitors })
+                let kind = ProtocolType::try_from(&rem[0])?;
+                let boards = expect::nat(&rem[1])? as usize;
+                let home = expect::string(&rem[2]).map(str::to_string)?;
+                let visitors = expect::string(&rem[3]).map(str::to_string)?;
+                Ok(Cmd::NewMatch {
+                    kind,
+                    boards,
+                    home,
+                    visitors,
+                })
             }
             "insert-score" => {
-                let id = Id::from_sexp(&rem[0])?;
-                let room = Room::from_sexp(&rem[1])?;
-                let board = expect_int(&rem[2])? as BoardNumber;
-                let score = Score::from_sexp(&rem[3])?;
-                Ok(Cmd::InsertScore { id, room, board, score })
+                let id = expect::nat(&rem[0])?;
+                let room = Room::try_from(&rem[1])?;
+                let board = expect::nat(&rem[2])? as BoardNumber;
+                let score = Score::try_from(&rem[3])?;
+                Ok(Cmd::InsertScore {
+                    id,
+                    room,
+                    board,
+                    score,
+                })
             }
-            _ => Err(SexpError::InvalidTag(tag.to_string())),
+            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
         }
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub enum CommandError {
-    CorruptState
+    CorruptState,
 }
 
-impl Sexpable for CommandError {
-    fn to_sexp(&self) -> Sexp {
-        NIL
+impl IntoSexp for CommandError {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            Self::CorruptState => S::symbol("corrupt-state".to_string()),
+        }
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        Err(SexpError::InvalidValue(
-            sexp.clone(),
-            "command error".to_string(),
-        ))
+impl TryFrom<&AST> for CommandError {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let tag = expect::symbol(ast)?;
+        match tag {
+            "corrupt-state" => Ok(Self::CorruptState),
+            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
+        }
     }
 }
 
@@ -121,21 +150,25 @@ pub enum CommandResult {
     ImpScore(Option<IMP>),
 }
 
-impl Sexpable for CommandResult {
-    fn to_sexp(&self) -> Sexp {
+impl IntoSexp for CommandResult {
+    fn into_sexp<S: Sexp>(self) -> S {
         match self {
-            CommandResult::Deal(board) => board.to_sexp(),
-            CommandResult::Score(score) => score.to_sexp(),
-            CommandResult::Identifier(id) => id.to_sexp(),
+            CommandResult::Deal(board) => board.into_sexp(),
+            CommandResult::Score(score) => score.into_sexp(),
+            CommandResult::Identifier(id) => S::nat(id),
             CommandResult::ImpScore(imp) => match imp {
-                Some(imp) => imp.to_sexp(),
-                None => NIL,
+                Some(imp) => imp.into_sexp(),
+                None => nil(),
             },
         }
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        Ok(CommandResult::Deal(Board::from_sexp(sexp)?))
+impl TryFrom<&AST> for CommandResult {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        Ok(CommandResult::Deal(Board::try_from(ast)?))
     }
 }
 
@@ -144,14 +177,26 @@ impl Cmd {
         match self {
             Cmd::Deal(board) => Ok(CommandResult::Deal(deal(board))),
             Cmd::Score(result) => Ok(CommandResult::Score(result.score())),
-            Cmd::NewMatch {kind, boards, home, visitors} => {
+            Cmd::NewMatch {
+                kind,
+                boards,
+                home,
+                visitors,
+            } => {
                 let protocol = Protocol::new(kind, boards, home, visitors);
                 let mut s = state.lock().or(Err(CommandError::CorruptState))?;
                 Ok(CommandResult::Identifier(s.create(protocol)))
-            },
-            Cmd::InsertScore { id, room, board, score } => {
+            }
+            Cmd::InsertScore {
+                id,
+                room,
+                board,
+                score,
+            } => {
                 let mut s = state.lock().or(Err(CommandError::CorruptState))?;
-                let imp = s.insert_score(id, room, board, score).map_err(|_| CommandError::CorruptState)?;
+                let imp = s
+                    .insert_score(id, room, board, score)
+                    .map_err(|_| CommandError::CorruptState)?;
                 Ok(CommandResult::ImpScore(imp))
             }
         }

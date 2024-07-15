@@ -40,3 +40,39 @@ impl Sexp for String {
     }
 }
 
+pub trait IntoSexp {
+    fn into_sexp<S: Sexp>(self) -> S;
+}
+
+pub enum SexpError {
+    Unexpected { expected: String, found: String },
+}
+
+pub fn nil<S: Sexp>() -> S {
+    S::list(vec![])
+}
+
+pub fn pair<S: Sexp>(left: S, right: S) -> S {
+    S::list(vec![left, right])
+}
+
+pub fn int<S: Sexp>(i: i64) -> S {
+    let n = i.abs() as u64;
+    if i > 0 {
+        S::nat(n)
+    } else {
+        S::list(vec![S::symbol("-".to_string()), S::nat(n)])
+    }
+}
+
+impl<T: IntoSexp> IntoSexp for Vec<T> {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(self.into_iter().map(IntoSexp::into_sexp).collect())
+    }
+}
+
+impl<T: IntoSexp, U: IntoSexp> IntoSexp for (T, U) {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![self.0.into_sexp(), self.1.into_sexp()])
+    }
+}

@@ -1,10 +1,17 @@
 use serde::{Deserialize, Serialize};
 
+use crate::language::{
+    ast::{
+        expect::{self, ExpectError},
+        AST,
+    },
+    IntoSexp, Sexp,
+};
+
 use super::{
     board::{Board, BoardNumber},
     scoring::{Scorable, Score, IMP},
 };
-use crate::sexpr::{expect_string, SexpError, Sexpable};
 
 pub struct Match<R: Sized> {
     pub home: String,
@@ -24,20 +31,24 @@ pub enum Room {
     Closed = 1, // Home: WE, Visitors: NS
 }
 
-impl Sexpable for Room {
-    fn to_sexp(&self) -> sexp::Sexp {
+impl IntoSexp for Room {
+    fn into_sexp<S: Sexp>(self) -> S {
         match self {
-            Room::Open => sexp::atom_s("open"),
-            Room::Closed => sexp::atom_s("closed"),
+            Room::Open => S::symbol("open".to_string()),
+            Room::Closed => S::symbol("closed".to_string()),
         }
     }
+}
 
-    fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
-        let tag = expect_string(sexp)?;
+impl TryFrom<&AST> for Room {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let tag = expect::string(ast)?;
         match tag {
             "open" => Ok(Room::Open),
             "closed" => Ok(Room::Closed),
-            _ => Err(SexpError::InvalidTag(tag.to_string())),
+            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
         }
     }
 }
@@ -50,7 +61,7 @@ impl<R> MatchBoard<R> {
             results: [None, None],
         }
     }
-    
+
     pub fn number(&self) -> BoardNumber {
         self.number
     }
@@ -100,7 +111,7 @@ impl<R: Scorable> Match<R> {
     pub fn imp(&self, board: BoardNumber) -> Option<IMP> {
         self.boards[board as usize].imp()
     }
-   
+
     pub fn total_imp(&self) -> IMP {
         self.boards.iter().filter_map(MatchBoard::imp).sum()
     }

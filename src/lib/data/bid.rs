@@ -1,9 +1,15 @@
 use super::card::Suit;
 use super::table::Dir;
-use crate::sexpr::*;
+use crate::language::{
+    self,
+    ast::{
+        expect::{self, ExpectError},
+        AST,
+    },
+    IntoSexp, Sexp,
+};
 
 use serde::{Deserialize, Serialize};
-use sexp::{self, Sexp};
 use std::cmp::Ordering;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
@@ -59,32 +65,39 @@ impl FromStr for Call {
     }
 }
 
-fn trump_to_sexp(trump: &Option<Suit>) -> Sexp {
+fn trump_to_sexp<S>(trump: &Option<Suit>) -> S
+where
+    S: Sexp,
+{
     match trump {
-        None => sexp::atom_s("NT"),
-        Some(suit) => suit.to_sexp(),
+        None => S::symbol("NT".to_string()),
+        Some(suit) => suit.clone().into_sexp(),
     }
 }
 
-fn trump_from_sexp(sexp: &Sexp) -> Result<Option<Suit>, SexpError> {
-    let s = expect_string(sexp)?;
+fn trump_from_sexp(ast: &AST) -> Result<Option<Suit>, ExpectError> {
+    let s = expect::symbol(&ast)?;
     match s {
-        "NT" => Ok(None),
+        "NT" | "nt" => Ok(None),
         _ => Suit::from_str(&s)
-            .map_err(|()| SexpError::InvalidTag(s.to_string()))
+            .map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
             .map(Some),
     }
 }
 
-impl Sexpable for Call {
-    fn to_sexp(&self) -> Sexp {
-        sexp::list(&[sexp::atom_i(self.level as i64), trump_to_sexp(&self.trump)])
+impl IntoSexp for Call {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![S::nat(self.level as u64), trump_to_sexp(&self.trump)])
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        let (l, t): (u64, Sexp) = Sexpable::from_sexp(sexp)?;
-        let level = l as u8;
-        let trump = trump_from_sexp(&t)?;
+impl TryFrom<&AST> for Call {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let (l, t) = expect::pair(ast)?;
+        let level = expect::nat(l)? as u8;
+        let trump: Option<Suit> = trump_from_sexp(t)?;
         Ok(Call { level, trump })
     }
 }
@@ -179,14 +192,30 @@ impl Display for Bid {
     }
 }
 
-impl Sexpable for Bid {
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(&self.to_string())
+impl IntoSexp for Bid {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            Self::Pass => S::symbol("pass".to_string()),
+            Self::Double => S::symbol("dbl".to_string()),
+            Self::Redouble => S::symbol("rdbl".to_string()),
+            Self::Call(call) => call.into_sexp(),
+        }
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        let s = expect_string(sexp)?;
-        Bid::from_str(s).map_err(|_| SexpError::InvalidTag(s.to_string()))
+impl TryFrom<&AST> for Bid {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        match ast {
+            AST::Symbol(s) => match s.as_str() {
+                "pass" | "PASS" => Ok(Bid::Pass),
+                "dbl" | "DBL" => Ok(Bid::Double),
+                "rdbl" | "RDBL" => Ok(Bid::Redouble),
+                _ => Err(ExpectError::InvalidSymbol(s.clone())),
+            },
+            _ => Call::try_from(ast).map(Bid::Call),
+        }
     }
 }
 
@@ -219,22 +248,30 @@ impl FromStr for Doubled {
     fn from_str(s: &str) -> Result<Doubled, String> {
         match s {
             "" => Ok(Doubled::Undoubled),
-            "x" => Ok(Doubled::Doubled),
-            "xx" => Ok(Doubled::Redoubled),
+            "x" | "X" => Ok(Doubled::Doubled),
+            "xx" | "XX" => Ok(Doubled::Redoubled),
             _ => Err("Invalid doubled".to_string()),
         }
     }
 }
 
-impl Sexpable for Doubled {
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(&self.to_string())
+impl IntoSexp for Doubled {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            Doubled::Undoubled => language::nil(),
+            Doubled::Doubled => S::symbol("x".to_string()),
+            Doubled::Redoubled => S::symbol("xx".to_string()),
+        }
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Doubled, SexpError> {
-        expect_nil(sexp).map(|()| Doubled::Undoubled).or_else(|_| {
-            let s = expect_string(sexp)?;
-            Doubled::from_str(s).map_err(|_| SexpError::InvalidTag(s.to_string()))
+impl TryFrom<&AST> for Doubled {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Doubled, ExpectError> {
+        expect::nil(ast).map(|()| Doubled::Undoubled).or_else(|_| {
+            let s = expect::symbol(&ast)?;
+            Doubled::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
         })
     }
 }
@@ -257,27 +294,6 @@ impl Contract {
             declarer: decl,
         }
     }
-
-    pub fn as_sexp_list(&self) -> Vec<Sexp> {
-        let mut contents = Vec::with_capacity(4);
-        match self {
-            Contract::Passed => contents.push(sexp::atom_s("pass")),
-            Contract::Contract {
-                call,
-                doubled,
-                declarer,
-            } => {
-                contents.push((call.level as u64).to_sexp());
-                contents.push(trump_to_sexp(&call.trump));
-                match doubled {
-                    Doubled::Undoubled => (),
-                    d => contents.push(d.to_sexp()),
-                };
-                contents.push(declarer.to_sexp());
-            }
-        }
-        contents
-    }
 }
 
 impl Debug for Contract {
@@ -299,41 +315,54 @@ impl Display for Contract {
     }
 }
 
-impl Sexpable for Contract {
-    fn to_sexp(&self) -> Sexp {
-        sexp::list(self.as_sexp_list().as_slice())
+impl IntoSexp for Contract {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            Self::Passed => language::nil(),
+            Self::Contract {
+                call,
+                doubled,
+                declarer,
+            } => S::list(vec![
+                S::nat(call.level as u64),
+                trump_to_sexp(&call.trump),
+                doubled.into_sexp(),
+                declarer.into_sexp(),
+            ]),
+        }
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Contract, SexpError> {
-        let l = expect_list(sexp)?;
+impl TryFrom<&AST> for Contract {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Contract, ExpectError> {
+        let l = expect::list(&ast)?;
         match l {
-            [] | [_] => Ok(Contract::Passed),
+            [] => Ok(Contract::Passed),
             [lvl, tr, dbl, dcl] => {
-                let level: u64 = Sexpable::from_sexp(lvl)?;
+                let level: u64 = expect::nat(lvl)?;
                 Ok(Contract::Contract {
                     call: Call {
                         level: level as u8,
-                        trump: trump_from_sexp(tr)?,
+                        trump: trump_from_sexp(&tr)?,
                     },
-                    doubled: Doubled::from_sexp(dbl)?,
-                    declarer: Dir::from_sexp(dcl)?,
+                    doubled: Doubled::try_from(dbl)?,
+                    declarer: Dir::try_from(dcl)?,
                 })
             }
             [lvl, tr, dcl] => {
-                let level: u64 = Sexpable::from_sexp(lvl)?;
+                let level: u64 = expect::nat(lvl)?;
                 Ok(Contract::Contract {
                     call: Call {
                         level: level as u8,
-                        trump: trump_from_sexp(tr)?,
+                        trump: trump_from_sexp(&tr)?,
                     },
                     doubled: Doubled::Undoubled,
-                    declarer: Dir::from_sexp(dcl)?,
+                    declarer: Dir::try_from(dcl)?,
                 })
             }
-            _ => Err(SexpError::InvalidValue(
-                sexp.clone(),
-                "contract".to_string(),
-            )),
+            _ => Err(ExpectError::WrongLength(4, l.to_vec())),
         }
     }
 }

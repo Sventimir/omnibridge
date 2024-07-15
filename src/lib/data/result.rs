@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
-use sexp::Sexp;
 use std::fmt::{self, Debug, Display, Formatter};
+
+use crate::language::ast::expect::{self, ExpectError};
+use crate::language::ast::AST;
+use crate::language::{int, nil, IntoSexp, Sexp};
 
 use super::bid::{Call, Contract, Doubled};
 use super::board;
 use super::card::{Card, Suit};
 use super::scoring::{Scorable, Score};
 use super::table::Dir;
-
-use crate::sexpr::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct ContractResult {
@@ -84,7 +85,7 @@ fn slam_bonus(level: u8, vulnerable: bool) -> i16 {
 
 fn score_base(call: &Call, doubled: &Doubled, vulnerable: bool, tricks: i8) -> i16 {
     if tricks < 0 {
-        - undertrick_score(-tricks as u8, doubled, vulnerable)
+        -undertrick_score(-tricks as u8, doubled, vulnerable)
     } else {
         let mut score = trick_score(call);
         score *= match doubled {
@@ -163,46 +164,36 @@ impl Display for ContractResult {
     }
 }
 
-impl Sexpable for ContractResult {
-    fn to_sexp(&self) -> Sexp {
-        let lead: Vec<Sexp> = self.lead.iter().map(Sexpable::to_sexp).collect();
-        sexp::list(
-            &[
-                &[(self.board as u64).to_sexp()],
-                self.contract.as_sexp_list().as_slice(),
-                lead.as_slice(),
-                &[(self.tricks as i64).to_sexp()],
-            ]
-            .concat(),
-        )
+impl IntoSexp for ContractResult {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![
+            S::nat(self.board as u64),
+            self.contract.into_sexp(),
+            self.lead.map(Card::into_sexp).unwrap_or(nil()),
+            int(self.tricks as i64),
+        ])
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<ContractResult, SexpError> {
-        let contents = expect_list(sexp)?;
-        let (b, rem) = contents
-            .split_first()
-            .ok_or(SexpError::InvalidValue(sexp.clone(), "result".to_string()))?;
-        let board = expect_int(b)? as u8;
-        let (tricks, rem) = rem
-            .split_last()
-            .ok_or(SexpError::InvalidValue(sexp.clone(), "result".to_string()))?;
-        let tricks = expect_int(tricks)? as i8;
-        let (lead, contract) = rem
-            .split_last()
-            .ok_or(SexpError::InvalidValue(sexp.clone(), "result".to_string()))?;
-        match Card::from_sexp(lead) {
-            Ok(lead) => Ok(ContractResult {
-                board,
-                contract: Contract::from_sexp(&sexp::list(contract))?,
-                lead: Some(lead),
-                tricks,
-            }),
-            Err(_) => Ok(ContractResult {
-                board,
-                contract: Contract::from_sexp(&sexp::list(rem))?,
-                lead: None,
-                tricks,
-            }),
+impl TryFrom<&AST> for ContractResult {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<ContractResult, ExpectError> {
+        let contents = expect::list(&ast)?;
+        match contents {
+            [b, c, l, t] => {
+                let board = expect::nat(b)?;
+                let contract = Contract::try_from(c)?;
+                let lead = expect::optional(&Card::try_from, l)?;
+                let tricks = expect::int(t)?;
+                Ok(ContractResult {
+                    board: board as u8,
+                    contract,
+                    lead,
+                    tricks: tricks as i8,
+                })
+            }
+            _ => Err(ExpectError::WrongLength(4, contents.to_vec())),
         }
     }
 }

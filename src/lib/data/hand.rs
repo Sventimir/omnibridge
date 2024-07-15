@@ -3,13 +3,19 @@ use num_derive::FromPrimitive;
 use rand::seq::SliceRandom;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
-use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
+
+use crate::language::{
+    ast::{
+        expect::{self, ExpectError},
+        AST,
+    },
+    IntoSexp, Sexp,
+};
 
 use super::card::{Card, Deck, Suit, SUITS};
 use super::hand_eval::*;
 use super::holding::Holding;
-use crate::sexpr::*;
 
 /* Layout:
 _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__ _AKQ JT98 7654 32__*/
@@ -133,22 +139,29 @@ impl Display for Hand {
     }
 }
 
-impl Sexpable for Hand {
-    fn to_sexp(&self) -> Sexp {
+impl IntoSexp for Hand {
+    fn into_sexp<S: Sexp>(self) -> S {
         let mut v = Vec::with_capacity(4);
         for s in SUITS.iter().rev() {
             let h = self.holding(s);
-            v.push(Sexp::List(vec![s.to_sexp(), h.to_sexp()]));
+            v.push(S::list(vec![s.into_sexp(), h.into_sexp()]));
         }
-        Sexp::List(v)
+        S::list(v)
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Hand, SexpError> {
+impl TryFrom<&AST> for Hand {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Hand, ExpectError> {
         let mut hand = Hand::new();
-        for elem in iter_sexp(sexp)? {
-            let (s, h): (Suit, Holding) = Sexpable::from_sexp(elem)?;
-            for r in h.iter() {
-                hand.add(&Card::new(s, r));
+        let l = expect::list(&ast)?;
+        for elem in l.iter() {
+            let (s, h) = expect::pair(elem)?;
+            let suit = Suit::try_from(s)?;
+            let holding = Holding::try_from(h)?;
+            for r in holding.iter() {
+                hand.add(&Card::new(suit, r));
             }
         }
         Ok(hand)

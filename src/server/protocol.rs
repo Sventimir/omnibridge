@@ -1,9 +1,18 @@
-use bridge::{data::{
-    bid::Contract,
-    board::BoardNumber,
-    match_protocol::{Match, Room},
-    scoring::{Score, IMP},
-}, sexpr::{expect_string, SexpError, Sexpable}};
+use bridge::{
+    data::{
+        bid::Contract,
+        board::BoardNumber,
+        match_protocol::{Match, Room},
+        scoring::{Score, IMP},
+    },
+    language::{
+        ast::{
+            expect::{self, ExpectError},
+            AST,
+        },
+        IntoSexp, Sexp,
+    },
+};
 use serde::{Deserialize, Serialize};
 
 use crate::state::StateError;
@@ -16,20 +25,24 @@ pub enum ProtocolType {
     Contract,
 }
 
-impl Sexpable for ProtocolType {
-    fn to_sexp(&self) -> sexp::Sexp {
+impl IntoSexp for ProtocolType {
+    fn into_sexp<S: Sexp>(self) -> S {
         match self {
-            ProtocolType::ScoreOnly => sexp::atom_s("score-only"),
-            ProtocolType::Contract => sexp::atom_s("contract"),
+            ProtocolType::ScoreOnly => S::symbol("score-only".to_string()),
+            ProtocolType::Contract => S::symbol("contract".to_string()),
         }
     }
+}
 
-    fn from_sexp(sexp: &sexp::Sexp) -> Result<Self, SexpError> {
-        let tag = expect_string(sexp)?;
+impl TryFrom<&AST> for ProtocolType {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let tag = expect::string(ast)?;
         match tag {
             "score-only" => Ok(ProtocolType::ScoreOnly),
             "contract" => Ok(ProtocolType::Contract),
-            _ => Err(SexpError::InvalidTag(tag.to_string())),
+            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
         }
     }
 }

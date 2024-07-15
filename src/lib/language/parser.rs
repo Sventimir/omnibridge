@@ -1,8 +1,8 @@
+use super::{IntoSexp, Lisp, Sexp};
 use std::{
     fmt::{self, Debug, Display, Formatter},
     str::Utf8Error,
 };
-use super::Lisp;
 
 #[derive(Clone, PartialEq)]
 pub enum ParseError {
@@ -29,6 +29,31 @@ impl Debug for ParseError {
     }
 }
 
+impl IntoSexp for ParseError {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            ParseError::SyntaxError => S::list(vec![
+                S::symbol("error".to_string()),
+                S::symbol("syntax".to_string()),
+            ]),
+            ParseError::UtfError(e) => S::list(vec![
+                S::symbol("error".to_string()),
+                S::symbol("utf-8".to_string()),
+                S::string(e.to_string()),
+            ]),
+            ParseError::InvalidNumber(s) => S::list(vec![
+                S::symbol("error".to_string()),
+                S::symbol("invalid-number".to_string()),
+                S::string(s),
+            ]),
+            ParseError::UnexpectedNode(node) => S::list(vec![
+                S::symbol("error".to_string()),
+                S::symbol("unexpected-node".to_string()),
+                S::symbol(node.to_string()),
+            ]),
+        }
+    }
+}
 
 struct ParserState<'a> {
     cursor: tree_sitter::TreeCursor<'a>,

@@ -3,11 +3,17 @@ use num_derive::FromPrimitive;
 use rand::Rng;
 use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
-use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 
+use crate::language::{
+    ast::{
+        expect::{self, ExpectError},
+        AST,
+    },
+    IntoSexp, Sexp,
+};
+
 use super::card::Rank;
-use crate::sexpr::*;
 
 /* Bits 2-14 tell if corresponding rank is a part of the holding.
 The rest is unused. Layout:
@@ -153,13 +159,22 @@ impl Display for Holding {
     }
 }
 
-impl Sexpable for Holding {
-    fn to_sexp(&self) -> Sexp {
-        iter_into_sexp(self.iter())
+impl IntoSexp for Holding {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(self.iter().map(IntoSexp::into_sexp).collect())
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        iter_sexp(sexp)?.map(Rank::from_sexp).collect()
+impl TryFrom<&AST> for Holding {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let l = expect::list(ast)?;
+        let mut h = Holding::new();
+        for rank in l.iter() {
+            h.add(Rank::try_from(rank)?);
+        }
+        Ok(h)
     }
 }
 

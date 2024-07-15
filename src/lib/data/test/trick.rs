@@ -37,7 +37,7 @@ fn after_card_is_played_current_player_changes() {
     t.play_card(&Card::new(Suit::Spade, Rank::Ace));
     assert_eq!(t.leader(), Dir::North);
     assert_eq!(t.current_player(), Dir::East);
-} 
+}
 
 #[test]
 fn when_all_player_player_current_is_leader_and_all_cards_can_be_retrieved() {

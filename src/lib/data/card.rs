@@ -1,12 +1,15 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
-use sexp::{self, Sexp};
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
-use crate::sexpr::*;
+use crate::language::ast::{
+    expect::{self, ExpectError},
+    AST,
+};
+use crate::language::{IntoSexp, Sexp};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Suit {
@@ -63,14 +66,18 @@ impl FromStr for Suit {
     }
 }
 
-impl Sexpable for Suit {
-    fn from_sexp(sexp: &Sexp) -> Result<Suit, SexpError> {
-        let s = expect_string(sexp)?;
-        Suit::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
-    }
+impl TryFrom<&AST> for Suit {
+    type Error = ExpectError;
 
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(format!("{:?}", self).as_str())
+    fn try_from(ast: &AST) -> Result<Suit, ExpectError> {
+        let s = expect::string(&ast)?;
+        Suit::from_str(s).map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
+    }
+}
+
+impl IntoSexp for Suit {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::symbol(format!("{:?}", self))
     }
 }
 
@@ -167,17 +174,21 @@ impl Rank {
     }
 }
 
-impl Sexpable for Rank {
-    fn to_sexp(&self) -> Sexp {
-        match self {
-            Rank::Ace | Rank::King | Rank::Queen | Rank::Jack => sexp::atom_s(&self.to_string()),
-            _ => sexp::atom_i(*self as i64),
-        }
-    }
+impl TryFrom<&AST> for Rank {
+    type Error = ExpectError;
 
-    fn from_sexp(sexp: &Sexp) -> Result<Rank, SexpError> {
-        let s = expect_string(sexp)?;
-        Rank::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
+    fn try_from(ast: &AST) -> Result<Rank, ExpectError> {
+        let s = expect::symbol(&ast)?;
+        Rank::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
+    }
+}
+
+impl IntoSexp for Rank {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            Rank::Ace | Rank::King | Rank::Queen | Rank::Jack => S::symbol(self.to_string()),
+            _ => S::nat(self as u64),
+        }
     }
 }
 
@@ -271,16 +282,20 @@ impl FromStr for Card {
     }
 }
 
-impl Sexpable for Card {
-    fn to_sexp(&self) -> Sexp {
-        sexp::list(&[self.suit().to_sexp(), self.rank().to_sexp()])
+impl IntoSexp for Card {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![self.suit().into_sexp(), self.rank().into_sexp()])
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Card, SexpError> {
-        let l = expect_list(sexp)?;
+impl TryFrom<&AST> for Card {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Card, ExpectError> {
+        let l = expect::list(&ast)?;
         match l {
-            [suit, rank] => Ok(Card::new(Suit::from_sexp(suit)?, Rank::from_sexp(rank)?)),
-            _ => Err(SexpError::InvalidValue(sexp.clone(), "card".to_string())),
+            [suit, rank] => Ok(Card::new(Suit::try_from(suit)?, Rank::try_from(rank)?)),
+            _ => Err(ExpectError::WrongLength(2, l.to_vec())),
         }
     }
 }

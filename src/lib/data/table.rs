@@ -1,11 +1,16 @@
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
-use sexp::{self, Sexp};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
-use crate::sexpr::*;
+use crate::language::{
+    ast::{
+        expect::{self, ExpectError},
+        AST,
+    },
+    IntoSexp, Sexp,
+};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive, Serialize, Deserialize)]
 pub enum Dir {
@@ -32,14 +37,18 @@ impl Display for Dir {
     }
 }
 
-impl Sexpable for Dir {
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(&self.to_string())
+impl IntoSexp for Dir {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::symbol(self.to_string())
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Self, SexpError> {
-        let s = expect_string(sexp)?;
-        Dir::from_str(s).map_err(SexpError::Custom)
+impl TryFrom<&AST> for Dir {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+        let s = expect::symbol(&ast)?;
+        Dir::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
     }
 }
 
@@ -116,14 +125,18 @@ impl Display for Side {
     }
 }
 
-impl Sexpable for Side {
-    fn to_sexp(&self) -> Sexp {
-        sexp::atom_s(&self.to_string())
+impl IntoSexp for Side {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::symbol(self.to_string())
     }
+}
 
-    fn from_sexp(sexp: &Sexp) -> Result<Side, SexpError> {
-        let s = expect_string(sexp)?;
-        Side::from_str(s).map_err(|()| SexpError::InvalidTag(s.to_string()))
+impl TryFrom<&AST> for Side {
+    type Error = ExpectError;
+
+    fn try_from(ast: &AST) -> Result<Side, ExpectError> {
+        let s = expect::symbol(&ast)?;
+        Side::from_str(s).map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
     }
 }
 
