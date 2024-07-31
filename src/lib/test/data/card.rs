@@ -1,4 +1,4 @@
-use super::super::card::*;
+use crate::data::card::*;
 
 #[test]
 fn int_to_card_roundtrip() {

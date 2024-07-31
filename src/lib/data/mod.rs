@@ -10,6 +10,3 @@ pub mod scoring;
 pub mod stack;
 pub mod table;
 pub mod trick;
-
-#[cfg(test)]
-mod test;

@@ -1,5 +1,5 @@
-use super::super::card::*;
-use super::super::holding::Holding;
+use crate::data::card::*;
+use crate::data::holding::Holding;
 
 #[test]
 fn empty_has_no_high_cards() {

@@ -1,5 +1,5 @@
-use super::super::card::*;
-use super::super::hand::Hand;
+use crate::data::card::*;
+use crate::data::hand::Hand;
 
 #[test]
 fn display_empty_hand() {
