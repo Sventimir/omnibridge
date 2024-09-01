@@ -48,7 +48,10 @@ impl<M: Clone> TryFrom<&AST<M>> for Room {
         match tag {
             "open" => Ok(Room::Open),
             "closed" => Ok(Room::Closed),
-            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
+            _ => Err(ExpectError::InvalidSymbol(
+                tag.to_string(),
+                ast.meta().clone(),
+            )),
         }
     }
 }

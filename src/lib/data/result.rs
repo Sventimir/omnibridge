@@ -193,7 +193,11 @@ impl<M: Clone> TryFrom<&AST<M>> for ContractResult {
                     tricks: tricks as i8,
                 })
             }
-            _ => Err(ExpectError::WrongLength(4, contents.to_vec())),
+            _ => Err(ExpectError::WrongLength(
+                4,
+                contents.to_vec(),
+                ast.meta().clone(),
+            )),
         }
     }
 }

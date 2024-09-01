@@ -48,7 +48,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Dir {
 
     fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let s = expect::symbol(&ast)?;
-        Dir::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
+        Dir::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()))
     }
 }
 
@@ -136,7 +136,8 @@ impl<M: Clone> TryFrom<&AST<M>> for Side {
 
     fn try_from(ast: &AST<M>) -> Result<Side, Self::Error> {
         let s = expect::symbol(&ast)?;
-        Side::from_str(s).map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
+        Side::from_str(s)
+            .map_err(|()| ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()))
     }
 }
 

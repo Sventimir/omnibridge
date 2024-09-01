@@ -80,7 +80,7 @@ fn trump_from_sexp<M: Clone>(ast: &AST<M>) -> Result<Option<Suit>, ExpectError<M
     match s {
         "NT" | "nt" => Ok(None),
         _ => Suit::from_str(&s)
-            .map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
+            .map_err(|()| ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()))
             .map(Some),
     }
 }
@@ -212,7 +212,10 @@ impl<M: Clone> TryFrom<&AST<M>> for Bid {
                 "pass" | "PASS" => Ok(Bid::Pass),
                 "dbl" | "DBL" => Ok(Bid::Double),
                 "rdbl" | "RDBL" => Ok(Bid::Redouble),
-                _ => Err(ExpectError::InvalidSymbol(content.clone())),
+                _ => Err(ExpectError::InvalidSymbol(
+                    content.clone(),
+                    ast.meta().clone(),
+                )),
             },
             _ => Call::try_from(ast).map(Bid::Call),
         }
@@ -271,7 +274,8 @@ impl<M: Clone> TryFrom<&AST<M>> for Doubled {
     fn try_from(ast: &AST<M>) -> Result<Doubled, Self::Error> {
         expect::nil(ast).map(|()| Doubled::Undoubled).or_else(|_| {
             let s = expect::symbol(&ast)?;
-            Doubled::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
+            Doubled::from_str(s)
+                .map_err(|_| ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()))
         })
     }
 }
@@ -362,7 +366,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Contract {
                     declarer: Dir::try_from(dcl)?,
                 })
             }
-            _ => Err(ExpectError::WrongLength(4, l.to_vec())),
+            _ => Err(ExpectError::WrongLength(4, l.to_vec(), ast.meta().clone())),
         }
     }
 }

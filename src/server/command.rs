@@ -74,9 +74,11 @@ impl<M: Clone> TryFrom<&AST<M>> for Cmd {
 
     fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let cmd = expect::list(ast)?;
-        let (t, rem) = cmd
-            .split_first()
-            .ok_or(ExpectError::WrongLength(5, cmd.to_vec()))?;
+        let (t, rem) = cmd.split_first().ok_or(ExpectError::WrongLength(
+            5,
+            cmd.to_vec(),
+            ast.meta().clone(),
+        ))?;
         let tag = expect::symbol(t)?;
         match tag {
             "deal" => {
@@ -114,7 +116,10 @@ impl<M: Clone> TryFrom<&AST<M>> for Cmd {
                     score,
                 })
             }
-            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
+            _ => Err(ExpectError::InvalidSymbol(
+                tag.to_string(),
+                ast.meta().clone(),
+            )),
         }
     }
 }
@@ -139,7 +144,10 @@ impl<M: Clone> TryFrom<&AST<M>> for CommandError {
         let tag = expect::symbol(ast)?;
         match tag {
             "corrupt-state" => Ok(Self::CorruptState),
-            _ => Err(ExpectError::InvalidSymbol(tag.to_string())),
+            _ => Err(ExpectError::InvalidSymbol(
+                tag.to_string(),
+                ast.meta().clone(),
+            )),
         }
     }
 }

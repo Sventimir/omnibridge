@@ -71,7 +71,8 @@ impl<M: Clone> TryFrom<&AST<M>> for Suit {
 
     fn try_from(ast: &AST<M>) -> Result<Suit, Self::Error> {
         let s = expect::string(&ast)?;
-        Suit::from_str(s).map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
+        Suit::from_str(s)
+            .map_err(|()| ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()))
     }
 }
 
@@ -179,7 +180,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Rank {
 
     fn try_from(ast: &AST<M>) -> Result<Rank, Self::Error> {
         let s = expect::symbol(&ast)?;
-        Rank::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
+        Rank::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()))
     }
 }
 
@@ -295,7 +296,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Card {
         let l = expect::list(&ast)?;
         match l {
             [suit, rank] => Ok(Card::new(Suit::try_from(suit)?, Rank::try_from(rank)?)),
-            _ => Err(ExpectError::WrongLength(2, l.to_vec())),
+            _ => Err(ExpectError::WrongLength(2, l.to_vec(), ast.meta().clone())),
         }
     }
 }

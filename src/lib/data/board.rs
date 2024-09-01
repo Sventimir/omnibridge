@@ -105,7 +105,12 @@ impl<M: Clone> TryFrom<&AST<M>> for Board {
                 "E" => board.east = Hand::try_from(v)?,
                 "S" => board.south = Hand::try_from(v)?,
                 "W" => board.west = Hand::try_from(v)?,
-                _ => return Err(ExpectError::InvalidSymbol(tag.to_string())),
+                _ => {
+                    return Err(ExpectError::InvalidSymbol(
+                        tag.to_string(),
+                        ast.meta().clone(),
+                    ))
+                }
             }
         }
         Ok(board)

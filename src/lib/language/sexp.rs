@@ -76,3 +76,15 @@ impl<T: IntoSexp, U: IntoSexp> IntoSexp for (T, U) {
         S::list(vec![self.0.into_sexp(), self.1.into_sexp()])
     }
 }
+
+impl<T: IntoSexp> IntoSexp for std::ops::Range<T> {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![self.start.into_sexp(), self.end.into_sexp()])
+    }
+}
+
+impl IntoSexp for usize {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::nat(self as u64)
+    }
+}

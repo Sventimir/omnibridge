@@ -52,14 +52,14 @@ impl IntoSexp for Response {
 
 fn interpret(expr: &str, state: &mut Mutex<State>) -> Response {
     let request_id = digest(&SHA256, expr.as_bytes());
-    let result: Result<Vec<AST<Range<usize>>>, ServerError> = bridge::language::parser::parse(expr)
-        .map_err(|e| ServerError::LexerError(e));
-    let result = result
+    let result = bridge::language::parser::parse(expr)
+        .map_err(|e| ServerError::LexerError(e))
         .and_then(|sexp| match sexp.as_slice() {
             [s] => Cmd::try_from(s).map_err(ServerError::SexprError),
             _ => Err(ServerError::SexprError(ExpectError::WrongLength(
                 0,
                 sexp.clone(),
+                std::ops::Range { start: 0, end: expr.len() },
             ))),
         })
         .and_then(|cmd| cmd.execute(state).map_err(ServerError::CommandError));
