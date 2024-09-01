@@ -110,6 +110,7 @@ fn parse_node<'a, L: Lisp + WithLocation>(
             }
             Ok(L::list(items))
         }
+        "nil_lit" => Ok(L::list(vec![])),
         k => Err(ParseError::UnexpectedNode(k)),
     }?;
     ret.annot(node.byte_range());

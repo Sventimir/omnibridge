@@ -36,6 +36,15 @@ fn parse_nil() {
 }
 
 #[test]
+fn parse_nil_symbol() {
+    let result = language::parse::<AST<Meta>>("nil");
+    let sexpr = assert_success(&result);
+    let mut nil: AST<Meta> = nil();
+    nil.annot(0..3);
+    assert_eq!(*sexpr, nil)
+}
+
+#[test]
 fn parse_symbol() {
     let result = language::parse::<AST<Meta>>("foo");
     let sexpr = assert_success(&result);
