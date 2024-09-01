@@ -4,7 +4,7 @@ mod command;
 mod protocol;
 mod state;
 
-use bridge::language::{self, ast::{expect::ExpectError, AST}, pair, IntoSexp, Sexp};
+use bridge::language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
 use hex::ToHex;
 use ring::digest::{digest, Digest, SHA256};
 use state::State;

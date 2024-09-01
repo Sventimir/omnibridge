@@ -47,6 +47,7 @@ impl<M: Clone> TryFrom<&AST<M>> for ProtocolType {
     }
 }
 
+#[allow(dead_code)]
 pub enum Protocol {
     ScoreOnly(Match<Score>),
     Contract(Match<Contract>),

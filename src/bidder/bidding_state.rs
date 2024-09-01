@@ -15,7 +15,7 @@ observe_bid() let's us feed the engine with information
 coming from other participants of the bidding. */
 pub trait BiddingState {
     fn next_bid(&self) -> ProposedBids;
-    fn observe_bid(&mut self, dir: &Dir, bid: &Bid);
+    // fn observe_bid(&mut self, dir: &Dir, bid: &Bid);
 }
 
 pub fn normalize_bid_scores(bids: ProposedBids) -> ProposedBids {
@@ -31,17 +31,17 @@ pub fn normalize_bid_scores(bids: ProposedBids) -> ProposedBids {
 }
 
 pub struct Opening {
-    dir: Dir,
+    // dir: Dir,
     // hand: Hand,
     // vuln: Vulnerability,
     hand_eval: Eval,
 }
 
 impl Opening {
-    pub fn new(dir: Dir, _vuln: Vulnerability, hand: Hand) -> Opening {
+    pub fn new(_dir: Dir, _vuln: Vulnerability, hand: Hand) -> Opening {
         let hand_eval = hand.eval();
         Opening {
-            dir,
+            // dir,
             // hand,
             // vuln,
             hand_eval,
@@ -50,15 +50,15 @@ impl Opening {
 }
 
 impl BiddingState for Opening {
-    fn observe_bid(&mut self, dir: &Dir, bid: &Bid) {
-        if self.dir == *dir {
-            panic!("Cannot observe own bid!")
-        }
-        match bid {
-            Bid::Pass => (),
-            _ => panic!("Transition not implemented yet!"),
-        }
-    }
+    // fn observe_bid(&mut self, dir: &Dir, bid: &Bid) {
+    //     if self.dir == *dir {
+    //         panic!("Cannot observe own bid!")
+    //     }
+    //     match bid {
+    //         Bid::Pass => (),
+    //         _ => panic!("Transition not implemented yet!"),
+    //     }
+    // }
 
     fn next_bid(&self) -> ProposedBids {
         let mut response = BTreeMap::new();

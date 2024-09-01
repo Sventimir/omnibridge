@@ -15,6 +15,7 @@ pub trait Item {
     ) -> Result<Option<IMP>, StateError>;
 }
 
+#[allow(dead_code)]
 pub enum StateError {
     ItemNotFound(Id),
     NotImplemented,
