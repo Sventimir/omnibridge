@@ -87,10 +87,10 @@ impl IntoSexp for Board {
     }
 }
 
-impl TryFrom<&AST> for Board {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Board {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Board, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Board, Self::Error> {
         let mut board = Board::new(0);
         let l = expect::list(ast)?;
         for elem in l.iter() {

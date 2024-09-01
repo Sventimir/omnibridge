@@ -175,10 +175,10 @@ impl IntoSexp for ContractResult {
     }
 }
 
-impl TryFrom<&AST> for ContractResult {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for ContractResult {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<ContractResult, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<ContractResult, Self::Error> {
         let contents = expect::list(&ast)?;
         match contents {
             [b, c, l, t] => {

@@ -1,9 +1,13 @@
+use std::ops::Range;
+
 use crate::data::result::*;
 use crate::data::scoring::{Scorable, Score};
 use crate::language::{self, ast::AST};
 
+type Meta = Range<usize>;
+
 fn sexp_contract(s: &str) -> ContractResult {
-    let exprs = language::parse::<AST>(s).unwrap();
+    let exprs = language::parse::<AST<Meta>>(s).unwrap();
     let ast = exprs.get(0).unwrap();
     ContractResult::try_from(ast).unwrap()
 }

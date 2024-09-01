@@ -4,11 +4,11 @@ mod command;
 mod protocol;
 mod state;
 
-use bridge::language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
+use bridge::language::{self, ast::{expect::ExpectError, AST}, pair, IntoSexp, Sexp};
 use hex::ToHex;
 use ring::digest::{digest, Digest, SHA256};
 use state::State;
-use std::{io, sync::Mutex};
+use std::{io, ops::Range, sync::Mutex};
 
 use command::{Cmd, CommandError, CommandResult};
 
@@ -16,7 +16,7 @@ use command::{Cmd, CommandError, CommandResult};
 enum ServerError {
     CommandError(CommandError),
     LexerError(language::parser::ParseError),
-    SexprError(ExpectError),
+    SexprError(ExpectError<Range<usize>>),
 }
 
 impl IntoSexp for ServerError {
@@ -52,8 +52,9 @@ impl IntoSexp for Response {
 
 fn interpret(expr: &str, state: &mut Mutex<State>) -> Response {
     let request_id = digest(&SHA256, expr.as_bytes());
-    let result = bridge::language::parser::parse(expr)
-        .map_err(|e| ServerError::LexerError(e))
+    let result: Result<Vec<AST<Range<usize>>>, ServerError> = bridge::language::parser::parse(expr)
+        .map_err(|e| ServerError::LexerError(e));
+    let result = result
         .and_then(|sexp| match sexp.as_slice() {
             [s] => Cmd::try_from(s).map_err(ServerError::SexprError),
             _ => Err(ServerError::SexprError(ExpectError::WrongLength(

@@ -34,10 +34,10 @@ impl IntoSexp for ProtocolType {
     }
 }
 
-impl TryFrom<&AST> for ProtocolType {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for ProtocolType {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let tag = expect::string(ast)?;
         match tag {
             "score-only" => Ok(ProtocolType::ScoreOnly),

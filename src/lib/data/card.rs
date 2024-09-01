@@ -66,10 +66,10 @@ impl FromStr for Suit {
     }
 }
 
-impl TryFrom<&AST> for Suit {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Suit {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Suit, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Suit, Self::Error> {
         let s = expect::string(&ast)?;
         Suit::from_str(s).map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
     }
@@ -174,10 +174,10 @@ impl Rank {
     }
 }
 
-impl TryFrom<&AST> for Rank {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Rank {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Rank, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Rank, Self::Error> {
         let s = expect::symbol(&ast)?;
         Rank::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
     }
@@ -288,10 +288,10 @@ impl IntoSexp for Card {
     }
 }
 
-impl TryFrom<&AST> for Card {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Card {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Card, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Card, Self::Error> {
         let l = expect::list(&ast)?;
         match l {
             [suit, rank] => Ok(Card::new(Suit::try_from(suit)?, Rank::try_from(rank)?)),

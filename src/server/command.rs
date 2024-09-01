@@ -69,10 +69,10 @@ impl IntoSexp for Cmd {
     }
 }
 
-impl TryFrom<&AST> for Cmd {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Cmd {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let cmd = expect::list(ast)?;
         let (t, rem) = cmd
             .split_first()
@@ -84,7 +84,10 @@ impl TryFrom<&AST> for Cmd {
                 Ok(Cmd::Deal(board as BoardNumber))
             }
             "score" => {
-                let result = ContractResult::try_from(&AST::List(rem.to_vec()))?;
+                let result = ContractResult::try_from(&AST::List {
+                    content: rem.to_vec(),
+                    meta: ast.meta().clone(),
+                })?;
                 Ok(Cmd::Score(result))
             }
             "new-match" => {
@@ -129,10 +132,10 @@ impl IntoSexp for CommandError {
     }
 }
 
-impl TryFrom<&AST> for CommandError {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for CommandError {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let tag = expect::symbol(ast)?;
         match tag {
             "corrupt-state" => Ok(Self::CorruptState),
@@ -164,10 +167,10 @@ impl IntoSexp for CommandResult {
     }
 }
 
-impl TryFrom<&AST> for CommandResult {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for CommandResult {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         Ok(CommandResult::Deal(Board::try_from(ast)?))
     }
 }

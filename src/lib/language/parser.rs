@@ -1,4 +1,4 @@
-use super::{IntoSexp, Lisp, Sexp};
+use super::{src_location::WithLocation, IntoSexp, Lisp, Sexp};
 use std::{
     fmt::{self, Debug, Display, Formatter},
     str::Utf8Error,
@@ -60,11 +60,11 @@ struct ParserState<'a> {
     source: &'a [u8],
 }
 
-fn parse_node<'a, L: Lisp>(
+fn parse_node<'a, L: Lisp + WithLocation>(
     node: &'a tree_sitter::Node,
     state: &ParserState<'a>,
 ) -> Result<L, ParseError> {
-    match node.kind() {
+    let mut ret = match node.kind() {
         "sym_lit" => node
             .utf8_text(&state.source)
             .map_err(ParseError::UtfError)
@@ -111,10 +111,12 @@ fn parse_node<'a, L: Lisp>(
             Ok(L::list(items))
         }
         k => Err(ParseError::UnexpectedNode(k)),
-    }
+    }?;
+    ret.annot(node.byte_range());
+    Ok(ret)
 }
 
-pub fn parse<L: Lisp>(s: &str) -> Result<Vec<L>, ParseError> {
+pub fn parse<L: Lisp + WithLocation>(s: &str) -> Result<Vec<L>, ParseError> {
     let mut parser = tree_sitter::Parser::new();
     parser
         .set_language(tree_sitter_commonlisp::language())

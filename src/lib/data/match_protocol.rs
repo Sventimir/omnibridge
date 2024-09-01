@@ -40,10 +40,10 @@ impl IntoSexp for Room {
     }
 }
 
-impl TryFrom<&AST> for Room {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Room {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let tag = expect::string(ast)?;
         match tag {
             "open" => Ok(Room::Open),

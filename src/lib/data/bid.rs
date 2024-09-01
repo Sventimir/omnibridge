@@ -75,7 +75,7 @@ where
     }
 }
 
-fn trump_from_sexp(ast: &AST) -> Result<Option<Suit>, ExpectError> {
+fn trump_from_sexp<M: Clone>(ast: &AST<M>) -> Result<Option<Suit>, ExpectError<M>> {
     let s = expect::symbol(&ast)?;
     match s {
         "NT" | "nt" => Ok(None),
@@ -91,10 +91,10 @@ impl IntoSexp for Call {
     }
 }
 
-impl TryFrom<&AST> for Call {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Call {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let (l, t) = expect::pair(ast)?;
         let level = expect::nat(l)? as u8;
         let trump: Option<Suit> = trump_from_sexp(t)?;
@@ -203,16 +203,16 @@ impl IntoSexp for Bid {
     }
 }
 
-impl TryFrom<&AST> for Bid {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Bid {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         match ast {
-            AST::Symbol(s) => match s.as_str() {
+            AST::Symbol { content, .. } => match content.as_str() {
                 "pass" | "PASS" => Ok(Bid::Pass),
                 "dbl" | "DBL" => Ok(Bid::Double),
                 "rdbl" | "RDBL" => Ok(Bid::Redouble),
-                _ => Err(ExpectError::InvalidSymbol(s.clone())),
+                _ => Err(ExpectError::InvalidSymbol(content.clone())),
             },
             _ => Call::try_from(ast).map(Bid::Call),
         }
@@ -265,10 +265,10 @@ impl IntoSexp for Doubled {
     }
 }
 
-impl TryFrom<&AST> for Doubled {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Doubled {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Doubled, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Doubled, Self::Error> {
         expect::nil(ast).map(|()| Doubled::Undoubled).or_else(|_| {
             let s = expect::symbol(&ast)?;
             Doubled::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
@@ -333,10 +333,10 @@ impl IntoSexp for Contract {
     }
 }
 
-impl TryFrom<&AST> for Contract {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Contract {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Contract, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Contract, Self::Error> {
         let l = expect::list(&ast)?;
         match l {
             [] => Ok(Contract::Passed),

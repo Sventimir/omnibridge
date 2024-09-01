@@ -43,10 +43,10 @@ impl IntoSexp for Dir {
     }
 }
 
-impl TryFrom<&AST> for Dir {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Dir {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let s = expect::symbol(&ast)?;
         Dir::from_str(s).map_err(|_| ExpectError::InvalidSymbol(s.to_string()))
     }
@@ -131,10 +131,10 @@ impl IntoSexp for Side {
     }
 }
 
-impl TryFrom<&AST> for Side {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Side {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Side, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Side, Self::Error> {
         let s = expect::symbol(&ast)?;
         Side::from_str(s).map_err(|()| ExpectError::InvalidSymbol(s.to_string()))
     }

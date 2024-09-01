@@ -165,10 +165,10 @@ impl IntoSexp for Holding {
     }
 }
 
-impl TryFrom<&AST> for Holding {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Holding {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let l = expect::list(ast)?;
         let mut h = Holding::new();
         for rank in l.iter() {

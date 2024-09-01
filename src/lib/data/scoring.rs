@@ -33,10 +33,10 @@ impl IntoSexp for Score {
     }
 }
 
-impl TryFrom<&AST> for Score {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Score {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         Ok(Score::from_i16(expect::int(ast)? as i16))
     }
 }
@@ -84,10 +84,10 @@ impl IntoSexp for IMP {
     }
 }
 
-impl TryFrom<&AST> for IMP {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for IMP {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         Ok(IMP(expect::int(ast)? as i8))
     }
 }
@@ -107,10 +107,10 @@ impl IntoSexp for Matchpoints {
     }
 }
 
-impl TryFrom<&AST> for Matchpoints {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Matchpoints {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Self, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         Ok(Matchpoints(expect::nat(ast)? as u16))
     }
 }

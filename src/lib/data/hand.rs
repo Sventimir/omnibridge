@@ -150,10 +150,10 @@ impl IntoSexp for Hand {
     }
 }
 
-impl TryFrom<&AST> for Hand {
-    type Error = ExpectError;
+impl<M: Clone> TryFrom<&AST<M>> for Hand {
+    type Error = ExpectError<M>;
 
-    fn try_from(ast: &AST) -> Result<Hand, ExpectError> {
+    fn try_from(ast: &AST<M>) -> Result<Hand, Self::Error> {
         let mut hand = Hand::new();
         let l = expect::list(&ast)?;
         for elem in l.iter() {
