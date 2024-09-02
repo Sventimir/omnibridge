@@ -5,7 +5,7 @@ use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 
-use crate::language::{
+use language::{
     ast::{
         expect::{self, ExpectError},
         AST,

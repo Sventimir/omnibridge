@@ -1,17 +1,15 @@
-use bridge::{
-    data::{
-        bid::Contract,
-        board::BoardNumber,
-        match_protocol::{Match, Room},
-        scoring::{Score, IMP},
+use bridge::data::{
+    bid::Contract,
+    board::BoardNumber,
+    match_protocol::{Match, Room},
+    scoring::{Score, IMP},
+};
+use language::{
+    ast::{
+        expect::{self, ExpectError},
+        AST,
     },
-    language::{
-        ast::{
-            expect::{self, ExpectError},
-            AST,
-        },
-        IntoSexp, Sexp,
-    },
+    IntoSexp, Sexp,
 };
 use serde::{Deserialize, Serialize};
 

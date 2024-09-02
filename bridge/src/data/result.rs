@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 
-use crate::language::ast::expect::{self, ExpectError};
-use crate::language::ast::AST;
-use crate::language::{int, nil, IntoSexp, Sexp};
+use language::ast::expect::{self, ExpectError};
+use language::ast::AST;
+use language::{int, nil, IntoSexp, Sexp};
 
 use super::bid::{Call, Contract, Doubled};
 use super::board;

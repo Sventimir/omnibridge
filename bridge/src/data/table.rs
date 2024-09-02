@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
-use crate::language::{
+use language::{
     ast::{
         expect::{self, ExpectError},
         AST,

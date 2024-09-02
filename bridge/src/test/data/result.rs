@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::data::result::*;
 use crate::data::scoring::{Scorable, Score};
-use crate::language::{self, ast::AST};
+use language::{self, ast::AST};
 
 type Meta = Range<usize>;
 

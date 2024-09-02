@@ -1,4 +1,4 @@
-use crate::language::IntoSexp;
+use crate::IntoSexp;
 use std::fmt::Debug;
 
 use super::*;

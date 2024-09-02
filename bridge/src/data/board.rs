@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use super::hand::Hand;
 use super::table::{Dir, Vulnerability};
-use crate::language::ast::expect::{self, ExpectError};
-use crate::language::ast::AST;
-use crate::language::{pair, IntoSexp, Sexp};
+use language::ast::expect::{self, ExpectError};
+use language::ast::AST;
+use language::{pair, IntoSexp, Sexp};
 
 pub type BoardNumber = usize;
 

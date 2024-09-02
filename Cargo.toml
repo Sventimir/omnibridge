@@ -1,40 +1,7 @@
-[package]
-name = "omnibridge"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-clap = { version = "4.5.4", features = ["cargo"] }
-derive_more = "0.99.17"
-hex = "0.4.3"
-num = "0.4.1"
-num-derive = "0.4.1"
-num-traits = "0.2"
-quickcheck = "1.0.3"
-rand = "0.8.5"
-ring = "0.17.8"
-serde = {version = "1.0.198", features = ["derive"]}
-tree-sitter = "0.20"
-tree-sitter-commonlisp = "0.3.3"
-
-[lib]
-name = "bridge"
-path = "src/lib/mod.rs"
-
-[[bin]]
-name = "leader"
-path = "src/leader/main.rs"
-
-[[bin]]
-name = "bidder"
-path = "src/bidder/main.rs"
-
-[[bin]]
-name = "server"
-path = "src/server/main.rs"
-
-[[bin]]
-name = "test"
-path = "src/test/main.rs"
+[workspace]
+resolver = "2"
+members = [
+    "bridge",
+    "language",
+    "server",
+]

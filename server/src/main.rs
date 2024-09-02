@@ -4,7 +4,7 @@ mod command;
 mod protocol;
 mod state;
 
-use bridge::language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
+use language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
 use hex::ToHex;
 use ring::digest::{digest, Digest, SHA256};
 use state::State;
@@ -52,7 +52,7 @@ impl IntoSexp for Response {
 
 fn interpret(expr: &str, state: &mut Mutex<State>) -> Response {
     let request_id = digest(&SHA256, expr.as_bytes());
-    let result = bridge::language::parser::parse(expr)
+    let result = language::parser::parse(expr)
         .map_err(|e| ServerError::LexerError(e))
         .and_then(|sexp| match sexp.as_slice() {
             [s] => Cmd::try_from(s).map_err(ServerError::SexprError),

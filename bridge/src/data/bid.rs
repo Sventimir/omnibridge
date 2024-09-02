@@ -1,6 +1,6 @@
 use super::card::Suit;
 use super::table::Dir;
-use crate::language::{
+use language::{
     self,
     ast::{
         expect::{self, ExpectError},

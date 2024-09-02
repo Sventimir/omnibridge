@@ -5,11 +5,11 @@ use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
-use crate::language::ast::{
+use language::ast::{
     expect::{self, ExpectError},
     AST,
 };
-use crate::language::{IntoSexp, Sexp};
+use language::{IntoSexp, Sexp};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, FromPrimitive)]
 pub enum Suit {

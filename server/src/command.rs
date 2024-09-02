@@ -1,9 +1,9 @@
 use std::sync::Mutex;
 
 use bridge::data::match_protocol::Room;
-use bridge::language::ast::expect::{self, ExpectError};
-use bridge::language::ast::AST;
-use bridge::language::{nil, IntoSexp, Sexp};
+use language::ast::expect::{self, ExpectError};
+use language::ast::AST;
+use language::{nil, IntoSexp, Sexp};
 use serde::{Deserialize, Serialize};
 
 use bridge::data::board::{Board, BoardNumber};

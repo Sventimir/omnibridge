@@ -1,7 +1,7 @@
 use std::ops::Range;
 
-use crate::language::{
-    self, ast::AST, nil, parser::ParseError, src_location::WithLocation, CoreLisp, IntoSexp, Lisp,
+use crate::{
+    ast::AST, nil, parser::ParseError, src_location::WithLocation, CoreLisp, IntoSexp, Lisp,
     Sexp,
 };
 
@@ -22,13 +22,13 @@ fn assert_success(res: &Result<Vec<AST<Meta>>, ParseError>) -> &AST<Meta> {
 
 #[test]
 fn parse_nothing() {
-    let result = language::parse::<AST<Meta>>("");
+    let result = crate::parse::<AST<Meta>>("");
     assert_eq!(result, Ok(vec![]));
 }
 
 #[test]
 fn parse_nil() {
-    let result = language::parse::<AST<Meta>>("()");
+    let result = crate::parse::<AST<Meta>>("()");
     let sexpr = assert_success(&result);
     let mut nil: AST<Meta> = nil();
     nil.annot(0..2);
@@ -37,7 +37,7 @@ fn parse_nil() {
 
 #[test]
 fn parse_nil_symbol() {
-    let result = language::parse::<AST<Meta>>("nil");
+    let result = crate::parse::<AST<Meta>>("nil");
     let sexpr = assert_success(&result);
     let mut nil: AST<Meta> = nil();
     nil.annot(0..3);
@@ -46,7 +46,7 @@ fn parse_nil_symbol() {
 
 #[test]
 fn parse_symbol() {
-    let result = language::parse::<AST<Meta>>("foo");
+    let result = crate::parse::<AST<Meta>>("foo");
     let sexpr = assert_success(&result);
     let mut sym: AST<Meta> = AST::symbol("foo".to_string());
     sym.annot(0..3);
@@ -55,7 +55,7 @@ fn parse_symbol() {
 
 #[test]
 fn parse_quoted_symbol() {
-    let result = language::parse::<AST<Meta>>("'foo");
+    let result = crate::parse::<AST<Meta>>("'foo");
     let sexpr = assert_success(&result);
     let mut sym: AST<Meta> = AST::symbol("foo".to_string());
     sym.annot(1..4);
@@ -66,7 +66,7 @@ fn parse_quoted_symbol() {
 
 #[test]
 fn parse_nat() {
-    let result = language::parse::<AST<Meta>>("42");
+    let result = crate::parse::<AST<Meta>>("42");
     let sexpr = assert_success(&result);
     let mut nat: AST<Meta> = AST::nat(42);
     nat.annot(0..2);
@@ -76,13 +76,13 @@ fn parse_nat() {
 #[test]
 fn dont_parse_negative_num_without_parens() {
     const INPUT: &'static str = "-42";
-    let result = language::parse::<AST<Meta>>(INPUT);
+    let result = crate::parse::<AST<Meta>>(INPUT);
     assert_eq!(result, Err(ParseError::InvalidNumber(INPUT.to_string())));
 }
 
 #[test]
 fn parse_float() {
-    let result = language::parse::<AST<Meta>>("42.32");
+    let result = crate::parse::<AST<Meta>>("42.32");
     let sexpr = assert_success(&result);
     let mut float: AST<Meta> = AST::float(42.32);
     float.annot(0..5);
@@ -91,7 +91,7 @@ fn parse_float() {
 
 #[test]
 fn parse_string() {
-    let result = language::parse::<AST<Meta>>("\"foo bar\"");
+    let result = crate::parse::<AST<Meta>>("\"foo bar\"");
     let sexpr = assert_success(&result);
     let mut string: AST<Meta> = AST::string("foo bar".to_string());
     string.annot(0..9);
@@ -100,7 +100,7 @@ fn parse_string() {
 
 #[test]
 fn parse_list() {
-    let result = language::parse::<AST<Meta>>("(foo 42)");
+    let result = crate::parse::<AST<Meta>>("(foo 42)");
     let sexpr = assert_success(&result);
     let mut string: AST<Meta> = AST::symbol("foo".to_string());
     string.annot(1..4);
@@ -113,7 +113,7 @@ fn parse_list() {
 
 #[test]
 fn parse_quoted_list() {
-    let result = language::parse::<AST<Meta>>("'(foo x y 42 z)");
+    let result = crate::parse::<AST<Meta>>("'(foo x y 42 z)");
     let sexpr = assert_success(&result);
     let mut foo: AST<Meta> = AST::symbol("foo".to_string());
     foo.annot(2..5);
@@ -134,7 +134,7 @@ fn parse_quoted_list() {
 
 #[test]
 fn parse_nested_lists() {
-    let result = language::parse::<AST<Meta>>("(+ (* 3 4) (/ 5 7) (expt 2 3))");
+    let result = crate::parse::<AST<Meta>>("(+ (* 3 4) (/ 5 7) (expt 2 3))");
     let sexpr = assert_success(&result);
     let mut plus: AST<Meta> = AST::symbol("+".to_string());
     plus.annot(1..2);
@@ -169,7 +169,7 @@ fn parse_nested_lists() {
 
 #[test]
 fn parse_quasi_quoted_list() {
-    let result = language::parse::<AST<Meta>>("`(foo)");
+    let result = crate::parse::<AST<Meta>>("`(foo)");
     let sexpr = assert_success(&result);
     let mut sym: AST<Meta> = AST::symbol("foo".to_string());
     sym.annot(2..5);
@@ -182,7 +182,7 @@ fn parse_quasi_quoted_list() {
 
 #[test]
 fn parse_quasi_quoted_with_unquotes() {
-    let result = language::parse::<AST<Meta>>("(1 `(+ 1 ,one) 3)");
+    let result = crate::parse::<AST<Meta>>("(1 `(+ 1 ,one) 3)");
     let sexpr = assert_success(&result);
     let mut one1: AST<Meta> = AST::nat(1);
     one1.annot(1..2);
@@ -209,7 +209,7 @@ fn parse_quasi_quoted_with_unquotes() {
 // According to our parser it is.
 #[test]
 fn parse_unquote_outside_quasi_quote() {
-    let result = language::parse::<AST<Meta>>("(1 2 ,x ,y 5)");
+    let result = crate::parse::<AST<Meta>>("(1 2 ,x ,y 5)");
     let expr = assert_success(&result);
     let mut one: AST<Meta> = AST::nat(1);
     one.annot(1..2);

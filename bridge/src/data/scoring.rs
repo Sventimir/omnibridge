@@ -2,7 +2,7 @@ use derive_more::{Add, Neg, Sub, Sum};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
 
-use crate::language::{
+use language::{
     ast::{
         expect::{self, ExpectError},
         AST,

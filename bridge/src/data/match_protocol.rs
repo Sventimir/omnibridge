@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::language::{
+use language::{
     ast::{
         expect::{self, ExpectError},
         AST,
