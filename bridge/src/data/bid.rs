@@ -15,12 +15,12 @@ use std::fmt::{self, Debug, Display, Formatter};
 use std::str::FromStr;
 
 #[derive(PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
-pub struct Call {
+pub struct Bid {
     pub trump: Option<Suit>,
     pub level: u8,
 }
 
-impl Debug for Call {
+impl Debug for Bid {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.level)?;
         match self.trump {
@@ -32,7 +32,7 @@ impl Debug for Call {
     }
 }
 
-impl Display for Call {
+impl Display for Bid {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.level)?;
         match self.trump {
@@ -44,10 +44,10 @@ impl Display for Call {
     }
 }
 
-impl FromStr for Call {
+impl FromStr for Bid {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Call, String> {
+    fn from_str(s: &str) -> Result<Bid, String> {
         let mut chars = s.chars();
         let level = chars.next().unwrap().to_digit(10).unwrap() as u8;
         if level > 7 {
@@ -61,7 +61,7 @@ impl FromStr for Call {
             Some('N' | 'n') => None,
             _ => return Err("Invalid suit".to_string()),
         };
-        Ok(Call { trump: suit, level })
+        Ok(Bid { trump: suit, level })
     }
 }
 
@@ -85,39 +85,39 @@ fn trump_from_sexp<M: Clone>(ast: &AST<M>) -> Result<Option<Suit>, ExpectError<M
     }
 }
 
-impl IntoSexp for Call {
+impl IntoSexp for Bid {
     fn into_sexp<S: Sexp>(self) -> S {
         S::list(vec![S::nat(self.level as u64), trump_to_sexp(&self.trump)])
     }
 }
 
-impl<M: Clone> TryFrom<&AST<M>> for Call {
+impl<M: Clone> TryFrom<&AST<M>> for Bid {
     type Error = ExpectError<M>;
 
     fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         let (l, t) = expect::pair(ast)?;
         let level = expect::nat(l)? as u8;
         let trump: Option<Suit> = trump_from_sexp(t)?;
-        Ok(Call { level, trump })
+        Ok(Bid { level, trump })
     }
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum Bid {
+pub enum Call {
     Pass,
     Double,
     Redouble,
-    Call(Call),
+    Bid(Bid),
 }
 
-impl Bid {
+impl Call {
     /* Check if the bid can be made by the declarer given the current
     contract. Return the new contract if so, or None otherwise. */
     pub fn apply(&self, bidder: &Dir, contract: Contract) -> Option<Contract> {
         match (self, &contract) {
-            (Bid::Pass, _) => Some(contract),
+            (Call::Pass, _) => Some(contract),
             (
-                Bid::Double,
+                Call::Double,
                 Contract::Contract {
                     doubled: Doubled::Undoubled,
                     call,
@@ -129,7 +129,7 @@ impl Bid {
                 declarer: *declarer,
             }),
             (
-                Bid::Redouble,
+                Call::Redouble,
                 Contract::Contract {
                     doubled: Doubled::Doubled,
                     call,
@@ -140,12 +140,12 @@ impl Bid {
                 doubled: Doubled::Redoubled,
                 declarer: *declarer,
             }),
-            (Bid::Call(call), Contract::Passed) => Some(Contract::Contract {
+            (Call::Bid(call), Contract::Passed) => Some(Contract::Contract {
                 call: *call,
                 doubled: Doubled::Undoubled,
                 declarer: *bidder,
             }),
-            (Bid::Call(overcall), Contract::Contract { call, .. }) if overcall > &call => {
+            (Call::Bid(overcall), Contract::Contract { call, .. }) if overcall > &call => {
                 Some(Contract::Contract {
                     call: *overcall,
                     doubled: Doubled::Undoubled,
@@ -157,67 +157,67 @@ impl Bid {
     }
 }
 
-impl FromStr for Bid {
+impl FromStr for Call {
     type Err = String;
 
-    fn from_str(s: &str) -> Result<Bid, String> {
+    fn from_str(s: &str) -> Result<Call, String> {
         match s {
-            "Pass" | "p" => Ok(Bid::Pass),
-            "Dbl" | "x" => Ok(Bid::Double),
-            "Rdbl" | "xx" => Ok(Bid::Redouble),
-            _ => Call::from_str(s).map(Bid::Call),
+            "Pass" | "p" => Ok(Call::Pass),
+            "Dbl" | "x" => Ok(Call::Double),
+            "Rdbl" | "xx" => Ok(Call::Redouble),
+            _ => Bid::from_str(s).map(Call::Bid),
         }
     }
 }
 
-impl Debug for Bid {
+impl Debug for Call {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Pass => write!(f, "pass"),
             Self::Double => write!(f, "x"),
             Self::Redouble => write!(f, "xx"),
-            Self::Call(call) => write!(f, "{}", call),
+            Self::Bid(call) => write!(f, "{}", call),
         }
     }
 }
 
-impl Display for Bid {
+impl Display for Call {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Pass => write!(f, "pass"),
             Self::Double => write!(f, "x"),
             Self::Redouble => write!(f, "xx"),
-            Self::Call(call) => write!(f, "{}", call),
+            Self::Bid(call) => write!(f, "{}", call),
         }
     }
 }
 
-impl IntoSexp for Bid {
+impl IntoSexp for Call {
     fn into_sexp<S: Sexp>(self) -> S {
         match self {
             Self::Pass => S::symbol("pass".to_string()),
             Self::Double => S::symbol("dbl".to_string()),
             Self::Redouble => S::symbol("rdbl".to_string()),
-            Self::Call(call) => call.into_sexp(),
+            Self::Bid(call) => call.into_sexp(),
         }
     }
 }
 
-impl<M: Clone> TryFrom<&AST<M>> for Bid {
+impl<M: Clone> TryFrom<&AST<M>> for Call {
     type Error = ExpectError<M>;
 
     fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         match ast {
             AST::Symbol { content, .. } => match content.as_str() {
-                "pass" | "PASS" => Ok(Bid::Pass),
-                "dbl" | "DBL" => Ok(Bid::Double),
-                "rdbl" | "RDBL" => Ok(Bid::Redouble),
+                "pass" | "PASS" => Ok(Call::Pass),
+                "dbl" | "DBL" => Ok(Call::Double),
+                "rdbl" | "RDBL" => Ok(Call::Redouble),
                 _ => Err(ExpectError::InvalidSymbol(
                     content.clone(),
                     ast.meta().clone(),
                 )),
             },
-            _ => Call::try_from(ast).map(Bid::Call),
+            _ => Bid::try_from(ast).map(Call::Bid),
         }
     }
 }
@@ -285,13 +285,13 @@ pub enum Contract {
     Passed,
     Contract {
         declarer: Dir,
-        call: Call,
+        call: Bid,
         doubled: Doubled,
     },
 }
 
 impl Contract {
-    pub fn new(call: Call, doubled: Doubled, decl: Dir) -> Contract {
+    pub fn new(call: Bid, doubled: Doubled, decl: Dir) -> Contract {
         Contract::Contract {
             call,
             doubled,
@@ -347,7 +347,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Contract {
             [lvl, tr, dbl, dcl] => {
                 let level: u64 = expect::nat(lvl)?;
                 Ok(Contract::Contract {
-                    call: Call {
+                    call: Bid {
                         level: level as u8,
                         trump: trump_from_sexp(&tr)?,
                     },
@@ -358,7 +358,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Contract {
             [lvl, tr, dcl] => {
                 let level: u64 = expect::nat(lvl)?;
                 Ok(Contract::Contract {
-                    call: Call {
+                    call: Bid {
                         level: level as u8,
                         trump: trump_from_sexp(&tr)?,
                     },
@@ -371,14 +371,14 @@ impl<M: Clone> TryFrom<&AST<M>> for Contract {
     }
 }
 
-impl PartialOrd for Call {
-    fn partial_cmp(&self, other: &Call) -> Option<Ordering> {
+impl PartialOrd for Bid {
+    fn partial_cmp(&self, other: &Bid) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Call {
-    fn cmp(&self, other: &Call) -> Ordering {
+impl Ord for Bid {
+    fn cmp(&self, other: &Bid) -> Ordering {
         if self.level == other.level {
             match (self.trump, other.trump) {
                 (None, None) => Ordering::Equal,

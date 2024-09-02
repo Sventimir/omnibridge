@@ -5,7 +5,7 @@ use language::ast::expect::{self, ExpectError};
 use language::ast::AST;
 use language::{int, nil, IntoSexp, Sexp};
 
-use super::bid::{Call, Contract, Doubled};
+use super::bid::{Bid, Contract, Doubled};
 use super::board;
 use super::card::{Card, Suit};
 use super::scoring::{Scorable, Score};
@@ -51,11 +51,11 @@ fn trick_value(trump: &Option<Suit>) -> i16 {
     }
 }
 
-fn trick_score(call: &Call) -> i16 {
+fn trick_score(call: &Bid) -> i16 {
     trick_value(&call.trump) * call.level as i16 + if call.trump.is_none() { 10 } else { 0 }
 }
 
-fn overtrick_score(call: &Call, doubled: &Doubled, tricks: u8, vulnerable: bool) -> i16 {
+fn overtrick_score(call: &Bid, doubled: &Doubled, tricks: u8, vulnerable: bool) -> i16 {
     match doubled {
         Doubled::Undoubled => trick_value(&call.trump) * tricks as i16,
         Doubled::Doubled => (if vulnerable { 200 } else { 100 }) * tricks as i16,
@@ -83,7 +83,7 @@ fn slam_bonus(level: u8, vulnerable: bool) -> i16 {
     }
 }
 
-fn score_base(call: &Call, doubled: &Doubled, vulnerable: bool, tricks: i8) -> i16 {
+fn score_base(call: &Bid, doubled: &Doubled, vulnerable: bool, tricks: i8) -> i16 {
     if tricks < 0 {
         -undertrick_score(-tricks as u8, doubled, vulnerable)
     } else {
