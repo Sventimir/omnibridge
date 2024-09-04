@@ -10,13 +10,21 @@ fn not_instr_flips_bool() {
 }
 
 #[test]
-fn instrs_can_depend_on_each_ther() {
-    let prog = Program::new();
-    let arg1 = prog.alloc(vec![0]);
-    let arg2 = prog.alloc(vec![255]);
-    let neg_arg1 = prog.push_instr_not(&arg1);
-    let result = prog.push_instr_and(&neg_arg1, &arg2);
-    prog.exec();
-    println!("{:?}", prog);
-    assert_eq!(result.value(), vec![255]);
+fn de_morgan_law_test() {
+    let prog1 = Program::new();
+    let a = prog1.alloc(vec![255]);
+    let b = prog1.alloc(vec![0]);
+    let a_and_b = prog1.push_instr_and(&a, &b);
+    let result1 = prog1.push_instr_not(&a_and_b);
+    prog1.exec();
+
+    // Note that we cen reuse vars from prog1 in prog2.
+    // This may (and likely will) change in the future, though.
+    let prog2 = Program::new();
+    let not_a = prog2.push_instr_not(&a);
+    let not_b = prog2.push_instr_not(&b);
+    let result2 = prog2.push_instr_or(&not_a, &not_b);
+    prog2.exec();
+
+    assert_eq!(result1.value(), result2.value());
 }
