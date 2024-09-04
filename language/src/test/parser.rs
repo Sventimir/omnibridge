@@ -1,8 +1,7 @@
 use std::ops::Range;
 
 use crate::{
-    ast::AST, nil, parser::ParseError, src_location::WithLocation, CoreLisp, IntoSexp, Lisp,
-    Sexp,
+    ast::AST, nil, parser::ParseError, src_location::WithLocation, CoreLisp, IntoSexp, Lisp, Sexp,
 };
 
 type Meta = Range<usize>;

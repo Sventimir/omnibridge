@@ -70,7 +70,10 @@ pub fn int<M: Clone>(ast: &AST<M>) -> Result<i64, ExpectError<M>> {
         let (sign, n) = pair(ast)?;
         let s = symbol(sign)?;
         if s != "-" {
-            return Err(ExpectError::InvalidSymbol(s.to_string(), ast.meta().clone()));
+            return Err(ExpectError::InvalidSymbol(
+                s.to_string(),
+                ast.meta().clone(),
+            ));
         }
         nat(n).map(|n| -(n as i64))
     })
@@ -85,13 +88,13 @@ where
 }
 
 fn error_into_sexp<S, M>(kind: &str, mut ast: AST<M>) -> S
-where 
-      M: IntoSexp + Default,
-      S: Sexp
+where
+    M: IntoSexp + Default,
+    S: Sexp,
 {
     let meta = std::mem::replace(ast.meta_mut(), Default::default());
     S::list(vec![
-        S::symbol(kind.to_string()), 
+        S::symbol(kind.to_string()),
         ast.drop_meta().into_sexp(),
         meta.into_sexp(),
     ])
@@ -99,7 +102,7 @@ where
 
 impl<M> IntoSexp for ExpectError<M>
 where
-    M: Default + IntoSexp
+    M: Default + IntoSexp,
 {
     fn into_sexp<S: Sexp>(self) -> S {
         match self {
@@ -108,13 +111,11 @@ where
             ExpectError::Float(ast) => error_into_sexp("expected-float", ast),
             ExpectError::String(ast) => error_into_sexp("expected-string", ast),
             ExpectError::List(ast) => error_into_sexp("expected-list", ast),
-            ExpectError::InvalidSymbol(s, meta) => {
-                S::list(vec![
-                    S::symbol("invalid-symbol".to_string()),
-                    S::symbol(s),
-                    meta.into_sexp(),
-                ])
-            }
+            ExpectError::InvalidSymbol(s, meta) => S::list(vec![
+                S::symbol("invalid-symbol".to_string()),
+                S::symbol(s),
+                meta.into_sexp(),
+            ]),
             ExpectError::WrongLength(n, l, meta) => S::list(vec![
                 S::symbol("wrong-length".to_string()),
                 S::nat(n as u64),

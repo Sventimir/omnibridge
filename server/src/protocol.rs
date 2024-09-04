@@ -40,7 +40,10 @@ impl<M: Clone> TryFrom<&AST<M>> for ProtocolType {
         match tag {
             "score-only" => Ok(ProtocolType::ScoreOnly),
             "contract" => Ok(ProtocolType::Contract),
-            _ => Err(ExpectError::InvalidSymbol(tag.to_string(), ast.meta().clone())),
+            _ => Err(ExpectError::InvalidSymbol(
+                tag.to_string(),
+                ast.meta().clone(),
+            )),
         }
     }
 }

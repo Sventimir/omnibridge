@@ -4,8 +4,8 @@ mod command;
 mod protocol;
 mod state;
 
-use language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
 use hex::ToHex;
+use language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
 use ring::digest::{digest, Digest, SHA256};
 use state::State;
 use std::{io, ops::Range, sync::Mutex};
@@ -59,7 +59,10 @@ fn interpret(expr: &str, state: &mut Mutex<State>) -> Response {
             _ => Err(ServerError::SexprError(ExpectError::WrongLength(
                 0,
                 sexp.clone(),
-                std::ops::Range { start: 0, end: expr.len() },
+                std::ops::Range {
+                    start: 0,
+                    end: expr.len(),
+                },
             ))),
         })
         .and_then(|cmd| cmd.execute(state).map_err(ServerError::CommandError));
