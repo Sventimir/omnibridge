@@ -29,6 +29,7 @@ pub struct Program {
 pub enum Instr {
     Not { arg: Var, result: Var },
     And { left: Var, right: Var, result: Var },
+    Or { left: Var, right: Var, result: Var },
 }
 
 impl Program {
@@ -74,6 +75,16 @@ impl Program {
         result
     }
 
+    pub fn push_instr_or(&self, left: &Var, right: &Var) -> Var {
+        let result = Var::new(18);
+        self.push_instr(Instr::Or {
+            left: left.clone(),
+            right: right.clone(),
+            result: result.clone(),
+        });
+        result
+    }
+
     pub fn result(&self) -> Option<Var> {
         let instrs = self.instructions.lock().unwrap();
         (*instrs).last().map(Instr::result)
@@ -95,12 +106,22 @@ impl Instr {
                 let mut ret = result.lock();
                 *ret = *left.lock() & *right.lock();
             }
+            Instr::Or {
+                left,
+                right,
+                result,
+            } => {
+                let mut ret = result.lock();
+                *ret = *left.lock() | *right.lock();
+            }
         }
     }
 
     fn result(&self) -> Var {
         match self {
-            Instr::Not { result, .. } | Instr::And { result, .. } => result.clone(),
+            Instr::Not { result, .. } | Instr::And { result, .. } | Instr::Or { result, .. } => {
+                result.clone()
+            }
         }
     }
 }
@@ -117,6 +138,19 @@ impl Debug for Instr {
                 write!(
                     f,
                     "And({:?}, {:?} -> {:?})",
+                    left.lock(),
+                    right.lock(),
+                    result.lock()
+                )
+            }
+            Instr::Or {
+                left,
+                right,
+                result,
+            } => {
+                write!(
+                    f,
+                    "Or({:?}, {:?} -> {:?})",
                     left.lock(),
                     right.lock(),
                     result.lock()
