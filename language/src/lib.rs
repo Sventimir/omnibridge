@@ -5,11 +5,13 @@ extern crate quickcheck;
 pub mod ast;
 mod core_lisp;
 mod full_lisp;
+mod instr;
 pub mod parser;
 pub mod program;
 mod sexp;
 pub mod src_location;
 pub mod typed;
+mod var;
 
 pub use core_lisp::CoreLisp;
 pub use full_lisp::Lisp;
