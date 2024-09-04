@@ -1,10 +1,10 @@
 use std::fmt::{self, Debug, Formatter};
 use std::sync::{Arc, Mutex};
 
-pub struct Var(Arc<Mutex<u8>>);
+pub struct Var(Arc<Mutex<Vec<u8>>>);
 
 impl Var {
-    fn new(val: u8) -> Self {
+    fn new(val: Vec<u8>) -> Self {
         Var(Arc::new(Mutex::new(val)))
     }
 
@@ -12,12 +12,13 @@ impl Var {
         Self(Arc::clone(&self.0))
     }
 
-    fn lock(&self) -> std::sync::MutexGuard<u8> {
+    fn lock(&self) -> std::sync::MutexGuard<Vec<u8>> {
         self.0.lock().unwrap()
     }
 
-    pub fn value(&self) -> u8 {
-        *self.lock()
+    pub fn value(&self) -> Vec<u8> {
+        let val = self.lock();
+        val.clone()
     }
 }
 
@@ -39,7 +40,7 @@ impl Program {
         }
     }
 
-    pub fn alloc(&self, val: u8) -> Var {
+    pub fn alloc(&self, val: Vec<u8>) -> Var {
         Var::new(val)
     }
 
@@ -57,7 +58,7 @@ impl Program {
     }
 
     pub fn push_instr_not(&self, arg: &Var) -> Var {
-        let result = Var::new(123);
+        let result = Var::new(Vec::new());
         self.push_instr(Instr::Not {
             arg: arg.clone(),
             result: result.clone(),
@@ -66,7 +67,7 @@ impl Program {
     }
 
     pub fn push_instr_and(&self, left: &Var, right: &Var) -> Var {
-        let result = Var::new(18);
+        let result = Var::new(Vec::new());
         self.push_instr(Instr::And {
             left: left.clone(),
             right: right.clone(),
@@ -76,7 +77,7 @@ impl Program {
     }
 
     pub fn push_instr_or(&self, left: &Var, right: &Var) -> Var {
-        let result = Var::new(18);
+        let result = Var::new(Vec::new());
         self.push_instr(Instr::Or {
             left: left.clone(),
             right: right.clone(),
@@ -96,7 +97,10 @@ impl Instr {
         match self {
             Instr::Not { arg, result } => {
                 let mut ret = result.lock();
-                *ret = !*arg.lock();
+                ret.clear();
+                for byte in arg.lock().iter() {
+                    ret.push(!byte);
+                }
             }
             Instr::And {
                 left,
@@ -104,7 +108,10 @@ impl Instr {
                 result,
             } => {
                 let mut ret = result.lock();
-                *ret = *left.lock() & *right.lock();
+                ret.clear();
+                for (l, r) in left.lock().iter().zip(right.lock().iter()) {
+                    ret.push(l & r);
+                }
             }
             Instr::Or {
                 left,
@@ -112,7 +119,10 @@ impl Instr {
                 result,
             } => {
                 let mut ret = result.lock();
-                *ret = *left.lock() | *right.lock();
+                ret.clear();
+                for (l, r) in left.lock().iter().zip(right.lock().iter()) {
+                    ret.push(l | r);
+                }
             }
         }
     }
