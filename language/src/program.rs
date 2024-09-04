@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 pub struct Var(Arc<Mutex<u8>>);
 
 impl Var {
-    pub fn new(val: u8) -> Self {
+    fn new(val: u8) -> Self {
         Var(Arc::new(Mutex::new(val)))
     }
 
@@ -36,6 +36,10 @@ impl Program {
         Program {
             instructions: Arc::new(Mutex::new(Vec::new())),
         }
+    }
+
+    pub fn alloc(&self, val: u8) -> Var {
+        Var::new(val)
     }
 
     pub fn exec(&self) -> Var {
