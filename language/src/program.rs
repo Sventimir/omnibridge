@@ -1,24 +1,35 @@
 use std::fmt::{self, Debug, Formatter};
 use std::sync::{Arc, Mutex};
 
-pub struct Var(Arc<Mutex<Vec<u8>>>);
+use crate::typed::{Bool, MalformedDataError, Type};
 
-impl Var {
-    fn new(val: Vec<u8>) -> Self {
-        Var(Arc::new(Mutex::new(val)))
+pub struct Var<T: Type> {
+    val: Arc<Mutex<Vec<u8>>>,
+    typ: T,
+}
+
+impl<T: Type> Var<T> {
+    fn new(t: T, val: T::Repr) -> Self {
+        Self {
+            typ: t,
+            val: Arc::new(Mutex::new(T::to_bytes(&val))),
+        }
     }
 
     fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0))
+        Self {
+            val: Arc::clone(&self.val),
+            typ: self.typ.clone(),
+        }
     }
 
     fn lock(&self) -> std::sync::MutexGuard<Vec<u8>> {
-        self.0.lock().unwrap()
+        self.val.lock().unwrap()
     }
 
-    pub fn value(&self) -> Vec<u8> {
+    pub fn value(&self) -> Result<T::Repr, MalformedDataError> {
         let val = self.lock();
-        val.clone()
+        T::from_bytes(val.clone())
     }
 }
 
@@ -28,9 +39,20 @@ pub struct Program {
 }
 
 pub enum Instr {
-    Not { arg: Var, result: Var },
-    And { left: Var, right: Var, result: Var },
-    Or { left: Var, right: Var, result: Var },
+    Not {
+        arg: Var<Bool>,
+        result: Var<Bool>,
+    },
+    And {
+        left: Var<Bool>,
+        right: Var<Bool>,
+        result: Var<Bool>,
+    },
+    Or {
+        left: Var<Bool>,
+        right: Var<Bool>,
+        result: Var<Bool>,
+    },
 }
 
 impl Program {
@@ -40,16 +62,15 @@ impl Program {
         }
     }
 
-    pub fn alloc(&self, val: Vec<u8>) -> Var {
-        Var::new(val)
+    pub fn alloc<T: Type>(&self, t: T, val: T::Repr) -> Var<T> {
+        Var::new(t, val)
     }
 
-    pub fn exec(&self) -> Var {
+    pub fn exec(&self) {
         let mut instrs = self.instructions.lock().unwrap();
         for instr in &mut *instrs {
             instr.exec();
         }
-        instrs.last().unwrap().result()
     }
 
     pub fn push_instr(&self, instr: Instr) {
@@ -57,8 +78,8 @@ impl Program {
         (*instrs).push(instr);
     }
 
-    pub fn push_instr_not(&self, arg: &Var) -> Var {
-        let result = Var::new(Vec::new());
+    pub fn push_instr_not(&self, arg: &Var<Bool>) -> Var<Bool> {
+        let result = Var::new(Bool, Default::default());
         self.push_instr(Instr::Not {
             arg: arg.clone(),
             result: result.clone(),
@@ -66,8 +87,8 @@ impl Program {
         result
     }
 
-    pub fn push_instr_and(&self, left: &Var, right: &Var) -> Var {
-        let result = Var::new(Vec::new());
+    pub fn push_instr_and(&self, left: &Var<Bool>, right: &Var<Bool>) -> Var<Bool> {
+        let result = Var::new(Bool, Default::default());
         self.push_instr(Instr::And {
             left: left.clone(),
             right: right.clone(),
@@ -76,19 +97,14 @@ impl Program {
         result
     }
 
-    pub fn push_instr_or(&self, left: &Var, right: &Var) -> Var {
-        let result = Var::new(Vec::new());
+    pub fn push_instr_or(&self, left: &Var<Bool>, right: &Var<Bool>) -> Var<Bool> {
+        let result = Var::new(Bool, Default::default());
         self.push_instr(Instr::Or {
             left: left.clone(),
             right: right.clone(),
             result: result.clone(),
         });
         result
-    }
-
-    pub fn result(&self) -> Option<Var> {
-        let instrs = self.instructions.lock().unwrap();
-        (*instrs).last().map(Instr::result)
     }
 }
 
@@ -123,14 +139,6 @@ impl Instr {
                 for (l, r) in left.lock().iter().zip(right.lock().iter()) {
                     ret.push(l | r);
                 }
-            }
-        }
-    }
-
-    fn result(&self) -> Var {
-        match self {
-            Instr::Not { result, .. } | Instr::And { result, .. } | Instr::Or { result, .. } => {
-                result.clone()
             }
         }
     }
@@ -170,7 +178,7 @@ impl Debug for Instr {
     }
 }
 
-impl Debug for Var {
+impl<T: Type> Debug for Var<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "Var({:?})", *self.lock())
     }

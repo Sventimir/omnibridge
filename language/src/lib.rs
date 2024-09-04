@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 pub mod ast;
 mod core_lisp;
 mod full_lisp;
@@ -5,6 +9,7 @@ pub mod parser;
 pub mod program;
 mod sexp;
 pub mod src_location;
+pub mod typed;
 
 pub use core_lisp::CoreLisp;
 pub use full_lisp::Lisp;
