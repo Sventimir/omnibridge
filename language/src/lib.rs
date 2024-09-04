@@ -2,6 +2,7 @@ pub mod ast;
 mod core_lisp;
 mod full_lisp;
 pub mod parser;
+pub mod program;
 mod sexp;
 pub mod src_location;
 
