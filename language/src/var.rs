@@ -1,9 +1,12 @@
-use std::{fmt::{self, Debug, Formatter}, sync::{Arc, Mutex}};
+use std::{
+    fmt::{self, Debug, Formatter},
+    sync::{Arc, Mutex},
+};
 
-use crate::typed::{MalformedDataError, Type};
+use crate::typed::Type;
 
 pub struct Var<T: Type> {
-    val: Arc<Mutex<Vec<u8>>>,
+    val: Arc<Mutex<T::Repr>>,
     typ: T,
 }
 
@@ -11,7 +14,7 @@ impl<T: Type> Var<T> {
     pub fn new(t: T, val: T::Repr) -> Self {
         Self {
             typ: t,
-            val: Arc::new(Mutex::new(T::to_bytes(&val))),
+            val: Arc::new(Mutex::new(val)),
         }
     }
 
@@ -22,18 +25,21 @@ impl<T: Type> Var<T> {
         }
     }
 
-    pub fn lock(&self) -> std::sync::MutexGuard<Vec<u8>> {
+    pub fn lock(&self) -> std::sync::MutexGuard<T::Repr> {
         self.val.lock().unwrap()
     }
 
-    pub fn value(&self) -> Result<T::Repr, MalformedDataError> {
-        let val = self.lock();
-        T::from_bytes(val.clone())
+    pub fn value(&self) -> T::Repr {
+        (*self.lock()).clone()
     }
 }
 
-impl<T: Type> Debug for Var<T> {
+impl<T> Debug for Var<T>
+where
+    T: Type,
+    T::Repr: Debug,
+{
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "Var({:?})", *self.lock())
+        write!(f, "Var({:?})", self.value())
     }
 }

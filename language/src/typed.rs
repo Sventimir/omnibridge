@@ -1,5 +1,5 @@
 pub trait Type: Copy {
-    type Repr; // Rust type representing this type
+    type Repr: Clone + Default; // Rust type representing this type
 
     fn symbol() -> &'static str;
     fn to_bytes(repr: &Self::Repr) -> Vec<u8>;

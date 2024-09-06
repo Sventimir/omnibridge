@@ -7,7 +7,7 @@ fn not_instr_flips_bool() {
     let (not_instr, result) = instr::bool::not(arg.clone());
     prog.push_instr(not_instr);
     prog.exec();
-    assert_eq!(result.value().unwrap(), true);
+    assert_eq!(result.value(), true);
 }
 
 quickcheck! {
