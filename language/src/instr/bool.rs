@@ -1,7 +1,7 @@
 use super::Instr;
 use crate::{typed::Bool, var::Var};
 
-pub struct Not {
+struct Not {
     arg: Var<Bool>,
     result: Var<Bool>,
 }
@@ -22,7 +22,7 @@ pub fn not(arg: Var<Bool>) -> (Box<dyn Instr>, Var<Bool>) {
     (Box::new(instr), result)
 }
 
-pub struct Binary {
+struct Binary {
     args: [Var<Bool>; 2],
     result: Var<Bool>,
     op: fn(bool, bool) -> bool,
