@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    instr::Instr,
-    typed::Type,
-    var::Var,
+    instr::Instr, nil, typed::{Expr, Type}, var::Var
 };
 
 pub struct Program {
@@ -31,6 +29,14 @@ impl Program {
     pub fn push_instr(&self, instr: Box<dyn Instr>) {
         let mut instrs = self.instructions.lock().unwrap();
         (*instrs).push(instr);
+    }
+
+    pub fn result_as_sexp(&self) -> Expr {
+        let instrs = self.instructions.lock().unwrap();
+        match instrs.last() {
+            None => nil(),
+            Some(instr) => instr.result_as_sexp(),
+        }
     }
 }
 

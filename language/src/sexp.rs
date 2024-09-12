@@ -44,6 +44,7 @@ pub trait IntoSexp {
     fn into_sexp<S: Sexp>(self) -> S;
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SexpError {
     Unexpected { expected: String, found: String },
 }
@@ -88,3 +89,14 @@ impl IntoSexp for usize {
         S::nat(self as u64)
     }
 }
+
+impl IntoSexp for bool {
+    fn into_sexp<S: Sexp>(self) -> S {
+        if self {
+            S::symbol("t".to_string())
+        } else {
+            S::symbol("f".to_string())
+        }
+    }
+}
+ 

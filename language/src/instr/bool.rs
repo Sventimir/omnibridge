@@ -1,5 +1,5 @@
 use super::Instr;
-use crate::{typed::Bool, var::Var};
+use crate::{typed::{Bool, Expr}, var::Var, IntoSexp};
 
 struct Not {
     arg: Var<Bool>,
@@ -10,6 +10,10 @@ impl Instr for Not {
     fn exec(&mut self) {
         let mut ret = self.result.lock();
         *ret = !*self.arg.lock();
+    }
+
+    fn result_as_sexp(&self) -> Expr {
+        self.result.lock().into_sexp()
     }
 }
 
@@ -32,6 +36,10 @@ impl Instr for Binary {
     fn exec(&mut self) {
         let mut ret = self.result.lock();
         *ret = (self.op)(*self.args[0].lock(), *self.args[1].lock());
+    }
+
+    fn result_as_sexp(&self) -> Expr {
+        self.result.lock().into_sexp()
     }
 }
 
