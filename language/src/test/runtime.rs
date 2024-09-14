@@ -1,9 +1,9 @@
-use crate::{instr, program::Program, typed::Bool, var::Var};
+use crate::{instr, program::Program, var::Var};
 
 #[test]
 fn not_instr_flips_bool() {
     let prog = Program::new();
-    let arg: Var<Bool> = Var::new(Bool, false);
+    let arg: Var<bool> = Var::new(false);
     let (not_instr, result) = instr::bool::not(arg.clone());
     prog.push_instr(not_instr);
     prog.exec();
@@ -13,8 +13,8 @@ fn not_instr_flips_bool() {
 quickcheck! {
     fn de_morgan_law_holds(x: bool, y: bool) -> bool {
         let prog1 = Program::new();
-        let a = Var::new(Bool, x);
-        let b = Var::new(Bool, y);
+        let a = Var::new(x);
+        let b = Var::new(y);
         let (and_instr, a_and_b) = instr::bool::and(a.clone(), b.clone());
         prog1.push_instr(and_instr);
         let (not_instr, result1) = instr::bool::not(a_and_b);

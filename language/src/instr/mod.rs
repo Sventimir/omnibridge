@@ -1,4 +1,4 @@
-use crate::typed::Expr;
+use crate::Expr;
 
 
 pub mod bool;

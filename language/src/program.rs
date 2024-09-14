@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    instr::Instr, nil, typed::{Expr, Type}, var::Var
+    instr::Instr, nil, typed::IType, var::Var, Expr
 };
 
 pub struct Program {
@@ -15,8 +15,8 @@ impl Program {
         }
     }
 
-    pub fn alloc<T: Type>(&self, t: T, val: T::Repr) -> Var<T> {
-        Var::new(t, val)
+    pub fn alloc<T: IType + Clone>(&self, val: T) -> Var<T> {
+        Var::new(val)
     }
 
     pub fn exec(&self) {

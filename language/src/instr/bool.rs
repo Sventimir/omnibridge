@@ -1,9 +1,9 @@
 use super::Instr;
-use crate::{typed::{Bool, Expr}, var::Var, IntoSexp};
+use crate::{var::Var, Expr, IntoSexp};
 
 struct Not {
-    arg: Var<Bool>,
-    result: Var<Bool>,
+    arg: Var<bool>,
+    result: Var<bool>,
 }
 
 impl Instr for Not {
@@ -17,8 +17,8 @@ impl Instr for Not {
     }
 }
 
-pub fn not(arg: Var<Bool>) -> (Box<dyn Instr>, Var<Bool>) {
-    let result = Var::new(Bool, Default::default());
+pub fn not(arg: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
+    let result = Var::new(Default::default());
     let instr = Not {
         arg,
         result: result.clone(),
@@ -27,8 +27,8 @@ pub fn not(arg: Var<Bool>) -> (Box<dyn Instr>, Var<Bool>) {
 }
 
 struct Binary {
-    args: [Var<Bool>; 2],
-    result: Var<Bool>,
+    args: [Var<bool>; 2],
+    result: Var<bool>,
     op: fn(bool, bool) -> bool,
 }
 
@@ -43,8 +43,8 @@ impl Instr for Binary {
     }
 }
 
-pub fn and(left: Var<Bool>, right: Var<Bool>) -> (Box<dyn Instr>, Var<Bool>) {
-    let result = Var::new(Bool, Default::default());
+pub fn and(left: Var<bool>, right: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
+    let result = Var::new(Default::default());
     let instr = Binary {
         args: [left, right],
         result: result.clone(),
@@ -53,8 +53,8 @@ pub fn and(left: Var<Bool>, right: Var<Bool>) -> (Box<dyn Instr>, Var<Bool>) {
     (Box::new(instr), result)
 }
 
-pub fn or(left: Var<Bool>, right: Var<Bool>) -> (Box<dyn Instr>, Var<Bool>) {
-    let result = Var::new(Bool, Default::default());
+pub fn or(left: Var<bool>, right: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
+    let result = Var::new(Default::default());
     let instr = Binary {
         args: [left, right],
         result: result.clone(),

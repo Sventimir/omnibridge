@@ -3,17 +3,17 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::typed::Type;
+use crate::typed::{Type, IType};
 
-pub struct Var<T: Type> {
-    val: Arc<Mutex<T::Repr>>,
-    typ: T,
+pub struct Var<T: IType + Clone> {
+    val: Arc<Mutex<T>>,
+    typ: Type,
 }
 
-impl<T: Type> Var<T> {
-    pub fn new(t: T, val: T::Repr) -> Self {
+impl<T: IType + Clone> Var<T> {
+    pub fn new(val: T) -> Self {
         Self {
-            typ: t,
+            typ: T::tag(),
             val: Arc::new(Mutex::new(val)),
         }
     }
@@ -25,20 +25,16 @@ impl<T: Type> Var<T> {
         }
     }
 
-    pub fn lock(&self) -> std::sync::MutexGuard<T::Repr> {
+    pub fn lock(&self) -> std::sync::MutexGuard<T> {
         self.val.lock().unwrap()
     }
 
-    pub fn value(&self) -> T::Repr {
+    pub fn value(&self) -> T {
         (*self.lock()).clone()
     }
 }
 
-impl<T> Debug for Var<T>
-where
-    T: Type,
-    T::Repr: Debug,
-{
+impl<T: IType + Clone + Debug> Debug for Var<T> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "Var({:?})", self.value())
     }
