@@ -3,11 +3,11 @@ use crate::{instr, program::Program, var::Var};
 #[test]
 fn not_instr_flips_bool() {
     let prog = Program::new();
-    let arg: Var<bool> = Var::new(false);
+    let arg: Var = Var::new(false);
     let (not_instr, result) = instr::bool::not(arg.clone());
     prog.push_instr(not_instr);
     prog.exec();
-    assert_eq!(result.value(), true);
+    assert_eq!(result.value(), Some(true));
 }
 
 quickcheck! {
@@ -32,6 +32,6 @@ quickcheck! {
         prog2.push_instr(or_instr);
         prog2.exec();
 
-        result1.value() == result2.value()
+        result1.value::<bool>() == result2.value()
     }
 }

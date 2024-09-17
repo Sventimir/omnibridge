@@ -2,23 +2,23 @@ use super::Instr;
 use crate::{var::Var, Expr, IntoSexp};
 
 struct Not {
-    arg: Var<bool>,
-    result: Var<bool>,
+    arg: Var,
+    result: Var,
 }
 
 impl Instr for Not {
     fn exec(&mut self) {
         let mut ret = self.result.lock();
-        *ret = !*self.arg.lock();
+        *ret = Box::new(!self.arg.value::<bool>().unwrap());
     }
 
     fn result_as_sexp(&self) -> Expr {
-        self.result.lock().into_sexp()
+        self.result.value::<bool>().unwrap().into_sexp()
     }
 }
 
-pub fn not(arg: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
-    let result = Var::new(Default::default());
+pub fn not(arg: Var) -> (Box<dyn Instr>, Var) {
+    let result = Var::new(false);
     let instr = Not {
         arg,
         result: result.clone(),
@@ -27,24 +27,27 @@ pub fn not(arg: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
 }
 
 struct Binary {
-    args: [Var<bool>; 2],
-    result: Var<bool>,
+    args: [Var; 2],
+    result: Var,
     op: fn(bool, bool) -> bool,
 }
 
 impl Instr for Binary {
     fn exec(&mut self) {
         let mut ret = self.result.lock();
-        *ret = (self.op)(*self.args[0].lock(), *self.args[1].lock());
+        *ret = Box::new((self.op)(
+            self.args[0].value::<bool>().unwrap(),
+            self.args[1].value::<bool>().unwrap()
+        ));
     }
 
     fn result_as_sexp(&self) -> Expr {
-        self.result.lock().into_sexp()
+        self.result.value::<bool>().unwrap().into_sexp()
     }
 }
 
-pub fn and(left: Var<bool>, right: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
-    let result = Var::new(Default::default());
+pub fn and(left: Var, right: Var) -> (Box<dyn Instr>, Var) {
+    let result = Var::new(false);
     let instr = Binary {
         args: [left, right],
         result: result.clone(),
@@ -53,8 +56,8 @@ pub fn and(left: Var<bool>, right: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
     (Box::new(instr), result)
 }
 
-pub fn or(left: Var<bool>, right: Var<bool>) -> (Box<dyn Instr>, Var<bool>) {
-    let result = Var::new(Default::default());
+pub fn or(left: Var, right: Var) -> (Box<dyn Instr>, Var) {
+    let result = Var::new(false);
     let instr = Binary {
         args: [left, right],
         result: result.clone(),

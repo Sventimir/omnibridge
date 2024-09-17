@@ -15,7 +15,7 @@ impl Program {
         }
     }
 
-    pub fn alloc<T: IType + Clone>(&self, val: T) -> Var<T> {
+    pub fn alloc<T: IType + Clone + 'static>(&self, val: T) -> Var {
         Var::new(val)
     }
 
