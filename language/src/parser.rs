@@ -73,10 +73,6 @@ fn parse_node<'a, L: Lisp + WithLocation>(
             .utf8_text(&state.source)
             .map_err(ParseError::UtfError)
             .and_then(|s| {
-                // Negative numbers shoud be created with `-` function.
-                if s.starts_with('-') {
-                    return Err(ParseError::InvalidNumber(s.to_string()));
-                }
                 s.parse::<u64>()
                     .map(L::nat)
                     .or_else(|_| s.parse::<f64>().map(L::float))

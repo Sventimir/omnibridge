@@ -73,13 +73,6 @@ fn parse_nat() {
 }
 
 #[test]
-fn dont_parse_negative_num_without_parens() {
-    const INPUT: &'static str = "-42";
-    let result = crate::parse::<AST<Meta>>(INPUT);
-    assert_eq!(result, Err(ParseError::InvalidNumber(INPUT.to_string())));
-}
-
-#[test]
 fn parse_float() {
     let result = crate::parse::<AST<Meta>>("42.32");
     let sexpr = assert_success(&result);
