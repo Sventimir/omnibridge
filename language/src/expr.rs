@@ -1,6 +1,6 @@
 use crate::{IntoSexp, Sexp, SexpError};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     Symbol(String),
     Str(String),
@@ -64,15 +64,13 @@ impl TryFrom<Expr> for bool {
                     })
                 }
             }
-            Expr::Symbol(s) => {
-                match s.as_str() {
-                    "true" => Ok(true),
-                    "false" => Ok(false),
-                    _ => Err(SexpError::Unexpected {
-                        expected: "bool".to_string(),
-                        found: s,
-                    }),
-                }
+            Expr::Symbol(s) => match s.as_str() {
+                "t" => Ok(true),
+                "f" => Ok(false),
+                _ => Err(SexpError::Unexpected {
+                    expected: "bool".to_string(),
+                    found: s,
+                }),
             },
             _ => Err(SexpError::Unexpected {
                 expected: "bool".to_string(),

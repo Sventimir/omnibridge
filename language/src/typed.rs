@@ -1,6 +1,5 @@
 use crate::Expr;
 
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type {
     Bool,
@@ -36,5 +35,11 @@ impl IType for Expr {
 impl IType for f64 {
     fn tag() -> Type {
         Type::Number
+    }
+}
+
+impl IType for String {
+    fn tag() -> Type {
+        Type::String
     }
 }

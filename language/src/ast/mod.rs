@@ -135,7 +135,7 @@ impl<M: Default> Lisp for AST<M> {
 // quasiquotations and unquotations as function calls.
 // It will serve to quickly parse Sexp before a more serious
 // implementation of Lisp is developed.
-impl IntoSexp for AST<()> {
+impl<M> IntoSexp for AST<M> {
     fn into_sexp<S: Sexp>(self) -> S {
         match self {
             AST::Symbol { content, .. } => S::symbol(content.clone()),

@@ -1,8 +1,10 @@
 use std::{
-    any::Any, fmt::{self, Debug, Formatter}, sync::{Arc, Mutex}
+    any::Any,
+    fmt::{self, Debug, Formatter},
+    sync::{Arc, Mutex},
 };
 
-use crate::typed::{Type, IType};
+use crate::typed::{IType, Type};
 
 pub struct Var {
     val: Arc<Mutex<Box<dyn Any>>>,
@@ -45,7 +47,7 @@ impl Var {
 
 impl Debug for Var {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let v: &dyn Any = &*self.lock();
+        let v = self.lock();
         match self.typ {
             Type::Bool => {
                 let v: &bool = v.downcast_ref().unwrap();
@@ -67,7 +69,7 @@ impl Debug for Var {
                 return write!(f, "Var(nil)");
             }
             Type::Func(_, _) => {
-                return write!(f, "Var(func)");
+                return write!(f, "Var(func: {:?})", self.typ);
             }
         }
     }
