@@ -42,11 +42,33 @@ pub fn initialize_env() -> HashMap<String, Value> {
         },
     );
     env.insert(
+        "not".to_string(),
+        Value {
+            ty: Type::Func(vec![Type::Bool], Box::new(Type::Bool)),
+            constr: |prog, args| {
+                let (instr, ret) = instr::bool::not(args[0].clone());
+                prog.push_instr(instr);
+                ret
+            },
+        },
+    );
+    env.insert(
         "and".to_string(),
         Value {
             ty: Type::Func(vec![Type::Bool, Type::Bool], Box::new(Type::Bool)),
             constr: |prog, args| {
                 let (instr, ret) = instr::bool::and(args[0].clone(), args[1].clone());
+                prog.push_instr(instr);
+                ret
+            },
+        },
+    );
+    env.insert(
+        "or".to_string(),
+        Value {
+            ty: Type::Func(vec![Type::Bool, Type::Bool], Box::new(Type::Bool)),
+            constr: |prog, args| {
+                let (instr, ret) = instr::bool::or(args[0].clone(), args[1].clone());
                 prog.push_instr(instr);
                 ret
             },

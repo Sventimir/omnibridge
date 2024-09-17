@@ -8,6 +8,7 @@ use crate::{
     program::Program,
     src_location::WithLocation,
     typed::Type,
+    var::Var,
     IntoSexp,
 };
 
@@ -57,17 +58,40 @@ fn typecheck_a_bool_expr() {
     assert_eq!(ty, Ok(Type::Bool));
 }
 
+fn exec(src: &str) -> Var {
+    let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
+    let prog: Program = compile(&mut ast).unwrap();
+    prog.exec();
+    prog.result_var().unwrap()
+}
+
 quickcheck! {
     fn a_simple_function_call(a: bool, b: bool) -> bool {
-        let src = format!(
-            "(and {} {})",
-            a.into_sexp::<String>(),
-            b.into_sexp::<String>()
+        let result = exec(
+            &format!(
+                "(and {} {})",
+                a.into_sexp::<String>(),
+                b.into_sexp::<String>()
+            )
         );
-        let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
-        let prog: Program = compile(&mut ast).unwrap();
-        prog.exec();
-        println!("{:?}", prog);
-        prog.result() == Some(a && b)
+        result.value() == Some(a && b)
+    }
+
+    fn test_de_morgan_equivalence(a: bool, b: bool) -> bool {
+        let result1 = exec(
+            &format!(
+                "(not (or {} {}))",
+                a.into_sexp::<String>(),
+                b.into_sexp::<String>(),
+            )
+        );
+        let result2 = exec(
+            &format!(
+                "(and (not {}) (not {}))",
+                a.into_sexp::<String>(),
+                b.into_sexp::<String>(),
+            )
+        );
+        result1.value::<bool>() == result2.value()
     }
 }
