@@ -19,6 +19,10 @@ impl Instr for Not {
         *ret = Box::new(!self.arg.value::<bool>().unwrap());
     }
 
+    fn result_var(&self) -> Var {
+        self.result.clone()
+    }
+
     fn result_as_sexp(&self) -> Expr {
         self.result.value::<bool>().unwrap().into_sexp()
     }
@@ -57,6 +61,10 @@ impl Instr for Binary {
             self.args[0].value::<bool>().unwrap(),
             self.args[1].value::<bool>().unwrap(),
         ));
+    }
+
+    fn result_var(&self) -> Var {
+        self.result.clone()
     }
 
     fn result_as_sexp(&self) -> Expr {

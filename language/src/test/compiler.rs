@@ -68,6 +68,6 @@ quickcheck! {
         let prog: Program = compile(&mut ast).unwrap();
         prog.exec();
         println!("{:?}", prog);
-        prog.result_as_sexp().try_into() == Ok(a && b)
+        prog.result() == Some(a && b)
     }
 }

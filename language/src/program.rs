@@ -52,6 +52,11 @@ impl Program {
         (*instrs).push(instr);
     }
 
+    pub fn result<T: IType + Clone + 'static>(&self) -> Option<T> {
+        let instrs = self.instructions.lock().unwrap();
+        instrs.last().and_then(|instr| instr.result_var().value())
+    }
+
     pub fn result_as_sexp(&self) -> Expr {
         let instrs = self.instructions.lock().unwrap();
         match instrs.last() {
