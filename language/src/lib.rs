@@ -29,3 +29,4 @@ pub use sexp::{int, nil, pair, IntoSexp, Sexp, SexpError};
 
 #[cfg(test)]
 mod test;
+pub mod test_utils;

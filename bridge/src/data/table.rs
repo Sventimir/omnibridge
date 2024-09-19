@@ -197,3 +197,16 @@ impl FromStr for Vulnerability {
         }
     }
 }
+
+#[cfg(test)]
+mod quickcheck {
+    use ::quickcheck::{Arbitrary, Gen};
+
+    use super::*;
+
+    impl Arbitrary for Dir {
+        fn arbitrary(g: &mut Gen) -> Dir {
+            g.choose(&DIRS).unwrap().clone()
+        }
+    }
+}

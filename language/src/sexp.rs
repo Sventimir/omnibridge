@@ -84,6 +84,12 @@ impl<T: IntoSexp> IntoSexp for std::ops::Range<T> {
     }
 }
 
+impl IntoSexp for u8 {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::nat(self as u64)
+    }
+}
+
 impl IntoSexp for usize {
     fn into_sexp<S: Sexp>(self) -> S {
         S::nat(self as u64)

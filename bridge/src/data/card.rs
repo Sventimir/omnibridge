@@ -346,3 +346,43 @@ impl Deck {
         Deck(0)
     }
 }
+
+#[cfg(test)]
+mod quickcheck {
+    use super::*;
+    use ::quickcheck::{Arbitrary, Gen};
+
+    impl Arbitrary for Suit {
+        fn arbitrary(g: &mut Gen) -> Self {
+            g.choose(&SUITS).unwrap().clone()
+        }
+    }
+
+    impl Arbitrary for Rank {
+        fn arbitrary(g: &mut Gen) -> Self {
+            g.choose(&[
+                Rank::Ace,
+                Rank::King,
+                Rank::Queen,
+                Rank::Jack,
+                Rank::Ten,
+                Rank::Nine,
+                Rank::Eight,
+                Rank::Seven,
+                Rank::Six,
+                Rank::Five,
+                Rank::Four,
+                Rank::Three,
+                Rank::Two,
+            ])
+            .unwrap()
+            .clone()
+        }
+    }
+
+    impl Arbitrary for Card {
+        fn arbitrary(g: &mut Gen) -> Self {
+            Card::new(Suit::arbitrary(g), Rank::arbitrary(g))
+        }
+    }
+}

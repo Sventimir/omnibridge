@@ -6,8 +6,7 @@ use language::{
     ast::{
         expect::{self, ExpectError},
         AST,
-    },
-    int, IntoSexp, Sexp,
+    }, int, typed::{IType, Type}, IntoSexp, Sexp
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub)]
@@ -18,6 +17,10 @@ impl Score {
 
     pub fn from_i16(scr: i16) -> Score {
         Score(scr)
+    }
+
+    pub fn from_f64(scr: f64) -> Score {
+        Score(scr as i16)
     }
 }
 
@@ -38,6 +41,12 @@ impl<M: Clone> TryFrom<&AST<M>> for Score {
 
     fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         Ok(Score::from_i16(expect::int(ast)? as i16))
+    }
+}
+
+impl IType for Score {
+    fn tag() -> Type {
+        Type::Number
     }
 }
 
