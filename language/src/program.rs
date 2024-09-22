@@ -14,11 +14,12 @@ use crate::{
 pub struct Program {
     instructions: Arc<Mutex<Vec<Box<dyn Instr>>>>,
     ty: Type,
+    next_var_id: usize,
 }
 
 impl Debug for Program {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let contents = self.instructions.lock().unwrap();
+        let contents = self.instructions.try_lock().unwrap();
         let instr: String = contents.iter().map(|i| format!("{:?}, ", i)).collect();
         write!(f, "Program : {:?} [{}]", self.ty, instr)
     }
@@ -29,11 +30,14 @@ impl Program {
         Program {
             instructions: Arc::new(Mutex::new(Vec::new())),
             ty: Type::Nil,
+            next_var_id: 0,
         }
     }
 
-    pub fn alloc<T: IType + Clone + 'static>(&self, val: T) -> Var {
-        Var::new(val)
+    pub fn alloc<T: IType + Clone + 'static>(&mut self, val: T) -> Var {
+        let id = self.next_var_id;
+        self.next_var_id += 1;
+        Var::new(id, val)
     }
 
     pub fn assign_type(&mut self, ty: Type) {
@@ -41,19 +45,19 @@ impl Program {
     }
 
     pub fn exec(&self) {
-        let mut instrs = self.instructions.lock().unwrap();
+        let mut instrs = self.instructions.try_lock().unwrap();
         for instr in &mut *instrs {
             instr.exec();
         }
     }
 
     pub fn push_instr(&self, instr: Box<dyn Instr>) {
-        let mut instrs = self.instructions.lock().unwrap();
+        let mut instrs = self.instructions.try_lock().unwrap();
         (*instrs).push(instr);
     }
 
     pub fn result_var(&self) -> Option<Var> {
-        let instrs = self.instructions.lock().unwrap();
+        let instrs = self.instructions.try_lock().unwrap();
         instrs.last().map(|instr| instr.result_var().clone())
     }
 
@@ -62,7 +66,7 @@ impl Program {
     }
 
     pub fn result_as_sexp(&self) -> Expr {
-        let instrs = self.instructions.lock().unwrap();
+        let instrs = self.instructions.try_lock().unwrap();
         match instrs.last() {
             None => nil(),
             Some(instr) => instr.result_as_sexp(),

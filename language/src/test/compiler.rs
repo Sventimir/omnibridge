@@ -2,7 +2,7 @@ use crate::{
     ast::AST,
     compiler::{self, TypeError},
     parse,
-    test_utils::{Meta, exec},
+    test_utils::{exec, Meta},
     typed::Type,
     IntoSexp,
 };
@@ -44,5 +44,25 @@ quickcheck! {
             )
         );
         result1.value::<bool>() == result2.value()
+    }
+
+    fn test_multiplication_distribution_over_addition(a: f64, b: f64, c: f64) -> bool {
+        if a.is_nan() || b.is_nan() || c.is_nan() {
+            return true;
+        }
+        let result = exec(
+            &format!(
+                "(= (* {} (+ {} {})) (+ (* {} {}) (* {} {})))",
+                a.into_sexp::<String>(),
+                b.into_sexp::<String>(),
+                c.into_sexp::<String>(),
+                a.into_sexp::<String>(),
+                b.into_sexp::<String>(),
+                a.into_sexp::<String>(),
+                c.into_sexp::<String>(),
+            )
+        );
+        println!("Program returned: {}.", result.value::<bool>().unwrap());
+        result.value::<bool>() == Some(true)
     }
 }

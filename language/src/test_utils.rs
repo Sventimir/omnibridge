@@ -44,5 +44,6 @@ pub fn exec(src: &str) -> Var {
     let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
     let prog: Program = compile(&mut ast).unwrap();
     prog.exec();
+    println!("{:?}", prog);
     prog.result_var().unwrap()
 }

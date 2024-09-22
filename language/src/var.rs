@@ -7,13 +7,15 @@ use std::{
 use crate::typed::{IType, Type};
 
 pub struct Var {
+    id: usize,
     val: Arc<Mutex<Box<dyn Any>>>,
     typ: Type,
 }
 
 impl Var {
-    pub fn new<T: Any + IType>(val: T) -> Self {
+    pub fn new<T: Any + IType>(id: usize, val: T) -> Self {
         Self {
+            id,
             typ: T::tag(),
             val: Arc::new(Mutex::new(Box::new(val))),
         }
@@ -21,13 +23,14 @@ impl Var {
 
     pub fn clone(&self) -> Self {
         Self {
+            id: self.id,
             val: Arc::clone(&self.val),
             typ: self.typ.clone(),
         }
     }
 
     pub fn lock(&self) -> std::sync::MutexGuard<Box<dyn Any>> {
-        self.val.lock().unwrap()
+        self.val.try_lock().unwrap()
     }
 
     pub fn typ(&self) -> Type {
@@ -51,25 +54,25 @@ impl Debug for Var {
         match self.typ {
             Type::Bool => {
                 let v: &bool = v.downcast_ref().unwrap();
-                return write!(f, "Var({:?})", v);
+                return write!(f, "Var({} = {:?})", self.id, v);
             }
             Type::Number => {
-                let v: &f32 = v.downcast_ref().unwrap();
-                return write!(f, "Var({:?})", v);
+                let v: &f64 = v.downcast_ref().unwrap();
+                return write!(f, "Var({} = {:?})", self.id, v);
             }
             Type::String => {
                 let v: &String = v.downcast_ref().unwrap();
-                return write!(f, "Var({:?})", v);
+                return write!(f, "Var({} = {:?})", self.id, v);
             }
             Type::Expr => {
                 let v: &String = v.downcast_ref().unwrap();
-                return write!(f, "Var({:?})", v);
+                return write!(f, "Var({} = {:?})", self.id, v);
             }
             Type::Nil => {
-                return write!(f, "Var(nil)");
+                return write!(f, "Var({} = nil)", self.id);
             }
             Type::Func(_, _) => {
-                return write!(f, "Var(func: {:?})", self.typ);
+                return write!(f, "Var({} = func: {:?})", self.id, self.typ);
             }
         }
     }

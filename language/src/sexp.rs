@@ -96,6 +96,12 @@ impl IntoSexp for usize {
     }
 }
 
+impl IntoSexp for f64 {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::float(self)
+    }
+}
+
 impl IntoSexp for bool {
     fn into_sexp<S: Sexp>(self) -> S {
         if self {

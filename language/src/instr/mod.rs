@@ -1,6 +1,7 @@
 use crate::{var::Var, Expr};
 use std::fmt::Debug;
 
+pub mod binop;
 pub mod bool;
 
 pub trait Instr: Debug {

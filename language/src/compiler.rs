@@ -1,3 +1,4 @@
+use core::f64;
 use std::collections::HashMap;
 
 use crate::{ast::AST, instr, program::Program, typed::Type, var::Var, Expr, IntoSexp};
@@ -42,11 +43,32 @@ pub fn initialize_env() -> HashMap<String, Value> {
         },
     );
     env.insert(
+        "NaN".to_string(),
+        Value {
+            ty: Type::Number,
+            constr: |prog, _| prog.alloc(f64::NAN),
+        },
+    );
+    env.insert(
+        "inf".to_string(),
+        Value {
+            ty: Type::Number,
+            constr: |prog, _| prog.alloc(f64::INFINITY),
+        },
+    );
+    env.insert(
+        "-inf".to_string(),
+        Value {
+            ty: Type::Number,
+            constr: |prog, _| prog.alloc(f64::NEG_INFINITY),
+        },
+    );
+    env.insert(
         "not".to_string(),
         Value {
             ty: Type::Func(vec![Type::Bool], Box::new(Type::Bool)),
             constr: |prog, args| {
-                let (instr, ret) = instr::bool::not(args[0].clone());
+                let (instr, ret) = instr::bool::not(prog, args[0].clone());
                 prog.push_instr(instr);
                 ret
             },
@@ -57,7 +79,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
         Value {
             ty: Type::Func(vec![Type::Bool, Type::Bool], Box::new(Type::Bool)),
             constr: |prog, args| {
-                let (instr, ret) = instr::bool::and(args[0].clone(), args[1].clone());
+                let (instr, ret) = instr::binop::and(prog, args[0].clone(), args[1].clone());
                 prog.push_instr(instr);
                 ret
             },
@@ -68,11 +90,44 @@ pub fn initialize_env() -> HashMap<String, Value> {
         Value {
             ty: Type::Func(vec![Type::Bool, Type::Bool], Box::new(Type::Bool)),
             constr: |prog, args| {
-                let (instr, ret) = instr::bool::or(args[0].clone(), args[1].clone());
+                let (instr, ret) = instr::binop::or(prog, args[0].clone(), args[1].clone());
                 prog.push_instr(instr);
                 ret
             },
         },
+    );
+    env.insert(
+        "=".to_string(),
+        Value {
+            ty: Type::Func(vec![Type::Number, Type::Number], Box::new(Type::Bool)),
+            constr: |prog, args| {
+                let (instr, ret) = instr::binop::equal(prog, args[0].clone(), args[1].clone());
+                prog.push_instr(instr);
+                ret
+            },
+        }
+    );
+    env.insert(
+        "+".to_string(),
+        Value {
+            ty: Type::Func(vec![Type::Number, Type::Number], Box::new(Type::Number)),
+            constr: |prog, args| {
+                let (instr, ret) = instr::binop::add(prog, args[0].clone(), args[1].clone());
+                prog.push_instr(instr);
+                ret
+            },
+        }
+    );
+    env.insert(
+        "*".to_string(),
+        Value {
+            ty: Type::Func(vec![Type::Number, Type::Number], Box::new(Type::Number)),
+            constr: |prog, args| {
+                let (instr, ret) = instr::binop::mul(prog, args[0].clone(), args[1].clone());
+                prog.push_instr(instr);
+                ret
+            },
+        }
     );
     env
 }
