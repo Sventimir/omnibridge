@@ -3,7 +3,9 @@ use crate::Expr;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Type {
     Bool,
-    Number,
+    Decimal,
+    Int,
+    Nat,
     String,
     Expr,
     Nil,
@@ -34,7 +36,19 @@ impl IType for Expr {
 
 impl IType for f64 {
     fn tag() -> Type {
-        Type::Number
+        Type::Decimal
+    }
+}
+
+impl IType for i64 {
+    fn tag() -> Type {
+        Type::Int
+    }
+}
+
+impl IType for u64 {
+    fn tag() -> Type {
+        Type::Nat
     }
 }
 

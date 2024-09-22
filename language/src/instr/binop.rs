@@ -27,6 +27,8 @@ where
 {
     fn exec(&mut self) {
         let mut ret = self.result.lock();
+        println!("Unwrapping arg1: {:?}...", A::tag());
+        println!("Unwrapping arg2: {:?}...", B::tag());
         *ret = Box::new((self.op)(
             self.args[0].value::<A>().unwrap(),
             self.args[1].value::<B>().unwrap(),

@@ -49,7 +49,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Score {
 
 impl IType for Score {
     fn tag() -> Type {
-        Type::Number
+        Type::Decimal
     }
 }
 

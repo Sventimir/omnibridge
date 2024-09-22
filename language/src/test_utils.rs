@@ -43,8 +43,10 @@ impl Default for Meta {
 }
 
 pub fn exec(src: &str) -> Var {
+    println!("src: '{}'", src);
     let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
     let prog: Program = compile(&mut ast).unwrap();
+    println!("{:?}", prog);
     prog.exec();
     prog.result_var().unwrap()
 }

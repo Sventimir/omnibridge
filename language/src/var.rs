@@ -54,25 +54,33 @@ impl Debug for Var {
         match self.typ {
             Type::Bool => {
                 let v: &bool = v.downcast_ref().unwrap();
-                return write!(f, "Var({} = {:?})", self.id, v);
+                return write!(f, "Var({}: bool = {:?})", self.id, v);
             }
-            Type::Number => {
+            Type::Decimal => {
                 let v: &f64 = v.downcast_ref().unwrap();
-                return write!(f, "Var({} = {:?})", self.id, v);
+                return write!(f, "Var({}: decimal = {:?})", self.id, v);
+            }
+            Type::Int => {
+                let v: &i64 = v.downcast_ref().unwrap();
+                return write!(f, "Var({}: int = {:?})", self.id, v);
+            }
+            Type::Nat => {
+                let v: &u64 = v.downcast_ref().unwrap();
+                return write!(f, "Var({}: nat = {:?})", self.id, v);
             }
             Type::String => {
                 let v: &String = v.downcast_ref().unwrap();
-                return write!(f, "Var({} = {:?})", self.id, v);
+                return write!(f, "Var({}: string = {:?})", self.id, v);
             }
             Type::Expr => {
                 let v: &String = v.downcast_ref().unwrap();
-                return write!(f, "Var({} = {:?})", self.id, v);
+                return write!(f, "Var({}: sexp = {:?})", self.id, v);
             }
             Type::Nil => {
-                return write!(f, "Var({} = nil)", self.id);
+                return write!(f, "Var({}: nil = nil)", self.id);
             }
             Type::Func(_, _) => {
-                return write!(f, "Var({} = func: {:?})", self.id, self.typ);
+                return write!(f, "Var({}: {:?})", self.id, self.typ);
             }
         }
     }

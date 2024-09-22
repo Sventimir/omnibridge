@@ -9,6 +9,7 @@ pub enum AST<M> {
     Symbol { content: String, meta: M },
     String { content: String, meta: M },
     Nat { content: u64, meta: M },
+    Int { content: i64, meta: M },
     Float { content: f64, meta: M },
     List { content: Vec<AST<M>>, meta: M },
     Quoted { content: Box<AST<M>>, meta: M },
@@ -22,6 +23,7 @@ impl<M> AST<M> {
             AST::Symbol { meta, .. } => meta,
             AST::String { meta, .. } => meta,
             AST::Nat { meta, .. } => meta,
+            AST::Int { meta, .. } => meta,
             AST::Float { meta, .. } => meta,
             AST::List { meta, .. } => meta,
             AST::Quoted { meta, .. } => meta,
@@ -35,6 +37,7 @@ impl<M> AST<M> {
             AST::Symbol { meta, .. } => meta,
             AST::String { meta, .. } => meta,
             AST::Nat { meta, .. } => meta,
+            AST::Int { meta, .. } => meta,
             AST::Float { meta, .. } => meta,
             AST::List { meta, .. } => meta,
             AST::Quoted { meta, .. } => meta,
@@ -48,6 +51,7 @@ impl<M> AST<M> {
             AST::Symbol { content, .. } => AST::Symbol { content, meta: () },
             AST::String { content, .. } => AST::String { content, meta: () },
             AST::Nat { content, .. } => AST::Nat { content, meta: () },
+            AST::Int { content, .. } => AST::Int { content, meta: () },
             AST::Float { content, .. } => AST::Float { content, meta: () },
             AST::List { content, .. } => AST::List {
                 content: content.into_iter().map(|x| x.drop_meta()).collect(),
@@ -87,6 +91,13 @@ impl<M: Default> Sexp for AST<M> {
     fn nat(n: u64) -> Self {
         AST::Nat {
             content: n,
+            meta: Default::default(),
+        }
+    }
+
+    fn int(i: i64) -> Self {
+        AST::Int {
+            content: i,
             meta: Default::default(),
         }
     }
@@ -141,6 +152,7 @@ impl<M> IntoSexp for AST<M> {
             AST::Symbol { content, .. } => S::symbol(content.clone()),
             AST::String { content, .. } => S::string(content.clone()),
             AST::Nat { content, .. } => S::nat(content),
+            AST::Int { content, .. } => S::int(content),
             AST::Float { content, .. } => S::float(content),
             AST::List { content, .. } => {
                 let mut acc = Vec::new();

@@ -7,6 +7,7 @@ pub trait Sexp: Sized {
     fn symbol(s: String) -> Self;
     fn string(s: String) -> Self;
     fn nat(n: u64) -> Self;
+    fn int(i: i64) -> Self;
     fn float(f: f64) -> Self;
     fn list(l: Vec<Self>) -> Self;
 }
@@ -22,6 +23,10 @@ impl Sexp for String {
 
     fn nat(n: u64) -> Self {
         n.to_string()
+    }
+
+    fn int(i: i64) -> Self {
+        i.to_string()
     }
 
     fn float(f: f64) -> Self {

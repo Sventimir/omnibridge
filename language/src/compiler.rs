@@ -45,21 +45,21 @@ pub fn initialize_env() -> HashMap<String, Value> {
     env.insert(
         "NaN".to_string(),
         Value {
-            ty: Type::Number,
+            ty: Type::Decimal,
             constr: |prog, _| prog.alloc(f64::NAN),
         },
     );
     env.insert(
         "inf".to_string(),
         Value {
-            ty: Type::Number,
+            ty: Type::Decimal,
             constr: |prog, _| prog.alloc(f64::INFINITY),
         },
     );
     env.insert(
         "-inf".to_string(),
         Value {
-            ty: Type::Number,
+            ty: Type::Decimal,
             constr: |prog, _| prog.alloc(f64::NEG_INFINITY),
         },
     );
@@ -99,7 +99,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
     env.insert(
         "=".to_string(),
         Value {
-            ty: Type::Func(vec![Type::Number, Type::Number], Box::new(Type::Bool)),
+            ty: Type::Func(vec![Type::Decimal, Type::Decimal], Box::new(Type::Bool)),
             constr: |prog, args| {
                 let (instr, ret) = instr::binop::equal(prog, args[0].clone(), args[1].clone());
                 prog.push_instr(instr);
@@ -110,7 +110,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
     env.insert(
         "+".to_string(),
         Value {
-            ty: Type::Func(vec![Type::Number, Type::Number], Box::new(Type::Number)),
+            ty: Type::Func(vec![Type::Decimal, Type::Decimal], Box::new(Type::Decimal)),
             constr: |prog, args| {
                 let (instr, ret) = instr::binop::add(prog, args[0].clone(), args[1].clone());
                 prog.push_instr(instr);
@@ -121,7 +121,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
     env.insert(
         "*".to_string(),
         Value {
-            ty: Type::Func(vec![Type::Number, Type::Number], Box::new(Type::Number)),
+            ty: Type::Func(vec![Type::Decimal, Type::Decimal], Box::new(Type::Decimal)),
             constr: |prog, args| {
                 let (instr, ret) = instr::binop::mul(prog, args[0].clone(), args[1].clone());
                 prog.push_instr(instr);
@@ -150,6 +150,7 @@ fn compile_ast<M: Clone + Typed>(
 ) -> Var {
     match ast {
         AST::Nat { content, .. } => prog.alloc(*content as f64),
+        AST::Int { content, .. } => prog.alloc(*content as f64),
         AST::Float { content, .. } => prog.alloc(*content),
         AST::String { content, .. } => prog.alloc(content.clone()),
         AST::Quoted { content, .. } | AST::QuasiQuoted { content, .. } => {
@@ -183,7 +184,7 @@ pub fn typecheck<M: Clone + Typed>(
     env: &HashMap<String, Value>,
 ) -> Result<Type, TypeError<M>> {
     let ty = match ast {
-        AST::Nat { .. } | AST::Float { .. } => Ok(Type::Number),
+        AST::Nat { .. } | AST::Int { .. } | AST::Float { .. } => Ok(Type::Decimal),
         AST::String { .. } => Ok(Type::String),
         AST::Quoted { .. } => Ok(Type::Expr),
         AST::QuasiQuoted { meta, .. } | AST::Unquoted { meta, .. } => {

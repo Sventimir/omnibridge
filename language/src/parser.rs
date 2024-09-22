@@ -75,6 +75,7 @@ fn parse_node<'a, L: Lisp + WithLocation>(
             .and_then(|s| {
                 s.parse::<u64>()
                     .map(L::nat)
+                    .or_else(|_| s.parse::<i64>().map(L::int))
                     .or_else(|_| s.parse::<f64>().map(L::float))
                     .map_err(|_| ParseError::InvalidNumber(s.to_string()))
             }),

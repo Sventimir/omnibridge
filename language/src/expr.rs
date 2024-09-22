@@ -5,6 +5,7 @@ pub enum Expr {
     Symbol(String),
     Str(String),
     Nat(u64),
+    Int(i64),
     Float(f64),
     List(Vec<Expr>),
 }
@@ -28,6 +29,10 @@ impl Sexp for Expr {
         Expr::Nat(n)
     }
 
+    fn int(i: i64) -> Self {
+        Expr::Int(i)
+    }
+
     fn float(f: f64) -> Self {
         Expr::Float(f)
     }
@@ -43,6 +48,7 @@ impl IntoSexp for Expr {
             Expr::Symbol(s) => S::symbol(s),
             Expr::Str(s) => S::string(s),
             Expr::Nat(n) => S::nat(n),
+            Expr::Int(i) => S::int(i),
             Expr::Float(f) => S::float(f),
             Expr::List(l) => S::list(l.into_iter().map(|e| e.into_sexp()).collect()),
         }
