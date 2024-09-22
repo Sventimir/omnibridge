@@ -9,9 +9,11 @@ edition = "2021"
 num = "0.4.1"
 num-derive = "0.4.1"
 num-traits = "0.2"
-quickcheck = "1.0.3"
 tree-sitter = "0.20"
 tree-sitter-commonlisp = "0.3.3"
+
+[dev-dependencies]
+proptest = "1.5.0"
 
 [lib]
 name = "language"

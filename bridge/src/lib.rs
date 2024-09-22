@@ -1,6 +1,6 @@
 #[cfg(test)]
 #[macro_use]
-extern crate quickcheck;
+extern crate proptest;
 
 pub mod data;
 pub mod dealer;

@@ -105,7 +105,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
                 prog.push_instr(instr);
                 ret
             },
-        }
+        },
     );
     env.insert(
         "+".to_string(),
@@ -116,7 +116,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
                 prog.push_instr(instr);
                 ret
             },
-        }
+        },
     );
     env.insert(
         "*".to_string(),
@@ -127,7 +127,7 @@ pub fn initialize_env() -> HashMap<String, Value> {
                 prog.push_instr(instr);
                 ret
             },
-        }
+        },
     );
     env
 }

@@ -391,16 +391,3 @@ impl Ord for Bid {
         }
     }
 }
-
-#[cfg(test)]
-mod quickcheck {
-    use ::quickcheck::{Arbitrary, Gen};
-
-    use super::*;
-
-    impl Arbitrary for Doubled {
-        fn arbitrary(g: &mut Gen) -> Doubled {
-            g.choose(&[Doubled::Undoubled, Doubled::Doubled, Doubled::Redoubled]).unwrap().clone()
-        }
-    }
-}

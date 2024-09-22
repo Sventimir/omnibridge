@@ -1,3 +1,5 @@
+use proptest::prelude::Strategy;
+
 use crate::{
     ast::AST,
     compiler::{self, TypeError},
@@ -16,8 +18,19 @@ fn typecheck_a_bool_expr() {
     assert_eq!(ty, Ok(Type::Bool));
 }
 
-quickcheck! {
-    fn a_simple_function_call(a: bool, b: bool) -> bool {
+/* This property is not true in general with respect to floating-point
+numbers. Things may go wrong when some computation hits infitinity
+or because of rounding errors. In general the order of operations
+matters with floats. Here we try to select a subset of values for
+which the property holds. Later we might switch to a more reliable
+type. */
+fn integral_float() -> impl Strategy<Value = f64> {
+    (i16::MIN..i16::MAX).prop_map(|x| x as f64)
+}
+
+proptest! {
+    #[test]
+    fn a_simple_function_call(a: bool, b: bool) {
         let result = exec(
             &format!(
                 "(and {} {})",
@@ -25,10 +38,11 @@ quickcheck! {
                 b.into_sexp::<String>()
             )
         );
-        result.value() == Some(a && b)
+        assert_eq!(result.value(), Some(a && b))
     }
 
-    fn test_de_morgan_equivalence(a: bool, b: bool) -> bool {
+    #[test]
+    fn test_de_morgan_equivalence(a: bool, b: bool) {
         let result1 = exec(
             &format!(
                 "(not (or {} {}))",
@@ -43,13 +57,15 @@ quickcheck! {
                 b.into_sexp::<String>(),
             )
         );
-        result1.value::<bool>() == result2.value()
+        assert_eq!(result1.value::<bool>(), result2.value())
     }
 
-    fn test_multiplication_distribution_over_addition(a: f64, b: f64, c: f64) -> bool {
-        if a.is_nan() || b.is_nan() || c.is_nan() {
-            return true;
-        }
+    #[test]
+    fn test_multiplication_distribution_over_addition(
+        a in integral_float(),
+        b in integral_float(),
+        c in integral_float()
+    ) {
         let result = exec(
             &format!(
                 "(= (* {} (+ {} {})) (+ (* {} {}) (* {} {})))",
@@ -62,7 +78,6 @@ quickcheck! {
                 c.into_sexp::<String>(),
             )
         );
-        println!("Program returned: {}.", result.value::<bool>().unwrap());
-        result.value::<bool>() == Some(true)
+        assert_eq!(result.value::<bool>(), Some(true))
     }
 }

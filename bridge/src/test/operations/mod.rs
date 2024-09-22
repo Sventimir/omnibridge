@@ -6,17 +6,38 @@ use crate::data::{
     table::Dir,
 };
 use language::{test_utils::exec, IntoSexp};
+use proptest::prelude::{Just, Strategy};
 
-quickcheck! {
+#[allow(dead_code)]
+fn arb_trump() -> impl Strategy<Value = Option<Suit>> {
+    prop_oneof![
+        Just(Some(Suit::Club)),
+        Just(Some(Suit::Diamond)),
+        Just(Some(Suit::Heart)),
+        Just(Some(Suit::Spade)),
+        Just(None),
+    ]
+}
+
+proptest! {
     #[ignore]
     fn test_score_computation(
-        board: u8,
-        level: u8,
-        trump: Option<Suit>,
-        declarer: Dir,
-        dbl: Doubled,
-        tricks: u8
-    ) -> bool {
+        board in 0..32u8,
+        level in 1..7u8,
+        trump in arb_trump(),
+        declarer in prop_oneof![
+            Just(Dir::North),
+            Just(Dir::East),
+            Just(Dir::South),
+            Just(Dir::West),
+        ],
+        dbl in prop_oneof![
+            Just(Doubled::Undoubled),
+            Just(Doubled::Doubled),
+            Just(Doubled::Redoubled),
+        ],
+        tricks in 0..13u8
+    ) {
         let result = exec(
             &format!(
                 "(score {} {} {} {} {} {})",
@@ -37,6 +58,6 @@ quickcheck! {
             lead: None,
             tricks: tricks as i8 - (level as i8 + 6),
         };
-        result.value::<Score>().unwrap() == contract_result.score()
+        assert_eq!(result.value::<Score>().unwrap(), contract_result.score())
     }
 }

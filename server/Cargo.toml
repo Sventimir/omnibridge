@@ -14,7 +14,6 @@ num-derive = "0.4.1"
 num-traits = "0.2"
 omnibridge = { path = "../bridge" }
 omnibridge-language = { path = "../language" }
-quickcheck = "1.0.3"
 rand = "0.8.5"
 ring = "0.17.8"
 serde = {version = "1.0.198", features = ["derive"]}

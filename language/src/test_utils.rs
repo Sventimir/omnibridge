@@ -1,7 +1,9 @@
 use std::ops::Range;
 
-use crate::{ast::AST, compile, compiler::Typed, parse, program::Program, src_location::WithLocation, typed::Type, var::Var};
-
+use crate::{
+    ast::AST, compile, compiler::Typed, parse, program::Program, src_location::WithLocation,
+    typed::Type, var::Var,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Meta {
@@ -44,6 +46,5 @@ pub fn exec(src: &str) -> Var {
     let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
     let prog: Program = compile(&mut ast).unwrap();
     prog.exec();
-    println!("{:?}", prog);
     prog.result_var().unwrap()
 }

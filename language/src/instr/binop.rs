@@ -2,7 +2,6 @@ use super::Instr;
 use crate::{program::Program, typed::IType, var::Var, Expr, IntoSexp};
 use std::fmt::{self, Debug, Formatter};
 
-
 struct BinaryOp<A, B, C> {
     args: [Var; 2],
     result: Var,
@@ -20,7 +19,7 @@ impl<A: Debug, B: Debug, C: Debug> Debug for BinaryOp<A, B, C> {
     }
 }
 
-impl<A, B, C> Instr for BinaryOp<A, B, C> 
+impl<A, B, C> Instr for BinaryOp<A, B, C>
 where
     A: Clone + Debug + IType + 'static,
     B: Clone + Debug + IType + 'static,

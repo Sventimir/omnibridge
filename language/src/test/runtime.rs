@@ -10,8 +10,9 @@ fn not_instr_flips_bool() {
     assert_eq!(result.value(), Some(true));
 }
 
-quickcheck! {
-    fn de_morgan_law_holds(x: bool, y: bool) -> bool {
+proptest! {
+    #[test]
+    fn de_morgan_law_holds(x: bool, y: bool) {
         let mut prog1 = Program::new();
         let a = prog1.alloc(x);
         let b = prog1.alloc(y);
@@ -32,6 +33,6 @@ quickcheck! {
         prog2.push_instr(or_instr);
         prog2.exec();
 
-        result1.value::<bool>() == result2.value()
+        assert_eq!(result1.value::<bool>(), result2.value())
     }
 }

@@ -6,7 +6,10 @@ use language::{
     ast::{
         expect::{self, ExpectError},
         AST,
-    }, int, typed::{IType, Type}, IntoSexp, Sexp
+    },
+    int,
+    typed::{IType, Type},
+    IntoSexp, Sexp,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub)]
