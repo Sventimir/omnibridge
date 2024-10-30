@@ -26,7 +26,7 @@
 (defun bridge-mode-log-comm (side msg)
   "Log MSG from SIDE in the omnibridge-log-buffer."
   (if omnibridge-log-buffer
-      (with-current-buffer omnibridge-log-buffer
+      (with-current-buffer (get-buffer-create omnibridge-log-buffer)
         (let ((inhibit-read-only t))
           (goto-char (point-max))
           (insert (format "%s> %s\n" side (string-trim msg)))))))

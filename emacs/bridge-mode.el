@@ -4,6 +4,7 @@
 ;;; Code:
 (require 'subr-x)
 (require 'bridge)
+(require 'bridge-match)
 (require 'omnibridge-server-interface)
 
 (defun omnibridge ()
@@ -41,13 +42,13 @@
                (callback (gethash request-id omnibridge-server-response-handlers))
                (result (or (assoc 'error expr) (assoc 'ok expr))))
           (progn
-            (cond ((eq (car result) 'err) (message result))
+            (cond ((eq (car result) 'error) (message "%s" result))
                   ((eq (car result) 'ok)
                    (funcall callback (cadr result))))
             (remhash request-id omnibridge-server-response-handlers)))
       ('error (progn
                 (message "%s" (string-trim msg))
-                (bridge-mode-log-comm 'error e))))))
+                (bridge-mode-log-comm 'error (prin1-to-string e)))))))
 
 (defun bridge-mode-insert-board (resp)
   "Insert the board from RESP at the end of the current buffer."
@@ -81,6 +82,10 @@
                      (bridge-card-format (bridge-contract-lead contract))
                      (bridge-contract-tricks-taken contract)
                      score))))
+
+(defvar-keymap bridge-mode-map
+  :doc "Keymap for bridge-mode."
+  "m" 'bridge-mode-match-protocol)
 
 (provide 'bridge-mode)
 ;;; bridge-mode.el ends here
