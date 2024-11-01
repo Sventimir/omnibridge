@@ -1,15 +1,7 @@
 use std::ops::Range;
 
 use crate::{
-    ast::AST,
-    compile,
-    compiler::{self, TypeError, Typed},
-    parse,
-    program::Program,
-    src_location::WithLocation,
-    typed::Type,
-    var::Var,
-    IntoSexp,
+    ast::AST, compile, compiler::{self, TypeError, Typed}, env::Env, parse, program::Program, src_location::WithLocation, typed::Type, var::Var, IntoSexp
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -52,8 +44,9 @@ impl Default for Meta {
 #[test]
 fn typecheck_a_bool_expr() {
     let src = "(and t f)";
-    let env = compiler::initialize_env();
+    let mut env = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
+    env.initialize();
     let ty: Result<Type, TypeError<Meta>> = compiler::typecheck(&mut ast[0], &env);
     assert_eq!(ty, Ok(Type::Bool));
 }
