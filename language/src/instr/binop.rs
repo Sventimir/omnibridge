@@ -23,12 +23,10 @@ impl<A, B, C> Instr for BinaryOp<A, B, C>
 where
     A: Clone + Debug + IType + 'static,
     B: Clone + Debug + IType + 'static,
-    C: Debug + 'static,
+    C: Clone + Debug + IType + IntoSexp + 'static,
 {
     fn exec(&mut self) {
         let mut ret = self.result.lock();
-        println!("Unwrapping arg1: {:?}...", A::tag());
-        println!("Unwrapping arg2: {:?}...", B::tag());
         *ret = Box::new((self.op)(
             self.args[0].value::<A>().unwrap(),
             self.args[1].value::<B>().unwrap(),
@@ -40,7 +38,7 @@ where
     }
 
     fn result_as_sexp(&self) -> Expr {
-        self.result.value::<bool>().unwrap().into_sexp()
+        self.result.value::<C>().unwrap().into_sexp()
     }
 }
 

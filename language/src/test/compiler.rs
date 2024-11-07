@@ -1,4 +1,7 @@
+use std::fmt::{self, Display, Formatter};
+
 use proptest::prelude::Strategy;
+use proptest_derive::Arbitrary;
 
 use crate::{
     ast::AST,
@@ -28,6 +31,23 @@ which the property holds. Later we might switch to a more reliable
 type. */
 fn integral_float() -> impl Strategy<Value = f64> {
     (i16::MIN..i16::MAX).prop_map(|x| x as f64)
+}
+
+#[derive(Arbitrary, Debug, PartialEq)]
+enum AnyNumber {
+    Nat(u64),
+    Int(i64),
+    Float(f64),
+}
+
+impl Display for AnyNumber {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            AnyNumber::Nat(n) => write!(f, "{}", n),
+            AnyNumber::Int(n) => write!(f, "{}", n),
+            AnyNumber::Float(n) => write!(f, "{}", n),
+        }
+    }
 }
 
 proptest! {
@@ -81,5 +101,24 @@ proptest! {
             )
         );
         assert_eq!(result.value::<bool>(), Some(true))
+    }
+
+    #[ignore]
+    #[test]
+    fn test_polymorhic_identity(any_num: AnyNumber) {
+        match any_num {
+            AnyNumber::Nat(n) => {
+                let result = exec(&format!("(id {})", n));
+                assert_eq!(result.value::<u64>(), Some(n))
+            }
+            AnyNumber::Int(i) => {
+                let result = exec(&format!("(id {})", i));
+                assert_eq!(result.value::<i64>(), Some(i))
+            }
+            AnyNumber::Float(f) => {
+                let result = exec(&format!("(id {})", f));
+                assert_eq!(result.value::<f64>(), Some(f))
+            }
+        }
     }
 }
