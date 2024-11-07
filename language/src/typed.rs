@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::Expr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -41,5 +43,28 @@ impl IType for f64 {
 impl IType for String {
     fn tag() -> Type {
         Type::String
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeVar {
+    resolved: Arc<Mutex<Option<Type>>>,
+}
+
+impl TypeVar {
+    pub fn new() -> Self {
+        TypeVar {
+            resolved: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    pub fn resolve(&self, ty: Type) {
+        let mut resolved = self.resolved.lock().unwrap();
+        *resolved = Some(ty);
+    }
+
+    pub fn get(&self) -> Option<Type> {
+        let resolved = self.resolved.lock().unwrap();
+        resolved.clone()
     }
 }
