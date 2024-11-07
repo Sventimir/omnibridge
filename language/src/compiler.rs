@@ -1,140 +1,9 @@
-use core::f64;
-use std::collections::HashMap;
-
-use crate::{ast::AST, instr, program::Program, typed::Type, var::Var, Expr, IntoSexp};
-
-#[derive(Debug)]
-pub struct Value {
-    ty: Type,
-    constr: fn(prog: &mut Program, args: &[Var]) -> Var,
-}
-
-impl Value {
-    fn compile_var(&self, prog: &mut Program) -> Var {
-        (self.constr)(prog, &[])
-    }
-
-    fn compile_func(&self, prog: &mut Program, args: &[Var]) -> Var {
-        (self.constr)(prog, args)
-    }
-}
-
-pub fn initialize_env() -> HashMap<String, Value> {
-    let mut env = HashMap::new();
-    env.insert(
-        "t".to_string(),
-        Value {
-            ty: Type::Bool,
-            constr: |prog, _| prog.alloc(true),
-        },
-    );
-    env.insert(
-        "f".to_string(),
-        Value {
-            ty: Type::Bool,
-            constr: |prog, _| prog.alloc(false),
-        },
-    );
-    env.insert(
-        "nil".to_string(),
-        Value {
-            ty: Type::Nil,
-            constr: |prog, _| prog.alloc(()),
-        },
-    );
-    env.insert(
-        "NaN".to_string(),
-        Value {
-            ty: Type::Decimal,
-            constr: |prog, _| prog.alloc(f64::NAN),
-        },
-    );
-    env.insert(
-        "inf".to_string(),
-        Value {
-            ty: Type::Decimal,
-            constr: |prog, _| prog.alloc(f64::INFINITY),
-        },
-    );
-    env.insert(
-        "-inf".to_string(),
-        Value {
-            ty: Type::Decimal,
-            constr: |prog, _| prog.alloc(f64::NEG_INFINITY),
-        },
-    );
-    env.insert(
-        "not".to_string(),
-        Value {
-            ty: Type::Func(vec![Type::Bool], Box::new(Type::Bool)),
-            constr: |prog, args| {
-                let (instr, ret) = instr::bool::not(prog, args[0].clone());
-                prog.push_instr(instr);
-                ret
-            },
-        },
-    );
-    env.insert(
-        "and".to_string(),
-        Value {
-            ty: Type::Func(vec![Type::Bool, Type::Bool], Box::new(Type::Bool)),
-            constr: |prog, args| {
-                let (instr, ret) = instr::binop::and(prog, args[0].clone(), args[1].clone());
-                prog.push_instr(instr);
-                ret
-            },
-        },
-    );
-    env.insert(
-        "or".to_string(),
-        Value {
-            ty: Type::Func(vec![Type::Bool, Type::Bool], Box::new(Type::Bool)),
-            constr: |prog, args| {
-                let (instr, ret) = instr::binop::or(prog, args[0].clone(), args[1].clone());
-                prog.push_instr(instr);
-                ret
-            },
-        },
-    );
-    env.insert(
-        "=".to_string(),
-        Value {
-            ty: Type::Func(vec![Type::Decimal, Type::Decimal], Box::new(Type::Bool)),
-            constr: |prog, args| {
-                let (instr, ret) = instr::binop::equal(prog, args[0].clone(), args[1].clone());
-                prog.push_instr(instr);
-                ret
-            },
-        },
-    );
-    env.insert(
-        "+".to_string(),
-        Value {
-            ty: Type::Func(vec![Type::Decimal, Type::Decimal], Box::new(Type::Decimal)),
-            constr: |prog, args| {
-                let (instr, ret) = instr::binop::add(prog, args[0].clone(), args[1].clone());
-                prog.push_instr(instr);
-                ret
-            },
-        },
-    );
-    env.insert(
-        "*".to_string(),
-        Value {
-            ty: Type::Func(vec![Type::Decimal, Type::Decimal], Box::new(Type::Decimal)),
-            constr: |prog, args| {
-                let (instr, ret) = instr::binop::mul(prog, args[0].clone(), args[1].clone());
-                prog.push_instr(instr);
-                ret
-            },
-        },
-    );
-    env
-}
+use crate::{ast::AST, env::Env, program::Program, typed::Type, var::Var, Expr, IntoSexp};
 
 pub fn compile<M: Clone + Typed>(src: &mut Vec<AST<M>>) -> Result<Program, TypeError<M>> {
     let mut prog = Program::new();
-    let mut env: HashMap<String, Value> = initialize_env();
+    let mut env = Env::new();
+    env.initialize();
     for ast in src {
         let ty = typecheck(ast, &env)?;
         prog.assign_type(ty.clone());
@@ -146,7 +15,7 @@ pub fn compile<M: Clone + Typed>(src: &mut Vec<AST<M>>) -> Result<Program, TypeE
 fn compile_ast<M: Clone + Typed>(
     ast: &mut AST<M>,
     prog: &mut Program,
-    env: &mut HashMap<String, Value>,
+    env: &mut Env,
 ) -> Var {
     match ast {
         AST::Nat { content, .. } => prog.alloc(*content as f64),
@@ -181,7 +50,7 @@ fn compile_ast<M: Clone + Typed>(
 
 pub fn typecheck<M: Clone + Typed>(
     ast: &mut AST<M>,
-    env: &HashMap<String, Value>,
+    env: &Env,
 ) -> Result<Type, TypeError<M>> {
     let ty = match ast {
         AST::Nat { .. } | AST::Int { .. } | AST::Float { .. } => Ok(Type::Decimal),
@@ -191,11 +60,11 @@ pub fn typecheck<M: Clone + Typed>(
             Err(TypeError::UnexpectedQuasiquote(meta.clone()))
         }
         AST::Symbol { content, meta } => {
-            let v = env.get(content).ok_or(TypeError::UnknownSymbol {
+            let ty = env.ty(content).ok_or(TypeError::UnknownSymbol {
                 symbol: content.clone(),
                 meta: meta.clone(),
             })?;
-            Ok(v.ty.clone())
+            Ok(ty)
         }
         AST::List {
             content,
@@ -226,7 +95,7 @@ pub fn typecheck<M: Clone + Typed>(
 fn typecheck_func_args<M: Clone + Typed>(
     actual: &mut std::slice::IterMut<AST<M>>,
     expected: &mut std::slice::Iter<Type>,
-    env: &HashMap<String, Value>,
+    env: &Env,
     func_meta: &mut M,
 ) -> Result<(), TypeError<M>> {
     match (actual.next(), expected.next()) {

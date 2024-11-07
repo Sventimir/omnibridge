@@ -3,6 +3,7 @@ use proptest::prelude::Strategy;
 use crate::{
     ast::AST,
     compiler::{self, TypeError},
+    env::Env,
     parse,
     test_utils::{exec, Meta},
     typed::Type,
@@ -12,8 +13,9 @@ use crate::{
 #[test]
 fn typecheck_a_bool_expr() {
     let src = "(and t f)";
-    let env = compiler::initialize_env();
+    let mut env = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
+    env.initialize();
     let ty: Result<Type, TypeError<Meta>> = compiler::typecheck(&mut ast[0], &env);
     assert_eq!(ty, Ok(Type::Bool));
 }

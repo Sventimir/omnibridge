@@ -10,6 +10,8 @@ mod compiler;
 pub mod compiler;
 
 mod core_lisp;
+pub mod env;
+
 mod expr;
 mod full_lisp;
 mod instr;
