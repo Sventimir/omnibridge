@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::typed::{IType, Type};
+use crate::typed::{IType, Type, TypeConstr};
 
 pub struct Var {
     id: usize,
@@ -51,35 +51,35 @@ impl Var {
 impl Debug for Var {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let v = self.lock();
-        match self.typ {
-            Type::Bool => {
+        match self.typ.0 {
+            TypeConstr::Bool => {
                 let v: &bool = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: bool = {:?})", self.id, v);
             }
-            Type::Decimal => {
+            TypeConstr::Decimal => {
                 let v: &f64 = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: decimal = {:?})", self.id, v);
             }
-            Type::Int => {
+            TypeConstr::Int => {
                 let v: &i64 = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: int = {:?})", self.id, v);
             }
-            Type::Nat => {
+            TypeConstr::Nat => {
                 let v: &u64 = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: nat = {:?})", self.id, v);
             }
-            Type::String => {
+            TypeConstr::String => {
                 let v: &String = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: string = {:?})", self.id, v);
             }
-            Type::Expr => {
+            TypeConstr::Expr => {
                 let v: &String = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: sexp = {:?})", self.id, v);
             }
-            Type::Nil => {
+            TypeConstr::Nil => {
                 return write!(f, "Var({}: nil = nil)", self.id);
             }
-            Type::Func(_, _) => {
+            TypeConstr::Func(_, _) => {
                 return write!(f, "Var({}: {:?})", self.id, self.typ);
             }
         }

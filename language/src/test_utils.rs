@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::{
     ast::AST, compile, compiler::Typed, parse, program::Program, src_location::WithLocation,
-    typed::Type, var::Var,
+    typed::{Type, TypeConstr}, var::Var,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,7 +37,7 @@ impl Default for Meta {
     fn default() -> Self {
         Meta {
             loc: 0..0,
-            ty: Type::Nil,
+            ty: Type(TypeConstr::Nil),
         }
     }
 }

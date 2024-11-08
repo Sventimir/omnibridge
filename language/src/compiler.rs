@@ -1,4 +1,4 @@
-use crate::{ast::AST, env::Env, program::Program, typed::Type, var::Var, Expr, IntoSexp};
+use crate::{ast::AST, env::Env, program::Program, typed::{Type, TypeConstr}, var::Var, Expr, IntoSexp};
 
 pub fn compile<M: Clone + Typed>(src: &mut Vec<AST<M>>) -> Result<Program, TypeError<M>> {
     let mut prog = Program::new();
@@ -53,9 +53,9 @@ pub fn typecheck<M: Clone + Typed>(
     env: &Env,
 ) -> Result<Type, TypeError<M>> {
     let ty = match ast {
-        AST::Nat { .. } | AST::Int { .. } | AST::Float { .. } => Ok(Type::Decimal),
-        AST::String { .. } => Ok(Type::String),
-        AST::Quoted { .. } => Ok(Type::Expr),
+        AST::Nat { .. } | AST::Int { .. } | AST::Float { .. } => Ok(Type(TypeConstr::Decimal)),
+        AST::String { .. } => Ok(Type(TypeConstr::String)),
+        AST::Quoted { .. } => Ok(Type(TypeConstr::Expr)),
         AST::QuasiQuoted { meta, .. } | AST::Unquoted { meta, .. } => {
             Err(TypeError::UnexpectedQuasiquote(meta.clone()))
         }
@@ -72,19 +72,20 @@ pub fn typecheck<M: Clone + Typed>(
         } => {
             let mut cs = content.iter_mut();
             if let Some(ast) = cs.next() {
-                match typecheck(ast, env)? {
-                    Type::Func(args, ret) => {
+                let t = typecheck(ast, env)?;
+                match t.0 {
+                    TypeConstr::Func(args, ret) => {
                         typecheck_func_args(&mut cs, &mut args.iter(), env, meta)?;
                         Ok((*ret).clone())
                     }
                     ty => Err(TypeError::Mismatch {
-                        expected: Type::Func(vec![], Box::new(Type::Expr)),
-                        actual: ty,
+                        expected: Type(TypeConstr::Func(vec![], Box::new(Type(TypeConstr::Expr)))),
+                        actual: Type(ty),
                         meta: meta.clone(),
                     }),
                 }
             } else {
-                Ok(Type::Nil)
+                Ok(Type(TypeConstr::Nil))
             }
         }
     }?;

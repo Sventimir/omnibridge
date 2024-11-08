@@ -1,9 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::{fmt::{self, Debug, Formatter}, sync::{Arc, Mutex}};
 
 use crate::Expr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Type {
+pub enum TypeConstr<Param> {
     Bool,
     Decimal,
     Int,
@@ -11,7 +11,26 @@ pub enum Type {
     String,
     Expr,
     Nil,
-    Func(Vec<Type>, Box<Type>),
+    Func(Vec<Param>, Box<Param>),
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub struct Type(pub TypeConstr<Type>);
+
+impl Debug for Type {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl Type {
+    pub fn func(args: &[TypeConstr<Type>], ret: TypeConstr<Type>) -> Type {
+        let args = 
+            args.iter()
+                .map(|arg| Type(arg.clone()))
+                .collect();
+        Self(TypeConstr::Func(args, Box::new(Type(ret))))
+    }
 }
 
 pub trait IType {
@@ -20,49 +39,49 @@ pub trait IType {
 
 impl IType for bool {
     fn tag() -> Type {
-        Type::Bool
+        Type(TypeConstr::Bool)
     }
 }
 
 impl IType for () {
     fn tag() -> Type {
-        Type::Nil
+        Type(TypeConstr::Nil)
     }
 }
 
 impl IType for Expr {
     fn tag() -> Type {
-        Type::Expr
+        Type(TypeConstr::Expr)
     }
 }
 
 impl IType for f64 {
     fn tag() -> Type {
-        Type::Decimal
+        Type(TypeConstr::Decimal)
     }
 }
 
 impl IType for i64 {
     fn tag() -> Type {
-        Type::Int
+        Type(TypeConstr::Int)
     }
 }
 
 impl IType for u64 {
     fn tag() -> Type {
-        Type::Nat
+        Type(TypeConstr::Nat)
     }
 }
 
 impl IType for String {
     fn tag() -> Type {
-        Type::String
+        Type(TypeConstr::String)
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct TypeVar {
-    resolved: Arc<Mutex<Option<Type>>>,
+    resolved: Arc<Mutex<Option<TypeConstr<TypeVar>>>>,
 }
 
 impl TypeVar {
@@ -72,12 +91,12 @@ impl TypeVar {
         }
     }
 
-    pub fn resolve(&self, ty: Type) {
+    pub fn resolve(&self, ty: TypeConstr<TypeVar>) {
         let mut resolved = self.resolved.lock().unwrap();
         *resolved = Some(ty);
     }
 
-    pub fn get(&self) -> Option<Type> {
+    pub fn get(&self) -> Option<TypeConstr<TypeVar>> {
         let resolved = self.resolved.lock().unwrap();
         resolved.clone()
     }

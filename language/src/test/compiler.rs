@@ -9,7 +9,7 @@ use crate::{
     env::Env,
     parse,
     test_utils::{exec, Meta},
-    typed::Type,
+    typed::{Type, TypeConstr},
     IntoSexp,
 };
 
@@ -20,7 +20,7 @@ fn typecheck_a_bool_expr() {
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
     env.initialize();
     let ty: Result<Type, TypeError<Meta>> = compiler::typecheck(&mut ast[0], &env);
-    assert_eq!(ty, Ok(Type::Bool));
+    assert_eq!(ty, Ok(Type(TypeConstr::Bool)));
 }
 
 /* This property is not true in general with respect to floating-point

@@ -6,7 +6,7 @@ use std::{
 use crate::{
     instr::Instr,
     nil,
-    typed::{IType, Type},
+    typed::{IType, Type, TypeConstr},
     var::Var,
     Expr,
 };
@@ -29,7 +29,7 @@ impl Program {
     pub fn new() -> Self {
         Program {
             instructions: Arc::new(Mutex::new(Vec::new())),
-            ty: Type::Nil,
+            ty: Type(TypeConstr::Nil),
             next_var_id: 0,
         }
     }

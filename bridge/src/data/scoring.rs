@@ -8,7 +8,7 @@ use language::{
         AST,
     },
     int,
-    typed::{IType, Type},
+    typed::{IType, Type, TypeConstr},
     IntoSexp, Sexp,
 };
 
@@ -49,7 +49,7 @@ impl<M: Clone> TryFrom<&AST<M>> for Score {
 
 impl IType for Score {
     fn tag() -> Type {
-        Type::Decimal
+        Type(TypeConstr::Decimal)
     }
 }
 
