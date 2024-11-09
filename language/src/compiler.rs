@@ -28,7 +28,7 @@ fn compile_ast<M: Clone + Typed>(
         AST::Unquoted { content, .. } => compile_ast(content, prog, env),
         AST::Symbol { content, .. } => {
             let v = env.get(content).unwrap(); // this has already been verified by the type checker.
-            v.compile_var(prog)
+            (v.constr)(prog, &[])
         }
         AST::List { content, .. } => {
             let mut cs = content.iter_mut();
@@ -37,7 +37,7 @@ fn compile_ast<M: Clone + Typed>(
                     AST::Symbol { content, .. } => {
                         let args: Vec<Var> = cs.map(|arg| compile_ast(arg, prog, env)).collect();
                         let v = env.get(content).unwrap();
-                        v.compile_func(prog, args.as_slice())
+                        (v.constr)(prog, args.as_slice())
                     }
                     _ => panic!("Typechecker didn't catch a typing error!"),
                 }

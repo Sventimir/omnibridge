@@ -4,18 +4,8 @@ use crate::{instr, program::Program, typed::{Type, TypeConstr}, var::Var};
 
 #[derive(Debug)]
 pub struct Value {
-    ty: Type,
-    constr: fn(prog: &mut Program, args: &[Var]) -> Var,
-}
-
-impl Value {
-    pub fn compile_var(&self, prog: &mut Program) -> Var {
-        (self.constr)(prog, &[])
-    }
-
-    pub fn compile_func(&self, prog: &mut Program, args: &[Var]) -> Var {
-        (self.constr)(prog, args)
-    }
+    pub ty: Type,
+    pub constr: fn(prog: &mut Program, args: &[Var]) -> Var,
 }
 
 pub struct Env {
