@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{instr, program::Program, typed::{Type, TypeConstr}, var::Var};
+use crate::{
+    instr,
+    program::Program,
+    typed::{Type, TypeConstr, TypePrimitive},
+    var::Var,
+};
 
 #[derive(Debug)]
 pub struct Value {
@@ -31,28 +36,31 @@ impl Env {
         self.vars.insert(
             "t".to_string(),
             Value {
-                ty: Type(TypeConstr::Bool),
+                ty: Type(TypeConstr::Prim(TypePrimitive::Bool)),
                 constr: |prog, _| prog.alloc(true),
             },
         );
         self.vars.insert(
             "f".to_string(),
             Value {
-                ty: Type(TypeConstr::Bool),
+                ty: Type(TypeConstr::Prim(TypePrimitive::Bool)),
                 constr: |prog, _| prog.alloc(false),
             },
         );
         self.vars.insert(
             "nil".to_string(),
             Value {
-                ty: Type(TypeConstr::Nil),
+                ty: Type(TypeConstr::Prim(TypePrimitive::Nil)),
                 constr: |prog, _| prog.alloc(()),
             },
         );
         self.vars.insert(
             "not".to_string(),
             Value {
-                ty: Type::func(&[TypeConstr::Bool], TypeConstr::Bool),
+                ty: Type::func(
+                    &[TypeConstr::Prim(TypePrimitive::Bool)],
+                    TypeConstr::Prim(TypePrimitive::Bool),
+                ),
                 constr: |prog, args| {
                     let (instr, ret) = instr::bool::not(prog, args[0].clone());
                     prog.push_instr(instr);
@@ -63,7 +71,13 @@ impl Env {
         self.vars.insert(
             "and".to_string(),
             Value {
-                ty: Type::func(&[TypeConstr::Bool, TypeConstr::Bool], TypeConstr::Bool),
+                ty: Type::func(
+                    &[
+                        TypeConstr::Prim(TypePrimitive::Bool),
+                        TypeConstr::Prim(TypePrimitive::Bool),
+                    ],
+                    TypeConstr::Prim(TypePrimitive::Bool),
+                ),
                 constr: |prog, args| {
                     let (instr, ret) = instr::binop::and(prog, args[0].clone(), args[1].clone());
                     prog.push_instr(instr);
@@ -74,7 +88,13 @@ impl Env {
         self.vars.insert(
             "or".to_string(),
             Value {
-                ty: Type::func(&[TypeConstr::Bool, TypeConstr::Bool], TypeConstr::Bool),
+                ty: Type::func(
+                    &[
+                        TypeConstr::Prim(TypePrimitive::Bool),
+                        TypeConstr::Prim(TypePrimitive::Bool),
+                    ],
+                    TypeConstr::Prim(TypePrimitive::Bool),
+                ),
                 constr: |prog, args| {
                     let (instr, ret) = instr::binop::or(prog, args[0].clone(), args[1].clone());
                     prog.push_instr(instr);
@@ -85,7 +105,13 @@ impl Env {
         self.vars.insert(
             "+".to_string(),
             Value {
-                ty: Type::func(&[TypeConstr::Decimal, TypeConstr::Decimal], TypeConstr::Decimal),
+                ty: Type::func(
+                    &[
+                        TypeConstr::Prim(TypePrimitive::Decimal),
+                        TypeConstr::Prim(TypePrimitive::Decimal),
+                    ],
+                    TypeConstr::Prim(TypePrimitive::Decimal),
+                ),
                 constr: |prog, args| {
                     let (instr, ret) = instr::binop::add(prog, args[0].clone(), args[1].clone());
                     prog.push_instr(instr);
@@ -96,7 +122,13 @@ impl Env {
         self.vars.insert(
             "*".to_string(),
             Value {
-                ty: Type::func(&[TypeConstr::Decimal, TypeConstr::Decimal], TypeConstr::Decimal),
+                ty: Type::func(
+                    &[
+                        TypeConstr::Prim(TypePrimitive::Decimal),
+                        TypeConstr::Prim(TypePrimitive::Decimal),
+                    ],
+                    TypeConstr::Prim(TypePrimitive::Decimal),
+                ),
                 constr: |prog, args| {
                     let (instr, ret) = instr::binop::mul(prog, args[0].clone(), args[1].clone());
                     prog.push_instr(instr);
@@ -107,7 +139,13 @@ impl Env {
         self.vars.insert(
             "=".to_string(),
             Value {
-                ty: Type::func(&[TypeConstr::Decimal, TypeConstr::Decimal], TypeConstr::Decimal),
+                ty: Type::func(
+                    &[
+                        TypeConstr::Prim(TypePrimitive::Decimal),
+                        TypeConstr::Prim(TypePrimitive::Decimal),
+                    ],
+                    TypeConstr::Prim(TypePrimitive::Decimal),
+                ),
                 constr: |prog, args| {
                     let (instr, ret) = instr::binop::equal(prog, args[0].clone(), args[1].clone());
                     prog.push_instr(instr);

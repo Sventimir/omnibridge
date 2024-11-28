@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::typed::{IType, Type, TypeConstr};
+use crate::typed::{IType, Type, TypeConstr, TypePrimitive};
 
 pub struct Var {
     id: usize,
@@ -52,31 +52,31 @@ impl Debug for Var {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let v = self.lock();
         match self.typ.0 {
-            TypeConstr::Bool => {
+            TypeConstr::Prim(TypePrimitive::Bool) => {
                 let v: &bool = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: bool = {:?})", self.id, v);
             }
-            TypeConstr::Decimal => {
+            TypeConstr::Prim(TypePrimitive::Decimal) => {
                 let v: &f64 = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: decimal = {:?})", self.id, v);
             }
-            TypeConstr::Int => {
+            TypeConstr::Prim(TypePrimitive::Int) => {
                 let v: &i64 = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: int = {:?})", self.id, v);
             }
-            TypeConstr::Nat => {
+            TypeConstr::Prim(TypePrimitive::Nat) => {
                 let v: &u64 = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: nat = {:?})", self.id, v);
             }
-            TypeConstr::String => {
+            TypeConstr::Prim(TypePrimitive::String) => {
                 let v: &String = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: string = {:?})", self.id, v);
             }
-            TypeConstr::Expr => {
+            TypeConstr::Prim(TypePrimitive::Expr) => {
                 let v: &String = v.downcast_ref().unwrap();
                 return write!(f, "Var({}: sexp = {:?})", self.id, v);
             }
-            TypeConstr::Nil => {
+            TypeConstr::Prim(TypePrimitive::Nil) => {
                 return write!(f, "Var({}: nil = nil)", self.id);
             }
             TypeConstr::Func(_, _) => {

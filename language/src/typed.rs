@@ -3,7 +3,7 @@ use std::{fmt::{self, Debug, Formatter}, sync::{Arc, Mutex}};
 use crate::Expr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum TypeConstr<Param> {
+pub enum TypePrimitive {
     Bool,
     Decimal,
     Int,
@@ -11,6 +11,12 @@ pub enum TypeConstr<Param> {
     String,
     Expr,
     Nil,
+}
+
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TypeConstr<Param> {
+    Prim(TypePrimitive),
     Func(Vec<Param>, Box<Param>),
 }
 
@@ -31,6 +37,17 @@ impl Type {
                 .collect();
         Self(TypeConstr::Func(args, Box::new(Type(ret))))
     }
+
+    pub fn into_var(&self) -> TypeVar {
+        let intern = match self {
+            Type(TypeConstr::Prim(p)) => TypeConstr::Prim(p.clone()),
+            Type(TypeConstr::Func(args, ret)) => {
+                let args = args.iter().map(|arg| arg.into_var()).collect();
+                TypeConstr::Func(args, Box::new(ret.into_var()))
+            }
+        };
+        TypeVar { resolved: Arc::new(Mutex::new(Some(intern))) }
+    }
 }
 
 pub trait IType {
@@ -39,43 +56,43 @@ pub trait IType {
 
 impl IType for bool {
     fn tag() -> Type {
-        Type(TypeConstr::Bool)
+        Type(TypeConstr::Prim(TypePrimitive::Bool))
     }
 }
 
 impl IType for () {
     fn tag() -> Type {
-        Type(TypeConstr::Nil)
+        Type(TypeConstr::Prim(TypePrimitive::Nil))
     }
 }
 
 impl IType for Expr {
     fn tag() -> Type {
-        Type(TypeConstr::Expr)
+        Type(TypeConstr::Prim(TypePrimitive::Expr))
     }
 }
 
 impl IType for f64 {
     fn tag() -> Type {
-        Type(TypeConstr::Decimal)
+        Type(TypeConstr::Prim(TypePrimitive::Decimal))
     }
 }
 
 impl IType for i64 {
     fn tag() -> Type {
-        Type(TypeConstr::Int)
+        Type(TypeConstr::Prim(TypePrimitive::Int))
     }
 }
 
 impl IType for u64 {
     fn tag() -> Type {
-        Type(TypeConstr::Nat)
+        Type(TypeConstr::Prim(TypePrimitive::Nat))
     }
 }
 
 impl IType for String {
     fn tag() -> Type {
-        Type(TypeConstr::String)
+        Type(TypeConstr::Prim(TypePrimitive::String))
     }
 }
 

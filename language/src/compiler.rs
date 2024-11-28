@@ -1,4 +1,11 @@
-use crate::{ast::AST, env::Env, program::Program, typed::{Type, TypeConstr}, var::Var, Expr, IntoSexp};
+use crate::{
+    ast::AST,
+    env::Env,
+    program::Program,
+    typed::{Type, TypeConstr, TypePrimitive},
+    var::Var,
+    Expr, IntoSexp,
+};
 
 pub fn compile<M: Clone + Typed>(src: &mut Vec<AST<M>>) -> Result<Program, TypeError<M>> {
     let mut prog = Program::new();
@@ -12,11 +19,7 @@ pub fn compile<M: Clone + Typed>(src: &mut Vec<AST<M>>) -> Result<Program, TypeE
     Ok(prog)
 }
 
-fn compile_ast<M: Clone + Typed>(
-    ast: &mut AST<M>,
-    prog: &mut Program,
-    env: &mut Env,
-) -> Var {
+fn compile_ast<M: Clone + Typed>(ast: &mut AST<M>, prog: &mut Program, env: &mut Env) -> Var {
     match ast {
         AST::Nat { content, .. } => prog.alloc(*content as f64),
         AST::Int { content, .. } => prog.alloc(*content as f64),
@@ -48,14 +51,13 @@ fn compile_ast<M: Clone + Typed>(
     }
 }
 
-pub fn typecheck<M: Clone + Typed>(
-    ast: &mut AST<M>,
-    env: &Env,
-) -> Result<Type, TypeError<M>> {
+pub fn typecheck<M: Clone + Typed>(ast: &mut AST<M>, env: &Env) -> Result<Type, TypeError<M>> {
     let ty = match ast {
-        AST::Nat { .. } | AST::Int { .. } | AST::Float { .. } => Ok(Type(TypeConstr::Decimal)),
-        AST::String { .. } => Ok(Type(TypeConstr::String)),
-        AST::Quoted { .. } => Ok(Type(TypeConstr::Expr)),
+        AST::Nat { .. } | AST::Int { .. } | AST::Float { .. } => {
+            Ok(Type(TypeConstr::Prim(TypePrimitive::Decimal)))
+        }
+        AST::String { .. } => Ok(Type(TypeConstr::Prim(TypePrimitive::String))),
+        AST::Quoted { .. } => Ok(Type(TypeConstr::Prim(TypePrimitive::Expr))),
         AST::QuasiQuoted { meta, .. } | AST::Unquoted { meta, .. } => {
             Err(TypeError::UnexpectedQuasiquote(meta.clone()))
         }
@@ -79,13 +81,16 @@ pub fn typecheck<M: Clone + Typed>(
                         Ok((*ret).clone())
                     }
                     ty => Err(TypeError::Mismatch {
-                        expected: Type(TypeConstr::Func(vec![], Box::new(Type(TypeConstr::Expr)))),
+                        expected: Type(TypeConstr::Func(
+                            vec![],
+                            Box::new(Type(TypeConstr::Prim(TypePrimitive::Expr))),
+                        )),
                         actual: Type(ty),
                         meta: meta.clone(),
                     }),
                 }
             } else {
-                Ok(Type(TypeConstr::Nil))
+                Ok(Type(TypeConstr::Prim(TypePrimitive::Nil)))
             }
         }
     }?;
