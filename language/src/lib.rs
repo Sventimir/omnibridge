@@ -29,6 +29,8 @@ pub use full_lisp::Lisp;
 pub use parser::parse;
 pub use sexp::{int, nil, pair, IntoSexp, Sexp, SexpError};
 
+pub mod interpreter;
+
 #[cfg(test)]
 mod test;
 pub mod test_utils;
