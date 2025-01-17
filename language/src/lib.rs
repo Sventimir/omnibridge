@@ -30,6 +30,8 @@ pub use parser::parse;
 pub use sexp::{int, nil, pair, IntoSexp, Sexp, SexpError};
 
 pub mod interpreter;
+pub mod type_error;
+pub mod type_var;
 
 #[cfg(test)]
 mod test;
