@@ -8,65 +8,48 @@ use crate::{
     type_checker::typecheck, IntoSexp, Sexp,
 };
 
-#[test]
-fn typecheck_a_bool_expr() {
-    let src = "(and t f)";
+fn test_typechecker<F>(src: &str, check_result: F)
+where
+    F: FnOnce(BuiltinType) -> Result<(), String>,
+{
     let mut env: Env<BuiltinType> = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
     env.init();
-    let ret: Result<(), String> =
-        typecheck(&mut ast[0], &env)
+    let ret: Result<(), String> = typecheck(&mut ast[0], &env)
         .map_err(|e| e.into_sexp())
         .and_then(|tvar| {
-            tvar
-                .value()
+            tvar.value()
                 .ok_or(String::symbol("unresolved-type-var".to_string()))
         })
-        .and_then(|ty| {
-            match ty {
-                BuiltinType::Bool => Ok(()),
-                _ => Err(String::list(vec![
-                    String::symbol("result-type-mismatch".to_string()),
-                    String::symbol("bool".to_string()),
-                    String::symbol(ty.into_sexp()),
-                ]))
-            }
-        });
+        .and_then(check_result);
     match ret {
         Ok(()) => (),
         Err(e) => panic!("typecheck failed with error: {}", e),
-    
     }
 }
 
 #[test]
+fn typecheck_a_bool_expr() {
+    test_typechecker("(and t f)", |ty| match ty {
+        BuiltinType::Bool => Ok(()),
+        _ => Err(String::list(vec![
+            String::symbol("result-type-mismatch".to_string()),
+            String::symbol("bool".to_string()),
+            String::symbol(ty.into_sexp()),
+        ])),
+    })
+}
+
+#[test]
 fn typecheck_a_polymorphic_function_call() {
-    let src = "(id (+ 3.0 (* 2.0 (id 7.0))))";
-    let mut env: Env<BuiltinType> = Env::new();
-    let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
-    env.init();
-    let ret: Result<(), String> =
-        typecheck(&mut ast[0], &env)
-        .map_err(|e| e.into_sexp())
-        .and_then(|tvar| {
-            tvar
-                .value()
-                .ok_or(String::symbol("unresolved-type-var".to_string()))
-        })
-        .and_then(|ty| {
-            match ty {
-                BuiltinType::Float => Ok(()),
-                _ => Err(String::list(vec![
-                    String::symbol("result-type-mismatch".to_string()),
-                    String::symbol("float".to_string()),
-                    String::symbol(ty.into_sexp()),
-                ]))
-            }
-        });
-    match ret {
-        Ok(()) => (),
-        Err(e) => panic!("typecheck failed with error: {}", e),
-    }
+    test_typechecker("(id (+ 3.0 (* 2.0 (id 7.0))))", |ty| match ty {
+        BuiltinType::Float => Ok(()),
+        _ => Err(String::list(vec![
+            String::symbol("result-type-mismatch".to_string()),
+            String::symbol("float".to_string()),
+            String::symbol(ty.into_sexp()),
+        ])),
+    })
 }
 
 /* This property is not true in general with respect to floating-point
