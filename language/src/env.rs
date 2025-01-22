@@ -272,6 +272,18 @@ mod built_in {
                     }),
                 },
             );
+            {
+                let tvar = TypeVar::unknown();
+                    self.vars.insert(
+                        "id".to_string(),
+                        Value {
+                            ty: TypeVar::constant(BuiltinType::Fun {
+                                args: vec![tvar.make_ref()],
+                                ret: Box::new(tvar),
+                            }),
+                        }
+                    );
+            }
         }
     }
 }

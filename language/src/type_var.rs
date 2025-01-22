@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use crate::type_error::TypeError;
+use crate::{type_error::TypeError, IntoSexp, Sexp};
 
 pub trait PrimType: Sized {
     fn nat() -> Self;
@@ -83,6 +83,16 @@ impl<T: Clone + PrimType> TypeVar<T> {
                     Some(t) => t.unify(&prev, meta),
                 }
             }
+        }
+    }
+}
+
+impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match &*self.0.lock().unwrap() {
+            ValOrRef::Val(Some(t)) => t.clone().into_sexp(),
+            ValOrRef::Val(None) => S::symbol("'var".to_string()),
+            ValOrRef::Ref(var) => var.clone().into_sexp(),
         }
     }
 }

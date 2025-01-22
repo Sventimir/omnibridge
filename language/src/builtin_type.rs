@@ -1,4 +1,4 @@
-use crate::{type_error::TypeError, type_var::{PrimType, TypeVar}};
+use crate::{type_error::TypeError, type_var::{PrimType, TypeVar}, IntoSexp, Sexp};
 
 #[derive(Clone, Debug)]
 pub enum BuiltinType {
@@ -95,6 +95,25 @@ impl PrimType for BuiltinType {
                 found: other.clone(),
                 meta
             }),
+        }
+    }
+}
+
+impl IntoSexp for BuiltinType {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            BuiltinType::Bool => S::symbol("bool".to_string()),
+            BuiltinType::Nat => S::symbol("nat".to_string()),
+            BuiltinType::Int => S::symbol("int".to_string()),
+            BuiltinType::Float => S::symbol("float".to_string()),
+            BuiltinType::String => S::symbol("string".to_string()),
+            BuiltinType::Expr => S::symbol("expr".to_string()),
+            BuiltinType::Nil => S::symbol("nil".to_string()),
+            BuiltinType::Fun { args, ret } => {
+                let args_sexp = S::list(args.iter().map(|arg| arg.clone().into_sexp()).collect());
+                let ret_sexp = ret.clone().into_sexp();
+                S::list(vec![S::symbol("lambda".to_string()), args_sexp, ret_sexp])
+            }
         }
     }
 }

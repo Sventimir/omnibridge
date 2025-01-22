@@ -61,7 +61,7 @@ pub mod old {
 
 use std::ops::Range;
 
-use crate::{builtin_type::BuiltinType, src_location::WithLocation, type_checker::Typed, type_var::TypeVar};
+use crate::{builtin_type::BuiltinType, src_location::WithLocation, type_checker::Typed, type_var::TypeVar, IntoSexp, Sexp};
 
 #[derive(Clone, Debug)]
 pub struct Meta {
@@ -99,5 +99,15 @@ impl Default for Meta {
             loc: 0..0,
             ty: TypeVar::unknown(),
         }
+    }
+}
+
+impl IntoSexp for Meta {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::list(vec![
+            S::symbol("meta".to_string()),
+            self.ty.into_sexp(),
+            S::list(vec![self.loc.start.into_sexp(), self.loc.end.into_sexp()]),
+        ])
     }
 }

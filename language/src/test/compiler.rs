@@ -5,7 +5,7 @@ use proptest_derive::Arbitrary;
 
 use crate::{
     ast::AST, builtin_type::BuiltinType, env::Env, parse, test_utils::Meta,
-    type_checker::typecheck, IntoSexp,
+    type_checker::typecheck, IntoSexp, Sexp,
 };
 
 #[test]
@@ -14,17 +14,58 @@ fn typecheck_a_bool_expr() {
     let mut env: Env<BuiltinType> = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
     env.init();
-    match typecheck(&mut ast[0], &env) {
-        Err(e) => panic!("typecheck failed with error: {:?}", e),
-        Ok(tvar) => {
-            let ty = tvar
+    let ret: Result<(), String> =
+        typecheck(&mut ast[0], &env)
+        .map_err(|e| e.into_sexp())
+        .and_then(|tvar| {
+            tvar
                 .value()
-                .expect("type variable unresolved by the end of type checking");
+                .ok_or(String::symbol("unresolved-type-var".to_string()))
+        })
+        .and_then(|ty| {
             match ty {
-                BuiltinType::Bool => (),
-                _ => panic!("expected type Bool, got {:?}", ty),
+                BuiltinType::Bool => Ok(()),
+                _ => Err(String::list(vec![
+                    String::symbol("result-type-mismatch".to_string()),
+                    String::symbol("bool".to_string()),
+                    String::symbol(ty.into_sexp()),
+                ]))
             }
-        }
+        });
+    match ret {
+        Ok(()) => (),
+        Err(e) => panic!("typecheck failed with error: {}", e),
+    
+    }
+}
+
+#[test]
+fn typecheck_a_polymorphic_function_call() {
+    let src = "(id (+ 3.0 (* 2.0 (id 7.0))))";
+    let mut env: Env<BuiltinType> = Env::new();
+    let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
+    env.init();
+    let ret: Result<(), String> =
+        typecheck(&mut ast[0], &env)
+        .map_err(|e| e.into_sexp())
+        .and_then(|tvar| {
+            tvar
+                .value()
+                .ok_or(String::symbol("unresolved-type-var".to_string()))
+        })
+        .and_then(|ty| {
+            match ty {
+                BuiltinType::Float => Ok(()),
+                _ => Err(String::list(vec![
+                    String::symbol("result-type-mismatch".to_string()),
+                    String::symbol("float".to_string()),
+                    String::symbol(ty.into_sexp()),
+                ]))
+            }
+        });
+    match ret {
+        Ok(()) => (),
+        Err(e) => panic!("typecheck failed with error: {}", e),
     }
 }
 
