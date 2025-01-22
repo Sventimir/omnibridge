@@ -5,7 +5,7 @@ use crate::data::{
     scoring::{Scorable, Score},
     table::Dir,
 };
-use language::{test_utils::exec, IntoSexp};
+use language::{test_utils::old::exec, IntoSexp};
 use proptest::prelude::{Just, Strategy};
 
 #[allow(dead_code)]

@@ -1,6 +1,6 @@
 use crate::{
     ast::AST,
-    env::Env,
+    env::old::Env,
     program::Program,
     typed::{Type, TypeConstr, TypePrimitive},
     var::Var,

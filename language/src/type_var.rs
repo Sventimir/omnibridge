@@ -2,11 +2,25 @@ use std::sync::{Arc, Mutex};
 
 use crate::type_error::TypeError;
 
+pub trait PrimType: Sized {
+    fn nat() -> Self;
+    fn int() -> Self;
+    fn float() -> Self;
+    fn string() -> Self;
+    fn sexp() -> Self;
+    fn nil() -> Self;
+    fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self;
+
+    fn unify<M: Clone>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, Self>>;
+}
+
+#[derive(Debug)]
 enum ValOrRef<T> {
     Val(Option<T>),
     Ref(TypeVar<T>)
 }
 
+#[derive(Debug)]
 pub struct TypeVar<T>(Arc<Mutex<ValOrRef<T>>>);
 
 impl<T> Clone for TypeVar<T> {
@@ -53,8 +67,10 @@ impl<T: Clone> TypeVar<T> {
     }
 }
 
-impl<T: Clone + Eq> TypeVar<T> {
-    pub fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, T>> {
+impl<T: Clone + PrimType> TypeVar<T> {
+    pub fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, T>> 
+    where M: Clone
+    {
         match self.set_ref(other) {
             None => Ok(()),
             Some(prev) => {
@@ -64,91 +80,9 @@ impl<T: Clone + Eq> TypeVar<T> {
                         *that = ValOrRef::Val(Some(prev));
                         Ok(())
                     },
-                    Some(t) => {
-                        if t == prev {
-                            Ok(())
-                        } else {
-                            Err(TypeError::Mismatch {
-                                expected: prev,
-                                found: t,
-                                meta
-                            })
-                        }
-                    }
+                    Some(t) => t.unify(&prev, meta),
                 }
             }
         }
     }
 }
-
-
-// #[derive(Clone)]
-// pub struct TypeVal<T> {
-//     resolved: Arc<Mutex<Option<T>>>
-// }
-
-// impl<T> TypeVal<T> {
-//     fn unknown() -> Self {
-//         TypeVal {
-//             resolved: Arc::new(Mutex::new(None))
-//         }
-//     }
-
-//     fn constant(t: T) -> Self {
-//         TypeVal {
-//             resolved: Arc::new(Mutex::new(Some(t)))
-//         }
-//     }
-// }
-
-// pub struct TypeVar<T> {
-//     var: Arc<Mutex<TypeVal<T>>>
-// }
-
-// impl<T> TypeVar<T> {
-//     pub fn unknown() -> Self {
-//         TypeVar {
-//             var: Arc::new(Mutex::new(TypeVal::unknown()))
-//         }
-//     }
-
-//     pub fn constant(t: T) -> Self {
-//         TypeVar {
-//             var: Arc::new(Mutex::new(TypeVal::constant(t)))
-//         }
-//     }
-// }
-
-// impl<T: Clone> TypeVar<T> {
-//     pub fn value(&self) -> Option<T> {
-//         self.var.lock().unwrap().resolved.lock().unwrap().clone()
-//     }
-// }
-
-// impl<T: Clone + Eq> TypeVar<T> {
-//     pub fn unify<M>(&self, other: &TypeVar<T>, meta: M) -> Result<(), TypeError<M, T>> {
-//         let mut this = self.var.lock().unwrap();
-//         let this_val: Option<T>;
-//         {
-//             this_val = this.resolved.lock().unwrap().clone();
-//         };
-//         let that = other.var.lock().unwrap();
-//         if let Some(t) = &this_val {
-//             let mut that_val = that.resolved.lock().unwrap();
-//             match &*that_val {
-//                 None => *that_val = this_val,
-//                 Some(t1) => {
-//                     if *t != *t1 {
-//                         return Err(TypeError::Mismatch {
-//                             expected: t.clone(),
-//                             found: t1.clone(),
-//                             meta
-//                         })
-//                     }
-//                 }
-//             }
-//         };
-//         *this = that.clone();
-//         Ok(())
-//     }
-// }

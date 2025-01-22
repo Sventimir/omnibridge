@@ -4,23 +4,28 @@ use proptest::prelude::Strategy;
 use proptest_derive::Arbitrary;
 
 use crate::{
-    ast::AST,
-    compiler::{self, TypeError},
-    env::Env,
-    parse,
-    test_utils::{exec, Meta},
-    typed::{Type, TypeConstr, TypePrimitive},
-    IntoSexp,
+    ast::AST, builtin_type::BuiltinType, env::Env, parse, test_utils::Meta,
+    type_checker::typecheck, IntoSexp,
 };
 
 #[test]
 fn typecheck_a_bool_expr() {
     let src = "(and t f)";
-    let mut env = Env::new();
+    let mut env: Env<BuiltinType> = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
-    env.initialize();
-    let ty: Result<Type, TypeError<Meta>> = compiler::typecheck(&mut ast[0], &env);
-    assert_eq!(ty, Ok(Type(TypeConstr::Prim(TypePrimitive::Bool))));
+    env.init();
+    match typecheck(&mut ast[0], &env) {
+        Err(e) => panic!("typecheck failed with error: {:?}", e),
+        Ok(tvar) => {
+            let ty = tvar
+                .value()
+                .expect("type variable unresolved by the end of type checking");
+            match ty {
+                BuiltinType::Bool => (),
+                _ => panic!("expected type Bool, got {:?}", ty),
+            }
+        }
+    }
 }
 
 /* This property is not true in general with respect to floating-point
@@ -53,7 +58,7 @@ impl Display for AnyNumber {
 proptest! {
     #[test]
     fn a_simple_function_call(a: bool, b: bool) {
-        let result = exec(
+        let result = crate::test_utils::old::exec(
             &format!(
                 "(and {} {})",
                 a.into_sexp::<String>(),
@@ -65,14 +70,14 @@ proptest! {
 
     #[test]
     fn test_de_morgan_equivalence(a: bool, b: bool) {
-        let result1 = exec(
+        let result1 = crate::test_utils::old::exec(
             &format!(
                 "(not (or {} {}))",
                 a.into_sexp::<String>(),
                 b.into_sexp::<String>(),
             )
         );
-        let result2 = exec(
+        let result2 = crate::test_utils::old::exec(
             &format!(
                 "(and (not {}) (not {}))",
                 a.into_sexp::<String>(),
@@ -88,7 +93,7 @@ proptest! {
         b in integral_float(),
         c in integral_float()
     ) {
-        let result = exec(
+        let result = crate::test_utils::old::exec(
             &format!(
                 "(= (* {} (+ {} {})) (+ (* {} {}) (* {} {})))",
                 a.into_sexp::<String>(),
@@ -108,15 +113,15 @@ proptest! {
     fn test_polymorhic_identity(any_num: AnyNumber) {
         match any_num {
             AnyNumber::Nat(n) => {
-                let result = exec(&format!("(id {})", n));
+                let result = crate::test_utils::old::exec(&format!("(id {})", n));
                 assert_eq!(result.value::<u64>(), Some(n))
             }
             AnyNumber::Int(i) => {
-                let result = exec(&format!("(id {})", i));
+                let result = crate::test_utils::old::exec(&format!("(id {})", i));
                 assert_eq!(result.value::<i64>(), Some(i))
             }
             AnyNumber::Float(f) => {
-                let result = exec(&format!("(id {})", f));
+                let result = crate::test_utils::old::exec(&format!("(id {})", f));
                 assert_eq!(result.value::<f64>(), Some(f))
             }
         }
