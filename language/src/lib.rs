@@ -14,13 +14,9 @@ pub mod env;
 
 mod expr;
 mod full_lisp;
-mod instr;
 pub mod parser;
-pub mod program;
 mod sexp;
 pub mod src_location;
-pub mod typed;
-mod var;
 
 pub use compiler::compile;
 pub use core_lisp::CoreLisp;
@@ -29,6 +25,7 @@ pub use full_lisp::Lisp;
 pub use parser::parse;
 pub use sexp::{int, nil, pair, IntoSexp, Sexp, SexpError};
 
+pub mod builtin_instr;
 pub mod builtin_type;
 pub mod interpreter;
 pub mod type_checker;

@@ -1,3 +1,7 @@
+use std::any::Any;
+
+use crate::IntoSexp;
+
 pub enum NextStep {
     Forward,
     JumpTo(usize),
@@ -20,9 +24,11 @@ impl<V: Clone> Interpreter<V> {
         }
     }
 
-    fn exec(&mut self, instr: &dyn Instr<Value = V>) {
+    fn exec<I>(&mut self, instr: &I)
+    where I: Instr<Value = V>
+    {
         let args = self.stack.split_off(self.stack.len() - instr.arity());
-        let (result, advance) = instr.eval(&args);
+        let (result, advance) = instr.eval(args.as_slice());
         match advance {
             NextStep::Forward => self.cursor += 1,
             NextStep::JumpTo(n) => self.cursor = n,
@@ -32,14 +38,20 @@ impl<V: Clone> Interpreter<V> {
                 self.cursor += 1;
             }
         }
-        self.stack.push(result);
+        match result {
+            Some(v) => self.stack.push(v),
+            None => ()
+        }
     }
 }
 
 pub trait Instr {
     type Value: Clone;
+
     fn arity(&self) -> usize;
-    fn eval(&self, args: &[Self::Value]) -> (Self::Value, NextStep);
+    fn eval(&self, args: &[Self::Value]) -> (Option<Self::Value>, NextStep);
+
+    fn push(v: impl Any + 'static) -> Self;
 }
 
 pub fn execute<I, V>(program: &[I]) -> Vec<V>

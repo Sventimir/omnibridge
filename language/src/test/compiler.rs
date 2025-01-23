@@ -4,15 +4,14 @@ use proptest::prelude::Strategy;
 use proptest_derive::Arbitrary;
 
 use crate::{
-    ast::AST, builtin_type::BuiltinType, env::Env, parse, test_utils::Meta,
-    type_checker::typecheck, IntoSexp, Sexp,
+    ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, env::Env, parse, test_utils::Meta, type_checker::typecheck, IntoSexp, Sexp
 };
 
 fn test_typechecker<F>(src: &str, check_result: F)
 where
     F: FnOnce(BuiltinType) -> Result<(), String>,
 {
-    let mut env: Env<BuiltinType> = Env::new();
+    let mut env: Env<BuiltinType, BuiltinInstr> = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
     env.init();
     let ret: Result<(), String> = typecheck(&mut ast[0], &env)
@@ -85,33 +84,33 @@ impl Display for AnyNumber {
 proptest! {
     #[test]
     fn a_simple_function_call(a: bool, b: bool) {
-        let result = crate::test_utils::old::exec(
+        let result: bool = crate::test_utils::exec(
             &format!(
                 "(and {} {})",
                 a.into_sexp::<String>(),
                 b.into_sexp::<String>()
             )
         );
-        assert_eq!(result.value(), Some(a && b))
+        assert_eq!(result, a && b)
     }
 
     #[test]
     fn test_de_morgan_equivalence(a: bool, b: bool) {
-        let result1 = crate::test_utils::old::exec(
+        let result1: bool = crate::test_utils::exec(
             &format!(
                 "(not (or {} {}))",
                 a.into_sexp::<String>(),
                 b.into_sexp::<String>(),
             )
         );
-        let result2 = crate::test_utils::old::exec(
+        let result2: bool = crate::test_utils::exec(
             &format!(
                 "(and (not {}) (not {}))",
                 a.into_sexp::<String>(),
                 b.into_sexp::<String>(),
             )
         );
-        assert_eq!(result1.value::<bool>(), result2.value())
+        assert_eq!(result1, result2)
     }
 
     #[test]
@@ -120,7 +119,7 @@ proptest! {
         b in integral_float(),
         c in integral_float()
     ) {
-        let result = crate::test_utils::old::exec(
+        let result: bool = crate::test_utils::exec(
             &format!(
                 "(= (* {} (+ {} {})) (+ (* {} {}) (* {} {})))",
                 a.into_sexp::<String>(),
@@ -129,10 +128,10 @@ proptest! {
                 a.into_sexp::<String>(),
                 b.into_sexp::<String>(),
                 a.into_sexp::<String>(),
-                c.into_sexp::<String>(),
+                c.into_sexp::<String>()
             )
         );
-        assert_eq!(result.value::<bool>(), Some(true))
+        assert_eq!(result, true)
     }
 
     #[ignore]
@@ -140,16 +139,16 @@ proptest! {
     fn test_polymorhic_identity(any_num: AnyNumber) {
         match any_num {
             AnyNumber::Nat(n) => {
-                let result = crate::test_utils::old::exec(&format!("(id {})", n));
-                assert_eq!(result.value::<u64>(), Some(n))
+                let result: u64 = crate::test_utils::exec(&format!("(id {})", n));
+                assert_eq!(result, n)
             }
             AnyNumber::Int(i) => {
-                let result = crate::test_utils::old::exec(&format!("(id {})", i));
-                assert_eq!(result.value::<i64>(), Some(i))
+                let result: i64 = crate::test_utils::exec(&format!("(id {})", i));
+                assert_eq!(result, i)
             }
             AnyNumber::Float(f) => {
-                let result = crate::test_utils::old::exec(&format!("(id {})", f));
-                assert_eq!(result.value::<f64>(), Some(f))
+                let result: f64 = crate::test_utils::exec(&format!("(id {})", f));
+                assert_eq!(result, f)
             }
         }
     }

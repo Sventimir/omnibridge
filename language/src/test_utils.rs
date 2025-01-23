@@ -1,67 +1,6 @@
-pub mod old {
-    use std::ops::Range;
+use std::{any::Any, ops::Range, sync::Arc};
 
-    use crate::{
-        ast::AST,
-        compile,
-        compiler::Typed,
-        parse,
-        program::Program,
-        src_location::WithLocation,
-        typed::{Type, TypeConstr, TypePrimitive},
-        var::Var,
-    };
-
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    pub struct Meta {
-        loc: Range<usize>,
-        ty: Type,
-    }
-
-    impl Typed for Meta {
-        fn typ(&self) -> Type {
-            self.ty.clone()
-        }
-
-        fn assign_type(&mut self, ty: Type) {
-            self.ty = ty;
-        }
-    }
-
-    impl WithLocation for Meta {
-        type Loc = Range<usize>;
-
-        fn get_location(&self) -> Range<usize> {
-            self.loc.clone()
-        }
-
-        fn annot(&mut self, loc: Range<usize>) {
-            self.loc = loc;
-        }
-    }
-
-    impl Default for Meta {
-        fn default() -> Self {
-            Meta {
-                loc: 0..0,
-                ty: Type(TypeConstr::Prim(TypePrimitive::Nil)),
-            }
-        }
-    }
-
-    pub fn exec(src: &str) -> Var {
-        println!("src: '{}'", src);
-        let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
-        let prog: Program = compile(&mut ast).unwrap();
-        println!("{:?}", prog);
-        prog.exec();
-        prog.result_var().unwrap()
-    }
-}
-
-use std::ops::Range;
-
-use crate::{builtin_type::BuiltinType, src_location::WithLocation, type_checker::Typed, type_var::TypeVar, IntoSexp, Sexp};
+use crate::{ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env, interpreter, parse, src_location::WithLocation, type_checker::Typed, type_var::TypeVar, IntoSexp, Sexp};
 
 #[derive(Clone, Debug)]
 pub struct Meta {
@@ -110,4 +49,19 @@ impl IntoSexp for Meta {
             S::list(vec![self.loc.start.into_sexp(), self.loc.end.into_sexp()]),
         ])
     }
+}
+
+pub fn get_result<T: Clone + 'static>(stack: &[Arc<dyn Any>]) -> T {
+    stack.last().expect("stack is empty!").downcast_ref::<T>().expect("cast failed!").clone()
+}
+
+pub fn exec<T: Any + Clone>(src: &str) -> T {
+    println!("src: '{}'", src);
+    let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
+    let mut env: Env<BuiltinType, BuiltinInstr> = Env::new();
+    env.init();
+    let prog: Vec<BuiltinInstr> = compile(&mut ast, &mut env).unwrap();
+    // println!("{:?}", prog);
+    let stack = interpreter::execute(prog.as_slice());
+    get_result::<T>(stack.as_slice())
 }

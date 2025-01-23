@@ -5,7 +5,7 @@ use crate::data::{
     scoring::{Scorable, Score},
     table::Dir,
 };
-use language::{test_utils::old::exec, IntoSexp};
+use language::{test_utils::exec, IntoSexp};
 use proptest::prelude::{Just, Strategy};
 
 #[allow(dead_code)]
@@ -38,7 +38,7 @@ proptest! {
         ],
         tricks in 0..13u8
     ) {
-        let result = exec(
+        let result: Score = exec(
             &format!(
                 "(score {} {} {} {} {} {})",
                 board.into_sexp::<String>(),
@@ -58,6 +58,6 @@ proptest! {
             lead: None,
             tricks: tricks as i8 - (level as i8 + 6),
         };
-        assert_eq!(result.value::<Score>().unwrap(), contract_result.score())
+        assert_eq!(result, contract_result.score())
     }
 }

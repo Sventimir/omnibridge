@@ -8,7 +8,6 @@ use language::{
         AST,
     },
     int,
-    typed::{IType, Type, TypeConstr, TypePrimitive},
     IntoSexp, Sexp,
 };
 
@@ -44,12 +43,6 @@ impl<M: Clone> TryFrom<&AST<M>> for Score {
 
     fn try_from(ast: &AST<M>) -> Result<Self, Self::Error> {
         Ok(Score::from_i16(expect::int(ast)? as i16))
-    }
-}
-
-impl IType for Score {
-    fn tag() -> Type {
-        Type(TypeConstr::Prim(TypePrimitive::Decimal))
     }
 }
 

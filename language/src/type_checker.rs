@@ -8,8 +8,9 @@ pub trait Typed {
     fn get_type(&self) -> TypeVar<Self::Type>;
 }
 
-pub trait Environment<T> {
+pub trait Environment<T, I> {
     fn type_of(&self, name: &str) -> Option<TypeVar<T>>;
+    fn get_instr(&self, name: &str, ty: &T) -> Option<Vec<I>>;
 }
 
 fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeVar<T> 
@@ -22,8 +23,8 @@ where M: Typed<Type = T>,
     refv
 }
 
-pub fn typecheck<E, M, T>(ast: &mut AST<M>, env: &E) -> Result<TypeVar<T>, TypeError<M, T>>
-where E: Environment<T>,
+pub fn typecheck<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeVar<T>, TypeError<M, T>>
+where E: Environment<T, I>,
       M: Clone + Typed<Type = T>,
       T: Clone + PrimType
 {
