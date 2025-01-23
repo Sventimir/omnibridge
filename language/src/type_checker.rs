@@ -56,6 +56,7 @@ where E: Environment<T>,
                     let ret_ty = TypeVar::unknown();
                     let expected_ty = TypeVar::constant(T::fun(arg_tys.as_slice(), ret_ty.make_ref()));
                     fun_ty.unify(&expected_ty, meta.clone())?;
+                    meta.assign_type(ret_ty.make_ref());
                     Ok(ret_ty)
                 }
             }

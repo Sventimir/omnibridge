@@ -16,7 +16,7 @@ pub trait PrimType: Sized {
 
 #[derive(Debug)]
 enum ValOrRef<T> {
-    Val(Option<T>),
+    Val { name: String, value: Option<T> },
     Ref(TypeVar<T>)
 }
 
@@ -31,11 +31,11 @@ impl<T> Clone for TypeVar<T> {
 
 impl<T> TypeVar<T> {
     pub fn unknown() -> Self {
-        TypeVar(Arc::new(Mutex::new(ValOrRef::Val(None))))
+        TypeVar(Arc::new(Mutex::new(ValOrRef::Val { value: None, name: "".to_string() })))
     }
 
     pub fn constant(t: T) -> Self {
-        TypeVar(Arc::new(Mutex::new(ValOrRef::Val(Some(t)))))
+        TypeVar(Arc::new(Mutex::new(ValOrRef::Val { value: Some(t), name: "".to_string() })))
     }
 
 
@@ -44,16 +44,26 @@ impl<T> TypeVar<T> {
     }
 
     // If self held a value previously, that value is returned.
-    pub fn set_ref(&self, other: &Self) -> Option<T> {
+    fn set_ref(&self, other: &Self) -> Option<T> {
         let mut this = self.0.lock().unwrap();
         match &*this {
-            ValOrRef::Val(_) => {
-                match std::mem::replace(&mut *this, ValOrRef::Ref(other.clone())) {
-                    ValOrRef::Val(t) => t,
+            ValOrRef::Val { .. } => {
+                match std::mem::replace(&mut *this, ValOrRef::Ref(other.make_ref())) {
+                    ValOrRef::Val { value, .. } => value,
                     _ => unreachable!()
                 }
             },
             ValOrRef::Ref(var) => var.set_ref(other),
+        }
+    }
+
+    fn set_val(&self, t: T) {
+        let mut this = self.0.lock().unwrap();
+        match &mut *this {
+            ValOrRef::Val { ref mut value, .. } => {
+                *value = Some(t);
+            },
+            ValOrRef::Ref(var) => var.set_val(t),
         }
     }
 }
@@ -61,8 +71,15 @@ impl<T> TypeVar<T> {
 impl<T: Clone> TypeVar<T> {
     pub fn value(&self) -> Option<T> {
         match &*self.0.lock().unwrap() {
-            ValOrRef::Val(t) => t.clone(),
+            ValOrRef::Val { value: t, .. } => t.clone(),
             ValOrRef::Ref(var) => var.value(),
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match &*self.0.lock().unwrap() {
+            ValOrRef::Val { name, .. } => name.clone(),
+            ValOrRef::Ref(var) => var.name(),
         }
     }
 }
@@ -76,8 +93,7 @@ impl<T: Clone + PrimType> TypeVar<T> {
             Some(prev) => {
                 match other.value() {
                     None => {
-                        let mut that = other.0.lock().unwrap();
-                        *that = ValOrRef::Val(Some(prev));
+                        other.set_val(prev);
                         Ok(())
                     },
                     Some(t) => t.unify(&prev, meta),
@@ -90,8 +106,12 @@ impl<T: Clone + PrimType> TypeVar<T> {
 impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
     fn into_sexp<S: Sexp>(self) -> S {
         match &*self.0.lock().unwrap() {
-            ValOrRef::Val(Some(t)) => t.clone().into_sexp(),
-            ValOrRef::Val(None) => S::symbol("'var".to_string()),
+            ValOrRef::Val { value: Some(t), .. } => t.clone().into_sexp(),
+            ValOrRef::Val { value: None, name } => {
+                let mut v = "?".to_string();
+                v.push_str(&name);
+                S::symbol(v)
+            },
             ValOrRef::Ref(var) => var.clone().into_sexp(),
         }
     }

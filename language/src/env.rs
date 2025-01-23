@@ -168,7 +168,7 @@ use crate::{type_checker::Environment, type_var::TypeVar};
 
 #[derive(Debug)]
 pub struct Value<T> {
-    pub ty: TypeVar<T>,
+    pub ty: fn() -> TypeVar<T>,
 }
 
 pub struct Env<T> {
@@ -186,7 +186,7 @@ impl<T> Env<T> {
 
 impl<T> Environment<T> for Env<T> {
     fn type_of(&self, name: &str) -> Option<TypeVar<T>> {
-        self.vars.get(name).map(|v| v.ty.clone())
+        self.vars.get(name).map(|v| (v.ty)())
     }
 }
 
@@ -200,25 +200,25 @@ mod built_in {
             self.vars.insert(
                 "t".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Bool),
+                    ty: || TypeVar::constant(BuiltinType::Bool),
                 },
             );
             self.vars.insert(
                 "f".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Bool),
+                    ty: || TypeVar::constant(BuiltinType::Bool),
                 },
             );
             self.vars.insert(
                 "nil".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Nil),
+                    ty: || TypeVar::constant(BuiltinType::Nil),
                 },
             );
             self.vars.insert(
                 "not".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Fun {
+                    ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![TypeVar::constant(BuiltinType::Bool)],
                         ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
                     }),
@@ -227,7 +227,7 @@ mod built_in {
             self.vars.insert(
                 "and".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Fun {
+                    ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
                             TypeVar::constant(BuiltinType::Bool),
                             TypeVar::constant(BuiltinType::Bool),
@@ -239,7 +239,7 @@ mod built_in {
             self.vars.insert(
                 "or".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Fun {
+                    ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
                             TypeVar::constant(BuiltinType::Bool),
                             TypeVar::constant(BuiltinType::Bool),
@@ -251,7 +251,7 @@ mod built_in {
             self.vars.insert(
                 "+".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Fun {
+                    ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
                             TypeVar::constant(BuiltinType::Float),
                             TypeVar::constant(BuiltinType::Float),
@@ -263,7 +263,7 @@ mod built_in {
             self.vars.insert(
                 "*".to_string(),
                 Value {
-                    ty: TypeVar::constant(BuiltinType::Fun {
+                    ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
                             TypeVar::constant(BuiltinType::Float),
                             TypeVar::constant(BuiltinType::Float),
@@ -272,18 +272,17 @@ mod built_in {
                     }),
                 },
             );
-            {
-                let tvar = TypeVar::unknown();
-                    self.vars.insert(
-                        "id".to_string(),
-                        Value {
-                            ty: TypeVar::constant(BuiltinType::Fun {
-                                args: vec![tvar.make_ref()],
-                                ret: Box::new(tvar),
-                            }),
-                        }
-                    );
-            }
+            self.vars.insert(
+                "id".to_string(),
+                Value {
+                    ty: || {
+                        let tvar = TypeVar::unknown();
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![tvar.make_ref()],
+                            ret: Box::new(tvar),
+                        })},
+                }
+            );
         }
     }
 }

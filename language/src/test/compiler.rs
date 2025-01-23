@@ -24,7 +24,10 @@ where
         .and_then(check_result);
     match ret {
         Ok(()) => (),
-        Err(e) => panic!("typecheck failed with error: {}", e),
+        Err(e) => {
+            println!("AST:{:?}", ast[0]);
+            panic!("typecheck failed with error: {}", e)
+        },
     }
 }
 
