@@ -1,8 +1,9 @@
 use std::{any::Any, sync::Arc};
 
-use crate::{interpreter::{Instr, NextStep}, Expr};
+use crate::{interpreter::{Instr, NextStep}, Expr, IntoSexp, Sexp};
 
 
+#[derive(Clone)]
 pub enum BuiltinInstr {
     Push(Arc<dyn Any>),
     Not,
@@ -80,3 +81,16 @@ impl Instr for BuiltinInstr {
     }
 }
 
+impl IntoSexp for BuiltinInstr {
+    fn into_sexp<S: Sexp>(self) -> S {
+        match self {
+            BuiltinInstr::Push(_) => S::symbol("push".to_string()),
+            BuiltinInstr::Not => S::symbol("not".to_string()),
+            BuiltinInstr::And(arity) => S::list(vec![S::symbol("and".to_string()), S::nat(arity as u64)]),
+            BuiltinInstr::Or(arity) => S::list(vec![S::symbol("or".to_string()), S::nat(arity as u64)]),
+            BuiltinInstr::Add(arity) => S::list(vec![S::symbol("add".to_string()), S::nat(arity as u64)]),
+            BuiltinInstr::Mul(arity) => S::list(vec![S::symbol("mul".to_string()), S::nat(arity as u64)]),
+            BuiltinInstr::Eq => S::symbol("eq".to_string()),
+        }
+    }
+}

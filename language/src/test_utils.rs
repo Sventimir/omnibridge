@@ -61,7 +61,7 @@ pub fn exec<T: Any + Clone>(src: &str) -> T {
     let mut env: Env<BuiltinType, BuiltinInstr> = Env::new();
     env.init();
     let prog: Vec<BuiltinInstr> = compile(&mut ast, &mut env).unwrap();
-    // println!("{:?}", prog);
+    println!("{:?}", prog.clone().into_sexp::<String>());
     let stack = interpreter::execute(prog.as_slice());
     get_result::<T>(stack.as_slice())
 }
