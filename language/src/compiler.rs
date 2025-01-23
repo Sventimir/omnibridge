@@ -44,12 +44,12 @@ where
     T: PrimType + Clone,
 {
     match ast {
-        AST::Nat { content, .. } => Ok(prog.push(I::push(*content))),
-        AST::Int { content, .. } => Ok(prog.push(I::push(*content))),
-        AST::Float { content, .. } => Ok(prog.push(I::push(*content))),
-        AST::String { content, .. } => Ok(prog.push(I::push(content.clone()))),
+        AST::Nat { content, .. } => Ok(prog.push(I::push_nat(*content))),
+        AST::Int { content, .. } => Ok(prog.push(I::push_int(*content))),
+        AST::Float { content, .. } => Ok(prog.push(I::push_float(*content))),
+        AST::String { content, .. } => Ok(prog.push(I::push_str(content.clone()))),
         AST::Quoted { content, .. } | AST::QuasiQuoted { content, .. } => {
-            Ok(prog.push(I::push(content.clone().into_sexp::<Expr>())))
+            Ok(prog.push(I::push_sexp(content.clone().into_sexp::<Expr>())))
         }
         AST::Unquoted { content, .. } => compile_ast(content, prog, env),
         AST::Symbol { content, meta } => {

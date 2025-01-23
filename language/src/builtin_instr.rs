@@ -1,6 +1,6 @@
 use std::{any::Any, sync::Arc};
 
-use crate::interpreter::{Instr, NextStep};
+use crate::{interpreter::{Instr, NextStep}, Expr};
 
 
 pub enum BuiltinInstr {
@@ -59,7 +59,23 @@ impl Instr for BuiltinInstr {
         }
     }
 
-    fn push(v: impl Any + 'static) -> Self {
+    fn push_nat(v: u64) -> Self {
+        BuiltinInstr::Push(Arc::new(v))
+    }
+
+    fn push_int(v: i64) -> Self {
+        BuiltinInstr::Push(Arc::new(v))
+    }
+
+    fn push_float(v: f64) -> Self {
+        BuiltinInstr::Push(Arc::new(v))
+    }
+
+    fn push_str(v: String) -> Self {
+        BuiltinInstr::Push(Arc::new(v))
+    }
+
+    fn push_sexp(v: Expr) -> Self {
         BuiltinInstr::Push(Arc::new(v))
     }
 }

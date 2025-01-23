@@ -1,6 +1,4 @@
-use std::any::Any;
-
-use crate::IntoSexp;
+use crate::Expr;
 
 pub enum NextStep {
     Forward,
@@ -51,7 +49,11 @@ pub trait Instr {
     fn arity(&self) -> usize;
     fn eval(&self, args: &[Self::Value]) -> (Option<Self::Value>, NextStep);
 
-    fn push(v: impl Any + 'static) -> Self;
+    fn push_nat(v: u64) -> Self;
+    fn push_int(v: i64) -> Self;
+    fn push_float(v: f64) -> Self;
+    fn push_str(v: String) -> Self;
+    fn push_sexp(v: Expr) -> Self;
 }
 
 pub fn execute<I, V>(program: &[I]) -> Vec<V>

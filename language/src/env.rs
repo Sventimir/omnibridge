@@ -32,7 +32,9 @@ impl<T, I> Environment<T, I> for Env<T, I> {
 }
 
 mod built_in {
-    use crate::{builtin_instr::BuiltinInstr, builtin_type::BuiltinType, interpreter::Instr, type_var::TypeVar};
+    use std::sync::Arc;
+
+    use crate::{builtin_instr::BuiltinInstr, builtin_type::BuiltinType, type_var::TypeVar};
 
     use super::{Env, Value};
 
@@ -42,21 +44,21 @@ mod built_in {
                 "t".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Bool),
-                    prog: |_| vec![ BuiltinInstr::push(true) ]
+                    prog: |_| vec![ BuiltinInstr::Push(Arc::new(true)) ]
                 },
             );
             self.vars.insert(
                 "f".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Bool),
-                    prog: |_| vec![ BuiltinInstr::push(false) ]
+                    prog: |_| vec![ BuiltinInstr::Push(Arc::new(false)) ]
                 },
             );
             self.vars.insert(
                 "nil".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Nil),
-                    prog: |_| vec![ BuiltinInstr::push(false) ]
+                    prog: |_| vec![ BuiltinInstr::Push(Arc::new(false)) ]
                 },
             );
             self.vars.insert(
