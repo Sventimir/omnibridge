@@ -116,3 +116,9 @@ impl IntoSexp for bool {
         }
     }
 }
+
+impl IntoSexp for () {
+    fn into_sexp<S: Sexp>(self) -> S {
+        nil()
+    }
+}

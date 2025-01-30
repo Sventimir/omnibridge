@@ -6,6 +6,16 @@ pub trait Typed {
 
     fn assign_type(&mut self, ty: TypeVar<Self::Type>);
     fn get_type(&self) -> TypeVar<Self::Type>;
+
+    fn label_type_vars(&self, label_index: Option<&mut u8>) {
+        match label_index {
+            Some(index) => self.get_type().label(index),
+            None => {
+                let mut label_index: u8 = 'a' as u8;
+                self.get_type().label(&mut label_index);
+            }
+        }
+    }
 }
 
 pub trait Environment<T, I> {

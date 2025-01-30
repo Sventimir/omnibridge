@@ -15,13 +15,14 @@ pub trait PrimType: Sized {
 }
 
 #[derive(Debug)]
-enum ValOrRef<T> {
-    Val { name: String, value: Option<T> },
+enum VarOrRef<T> {
+    Val(T),
+    Var(String),
     Ref(TypeVar<T>)
 }
 
 #[derive(Debug)]
-pub struct TypeVar<T>(Arc<Mutex<ValOrRef<T>>>);
+pub struct TypeVar<T>(Arc<Mutex<VarOrRef<T>>>);
 
 impl<T> Clone for TypeVar<T> {
     fn clone(&self) -> Self {
@@ -31,39 +32,60 @@ impl<T> Clone for TypeVar<T> {
 
 impl<T> TypeVar<T> {
     pub fn unknown() -> Self {
-        TypeVar(Arc::new(Mutex::new(ValOrRef::Val { value: None, name: "".to_string() })))
+        TypeVar(Arc::new(Mutex::new(VarOrRef::Var("".to_string()))))
     }
 
     pub fn constant(t: T) -> Self {
-        TypeVar(Arc::new(Mutex::new(ValOrRef::Val { value: Some(t), name: "".to_string() })))
+        TypeVar(Arc::new(Mutex::new(VarOrRef::Val(t))))
     }
 
 
     pub fn make_ref(&self) -> Self {
-        TypeVar(Arc::new(Mutex::new(ValOrRef::Ref(self.clone()))))
+        TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(self.clone()))))
     }
 
     // If self held a value previously, that value is returned.
     fn set_ref(&self, other: &Self) -> Option<T> {
         let mut this = self.0.lock().unwrap();
         match &*this {
-            ValOrRef::Val { .. } => {
-                match std::mem::replace(&mut *this, ValOrRef::Ref(other.make_ref())) {
-                    ValOrRef::Val { value, .. } => value,
+            VarOrRef::Val(_) => {
+                match std::mem::replace(&mut *this, VarOrRef::Ref(other.make_ref())) {
+                    VarOrRef::Val(value) => Some(value),
                     _ => unreachable!()
                 }
             },
-            ValOrRef::Ref(var) => var.set_ref(other),
+            VarOrRef::Var(_) => {
+                *this = VarOrRef::Ref(other.make_ref());
+                None
+            },
+            VarOrRef::Ref(var) => var.set_ref(other),
         }
     }
 
     fn set_val(&self, t: T) {
         let mut this = self.0.lock().unwrap();
         match &mut *this {
-            ValOrRef::Val { ref mut value, .. } => {
-                *value = Some(t);
+            VarOrRef::Val(ref mut value) => {
+                *value = t;
             },
-            ValOrRef::Ref(var) => var.set_val(t),
+            VarOrRef::Var(_) => {
+                *this = VarOrRef::Val(t);
+            },
+            VarOrRef::Ref(var) => var.set_val(t),
+        }
+    }
+
+    pub fn label(&self, label_counter: &mut u8) {
+        let mut this = self.0.lock().unwrap();
+        match &mut *this {
+            VarOrRef::Val(_) => (),
+            VarOrRef::Var(ref mut name) => {
+                if name.is_empty() {
+                    *name = format!("{}", *label_counter as char);
+                    *label_counter += 1;
+                }
+            },
+            VarOrRef::Ref(var) => var.label(label_counter),
         }
     }
 }
@@ -71,15 +93,17 @@ impl<T> TypeVar<T> {
 impl<T: Clone> TypeVar<T> {
     pub fn value(&self) -> Option<T> {
         match &*self.0.lock().unwrap() {
-            ValOrRef::Val { value: t, .. } => t.clone(),
-            ValOrRef::Ref(var) => var.value(),
+            VarOrRef::Val(t) => Some(t.clone()),
+            VarOrRef::Var(_) => None,
+            VarOrRef::Ref(var) => var.value(),
         }
     }
 
     pub fn name(&self) -> String {
         match &*self.0.lock().unwrap() {
-            ValOrRef::Val { name, .. } => name.clone(),
-            ValOrRef::Ref(var) => var.name(),
+            VarOrRef::Val(_) => "<const>".to_string(),
+            VarOrRef::Var(name) => name.clone(),
+            VarOrRef::Ref(var) => var.name(),
         }
     }
 }
@@ -106,13 +130,13 @@ impl<T: Clone + PrimType> TypeVar<T> {
 impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
     fn into_sexp<S: Sexp>(self) -> S {
         match &*self.0.lock().unwrap() {
-            ValOrRef::Val { value: Some(t), .. } => t.clone().into_sexp(),
-            ValOrRef::Val { value: None, name } => {
+            VarOrRef::Val(t) => t.clone().into_sexp(),
+            VarOrRef::Var(name) => {
                 let mut v = "?".to_string();
                 v.push_str(&name);
                 S::symbol(v)
             },
-            ValOrRef::Ref(var) => var.clone().into_sexp(),
+            VarOrRef::Ref(var) => var.clone().into_sexp(),
         }
     }
 }
