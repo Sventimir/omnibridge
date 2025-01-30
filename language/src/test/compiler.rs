@@ -44,8 +44,8 @@ fn typecheck_a_bool_expr() {
 
 #[test]
 fn typecheck_a_polymorphic_function_call() {
-    test_typechecker("(id (+ 3.0 (* 2.0 (id 7.0))))", |ty| match ty {
-        BuiltinType::Float => Ok(()),
+    test_typechecker("(id (+ 3 (* 2 (id 7))))", |ty| match ty {
+        BuiltinType::Int => Ok(()),
         _ => Err(String::list(vec![
             String::symbol("result-type-mismatch".to_string()),
             String::symbol("float".to_string()),

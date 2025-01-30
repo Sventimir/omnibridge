@@ -46,15 +46,15 @@ impl Instr for BuiltinInstr {
                 NextStep::Forward,
             ),
             BuiltinInstr::Add(_) => (
-                Some(Arc::new(args.iter().fold(0 as f64, |l, r| l + r.downcast_ref::<f64>().unwrap()))),
+                Some(Arc::new(args.iter().fold(0 as i64, |l, r| l + r.downcast_ref::<i64>().unwrap()))),
                 NextStep::Forward,
             ),
             BuiltinInstr::Mul(_) => (
-                Some(Arc::new(args.iter().fold(1 as f64, |l, r| l * r.downcast_ref::<f64>().unwrap()))),
+                Some(Arc::new(args.iter().fold(1 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()))),
                 NextStep::Forward,
             ),
             BuiltinInstr::Eq => (
-                Some(Arc::new(args[0].downcast_ref::<f64>() == args[1].downcast_ref::<f64>())),
+                Some(Arc::new(args[0].downcast_ref::<i64>() == args[1].downcast_ref::<i64>())),
                 NextStep::Forward,
             ),
         }

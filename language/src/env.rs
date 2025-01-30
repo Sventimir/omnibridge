@@ -102,10 +102,10 @@ mod built_in {
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
-                            TypeVar::constant(BuiltinType::Float),
-                            TypeVar::constant(BuiltinType::Float),
+                            TypeVar::constant(BuiltinType::Int),
+                            TypeVar::constant(BuiltinType::Int),
                         ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Float)),
+                        ret: Box::new(TypeVar::constant(BuiltinType::Int)),
                     }),
                     prog: |_| vec![ BuiltinInstr::Add(2) ]
                 },
@@ -115,10 +115,10 @@ mod built_in {
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
-                            TypeVar::constant(BuiltinType::Float),
-                            TypeVar::constant(BuiltinType::Float),
+                            TypeVar::constant(BuiltinType::Int),
+                            TypeVar::constant(BuiltinType::Int),
                         ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Float)),
+                        ret: Box::new(TypeVar::constant(BuiltinType::Int)),
                     }),
                     prog: |_| vec![ BuiltinInstr::Mul(2) ]
                 },
@@ -128,10 +128,10 @@ mod built_in {
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Fun {
                         args: vec![
-                            TypeVar::constant(BuiltinType::Float),
-                            TypeVar::constant(BuiltinType::Float),
+                            TypeVar::constant(BuiltinType::Int),
+                            TypeVar::constant(BuiltinType::Int),
                         ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Float)),
+                        ret: Box::new(TypeVar::constant(BuiltinType::Int)),
                     }),
                     prog: |_| vec![ BuiltinInstr::Eq ],
                 }

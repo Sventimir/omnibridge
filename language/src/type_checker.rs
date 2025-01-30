@@ -39,7 +39,7 @@ where E: Environment<T, I>,
       T: Clone + PrimType
 {
     match ast {
-        AST::Nat { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::nat())),
+        AST::Nat { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
         AST::Int { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
         AST::Float { ref mut meta,  .. } => Ok(assign_const_and_return(meta, T::float())),
         AST::String { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::string())),

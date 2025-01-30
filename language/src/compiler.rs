@@ -79,7 +79,7 @@ where
     T: PrimType + Clone,
 {
     match ast {
-        AST::Nat { content, .. } => Ok(prog.push(I::push_nat(*content))),
+        AST::Nat { content, .. } => Ok(prog.push(I::push_int(*content as i64))),
         AST::Int { content, .. } => Ok(prog.push(I::push_int(*content))),
         AST::Float { content, .. } => Ok(prog.push(I::push_float(*content))),
         AST::String { content, .. } => Ok(prog.push(I::push_str(content.clone()))),
