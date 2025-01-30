@@ -45,7 +45,10 @@ where E: Environment<T, I>,
         AST::String { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::string())),
         AST::Symbol { content, meta } => {
             match env.type_of(content) {
-                Some(t) => Ok(t.clone()),
+                Some(t) => {
+                    meta.assign_type(t.make_ref());
+                    Ok(t)
+                },
                 None => Err(TypeError::Undefined {
                     symbol: content.clone(),
                     meta: meta.clone()
