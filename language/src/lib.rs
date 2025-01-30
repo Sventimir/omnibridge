@@ -9,14 +9,20 @@ mod compiler;
 #[cfg(test)]
 pub mod compiler;
 
-mod core_lisp;
+pub mod builtin_instr;
+pub mod builtin_type;
 pub mod env;
+pub mod interpreter;
+pub mod parser;
+pub mod src_location;
+pub mod type_error;
 
+mod core_lisp;
 mod expr;
 mod full_lisp;
-pub mod parser;
 mod sexp;
-pub mod src_location;
+mod type_checker;
+mod type_var;
 
 pub use compiler::compile;
 pub use core_lisp::CoreLisp;
@@ -24,13 +30,6 @@ pub use expr::Expr;
 pub use full_lisp::Lisp;
 pub use parser::parse;
 pub use sexp::{int, nil, pair, IntoSexp, Sexp, SexpError};
-
-pub mod builtin_instr;
-pub mod builtin_type;
-pub mod interpreter;
-pub mod type_checker;
-pub mod type_error;
-pub mod type_var;
 
 #[cfg(test)]
 mod test;
