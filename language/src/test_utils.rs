@@ -1,6 +1,10 @@
 use std::{any::Any, ops::Range, sync::Arc};
 
-use crate::{ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env, interpreter, parse, src_location::WithLocation, type_checker::Typed, type_var::TypeVar, IntoSexp, Sexp};
+use crate::{
+    ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env,
+    interpreter, parse, src_location::WithLocation, type_checker::Typed, type_var::TypeVar,
+    IntoSexp, Sexp,
+};
 
 #[derive(Clone, Debug)]
 pub struct Meta {
@@ -14,7 +18,7 @@ impl Typed for Meta {
     fn get_type(&self) -> TypeVar<Self::Type> {
         self.ty.clone()
     }
-    
+
     fn assign_type(&mut self, ty: TypeVar<Self::Type>) {
         self.ty = ty;
     }
@@ -52,7 +56,12 @@ impl IntoSexp for Meta {
 }
 
 pub fn get_result<T: Clone + 'static>(stack: &[Arc<dyn Any>]) -> T {
-    stack.last().expect("stack is empty!").downcast_ref::<T>().expect("cast failed!").clone()
+    stack
+        .last()
+        .expect("stack is empty!")
+        .downcast_ref::<T>()
+        .expect("cast failed!")
+        .clone()
 }
 
 pub fn exec<T: Any + Clone>(src: &str) -> T {

@@ -1,7 +1,14 @@
 use std::fmt::{self, Debug, Formatter};
 
 use crate::{
-    ast::AST, env::Env, interpreter::Instr, pair, type_checker::{typecheck, Environment, Typed}, type_error::TypeError, type_var::PrimType, Expr, IntoSexp, Sexp
+    ast::AST,
+    env::Env,
+    interpreter::Instr,
+    pair,
+    type_checker::{typecheck, Environment, Typed},
+    type_error::TypeError,
+    type_var::PrimType,
+    Expr, IntoSexp, Sexp,
 };
 
 #[derive(Clone)]
@@ -11,18 +18,16 @@ pub enum CompilationError<M, T> {
 }
 
 impl<M, T> CompilationError<M, T>
-where M: Typed
+where
+    M: Typed,
 {
     fn label_type_vars(&self) {
         let mut label_index: u8 = 'a' as u8;
         match self {
             CompilationError::TypeError(e) => e.label_type_vars(Some(&mut label_index)),
-            CompilationError::UnresolvedTypeVar(m) => {
-                m.get_type().label(&mut label_index)
-            },
+            CompilationError::UnresolvedTypeVar(m) => m.get_type().label(&mut label_index),
         }
     }
-
 }
 
 impl<M, T> IntoSexp for CompilationError<M, T>
@@ -34,8 +39,9 @@ where
         self.label_type_vars();
         match self {
             CompilationError::TypeError(e) => e.into_sexp(),
-            CompilationError::UnresolvedTypeVar(m) => 
-                pair(S::symbol("unresolved-type-var".to_string()), m.into_sexp()),
+            CompilationError::UnresolvedTypeVar(m) => {
+                pair(S::symbol("unresolved-type-var".to_string()), m.into_sexp())
+            }
         }
     }
 }
@@ -46,7 +52,12 @@ where
     T: Clone + IntoSexp,
 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "CompilationError: {}", self.clone().into_sexp::<String>())    }
+        write!(
+            f,
+            "CompilationError: {}",
+            self.clone().into_sexp::<String>()
+        )
+    }
 }
 
 pub fn compile<M, I, T>(

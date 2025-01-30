@@ -7,8 +7,7 @@ use language::{
         expect::{self, ExpectError},
         AST,
     },
-    int,
-    IntoSexp, Sexp,
+    int, IntoSexp, Sexp,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Add, Neg, Sub)]

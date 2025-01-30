@@ -4,7 +4,8 @@ use proptest::prelude::Strategy;
 use proptest_derive::Arbitrary;
 
 use crate::{
-    ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, env::Env, parse, test_utils::Meta, type_checker::typecheck, IntoSexp, Sexp
+    ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, env::Env, parse,
+    test_utils::Meta, type_checker::typecheck, IntoSexp, Sexp,
 };
 
 fn test_typechecker<F>(src: &str, check_result: F)
@@ -26,7 +27,7 @@ where
         Err(e) => {
             println!("AST:{:?}", ast[0]);
             panic!("typecheck failed with error: {}", e)
-        },
+        }
     }
 }
 

@@ -1,4 +1,8 @@
-use crate::{type_error::TypeError, type_var::{PrimType, TypeVar}, IntoSexp, Sexp};
+use crate::{
+    type_error::TypeError,
+    type_var::{PrimType, TypeVar},
+    IntoSexp, Sexp,
+};
 
 #[derive(Clone, Debug)]
 pub enum BuiltinType {
@@ -12,21 +16,22 @@ pub enum BuiltinType {
     Fun {
         args: Vec<TypeVar<BuiltinType>>,
         ret: Box<TypeVar<BuiltinType>>,
-    }
+    },
 }
 
-impl PartialEq for BuiltinType{
+impl PartialEq for BuiltinType {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (BuiltinType::Bool, BuiltinType::Bool) 
-                | (BuiltinType::Nat, BuiltinType::Nat)
-                | (BuiltinType::Int, BuiltinType::Int)
-                | (BuiltinType::Float, BuiltinType::Float)
-                | (BuiltinType::String, BuiltinType::String)
-                | (BuiltinType::Expr, BuiltinType::Expr)
-                | (BuiltinType::Nil, BuiltinType::Nil) => true,
-            (BuiltinType::Fun { .. }, BuiltinType::Fun { .. }) => 
-                panic!("Function types are not comparable"),
+            (BuiltinType::Bool, BuiltinType::Bool)
+            | (BuiltinType::Nat, BuiltinType::Nat)
+            | (BuiltinType::Int, BuiltinType::Int)
+            | (BuiltinType::Float, BuiltinType::Float)
+            | (BuiltinType::String, BuiltinType::String)
+            | (BuiltinType::Expr, BuiltinType::Expr)
+            | (BuiltinType::Nil, BuiltinType::Nil) => true,
+            (BuiltinType::Fun { .. }, BuiltinType::Fun { .. }) => {
+                panic!("Function types are not comparable")
+            }
             _ => false,
         }
     }
@@ -64,25 +69,33 @@ impl PrimType for BuiltinType {
         }
     }
 
-    fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, Self>> 
-    where M: Clone 
+    fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, Self>>
+    where
+        M: Clone,
     {
         match (self, other) {
-            (BuiltinType::Bool, BuiltinType::Bool) 
-                | (BuiltinType::Nat, BuiltinType::Nat)
-                | (BuiltinType::Int, BuiltinType::Int)
-                | (BuiltinType::Float, BuiltinType::Float)
-                | (BuiltinType::String, BuiltinType::String)
-                | (BuiltinType::Expr, BuiltinType::Expr)
-                | (BuiltinType::Nil, BuiltinType::Nil) 
-                => Ok(()),
-            (BuiltinType::Fun { args: args_l, ret: ret_l },
-            BuiltinType::Fun { args: args_r, ret: ret_r }) => {
+            (BuiltinType::Bool, BuiltinType::Bool)
+            | (BuiltinType::Nat, BuiltinType::Nat)
+            | (BuiltinType::Int, BuiltinType::Int)
+            | (BuiltinType::Float, BuiltinType::Float)
+            | (BuiltinType::String, BuiltinType::String)
+            | (BuiltinType::Expr, BuiltinType::Expr)
+            | (BuiltinType::Nil, BuiltinType::Nil) => Ok(()),
+            (
+                BuiltinType::Fun {
+                    args: args_l,
+                    ret: ret_l,
+                },
+                BuiltinType::Fun {
+                    args: args_r,
+                    ret: ret_r,
+                },
+            ) => {
                 if args_l.len() != args_r.len() {
                     return Err(TypeError::Mismatch {
                         expected: self.clone(),
                         found: other.clone(),
-                        meta
+                        meta,
                     });
                 }
                 for (arg_l, arg_r) in args_l.iter().zip(args_r.iter()) {
@@ -93,7 +106,7 @@ impl PrimType for BuiltinType {
             _ => Err(TypeError::Mismatch {
                 expected: self.clone(),
                 found: other.clone(),
-                meta
+                meta,
             }),
         }
     }

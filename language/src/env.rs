@@ -12,7 +12,6 @@ pub struct Env<T, I> {
     vars: HashMap<String, Value<T, I>>,
 }
 
-
 impl<T, I> Env<T, I> {
     pub fn new() -> Self {
         Env {
@@ -44,97 +43,109 @@ mod built_in {
                 "t".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Bool),
-                    prog: |_| vec![ BuiltinInstr::Push(Arc::new(true)) ]
+                    prog: |_| vec![BuiltinInstr::Push(Arc::new(true))],
                 },
             );
             self.vars.insert(
                 "f".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Bool),
-                    prog: |_| vec![ BuiltinInstr::Push(Arc::new(false)) ]
+                    prog: |_| vec![BuiltinInstr::Push(Arc::new(false))],
                 },
             );
             self.vars.insert(
                 "nil".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Nil),
-                    prog: |_| vec![ BuiltinInstr::Push(Arc::new(false)) ]
+                    prog: |_| vec![BuiltinInstr::Push(Arc::new(false))],
                 },
             );
             self.vars.insert(
                 "not".to_string(),
                 Value {
-                    ty: || TypeVar::constant(BuiltinType::Fun {
-                        args: vec![TypeVar::constant(BuiltinType::Bool)],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
-                    }),
-                    prog: |_| vec![ BuiltinInstr::Not ],
+                    ty: || {
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![TypeVar::constant(BuiltinType::Bool)],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                        })
+                    },
+                    prog: |_| vec![BuiltinInstr::Not],
                 },
             );
             self.vars.insert(
                 "and".to_string(),
                 Value {
-                    ty: || TypeVar::constant(BuiltinType::Fun {
-                        args: vec![
-                            TypeVar::constant(BuiltinType::Bool),
-                            TypeVar::constant(BuiltinType::Bool),
-                        ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
-                    }),
-                    prog: |_| vec![ BuiltinInstr::And(2) ]
+                    ty: || {
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![
+                                TypeVar::constant(BuiltinType::Bool),
+                                TypeVar::constant(BuiltinType::Bool),
+                            ],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                        })
+                    },
+                    prog: |_| vec![BuiltinInstr::And(2)],
                 },
             );
             self.vars.insert(
                 "or".to_string(),
                 Value {
-                    ty: || TypeVar::constant(BuiltinType::Fun {
-                        args: vec![
-                            TypeVar::constant(BuiltinType::Bool),
-                            TypeVar::constant(BuiltinType::Bool),
-                        ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
-                    }),
-                    prog: |_| vec![ BuiltinInstr::Or(2) ]
+                    ty: || {
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![
+                                TypeVar::constant(BuiltinType::Bool),
+                                TypeVar::constant(BuiltinType::Bool),
+                            ],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                        })
+                    },
+                    prog: |_| vec![BuiltinInstr::Or(2)],
                 },
             );
             self.vars.insert(
                 "+".to_string(),
                 Value {
-                    ty: || TypeVar::constant(BuiltinType::Fun {
-                        args: vec![
-                            TypeVar::constant(BuiltinType::Int),
-                            TypeVar::constant(BuiltinType::Int),
-                        ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Int)),
-                    }),
-                    prog: |_| vec![ BuiltinInstr::Add(2) ]
+                    ty: || {
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![
+                                TypeVar::constant(BuiltinType::Int),
+                                TypeVar::constant(BuiltinType::Int),
+                            ],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Int)),
+                        })
+                    },
+                    prog: |_| vec![BuiltinInstr::Add(2)],
                 },
             );
             self.vars.insert(
                 "*".to_string(),
                 Value {
-                    ty: || TypeVar::constant(BuiltinType::Fun {
-                        args: vec![
-                            TypeVar::constant(BuiltinType::Int),
-                            TypeVar::constant(BuiltinType::Int),
-                        ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Int)),
-                    }),
-                    prog: |_| vec![ BuiltinInstr::Mul(2) ]
+                    ty: || {
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![
+                                TypeVar::constant(BuiltinType::Int),
+                                TypeVar::constant(BuiltinType::Int),
+                            ],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Int)),
+                        })
+                    },
+                    prog: |_| vec![BuiltinInstr::Mul(2)],
                 },
             );
             self.vars.insert(
                 "=".to_string(),
                 Value {
-                    ty: || TypeVar::constant(BuiltinType::Fun {
-                        args: vec![
-                            TypeVar::constant(BuiltinType::Int),
-                            TypeVar::constant(BuiltinType::Int),
-                        ],
-                        ret: Box::new(TypeVar::constant(BuiltinType::Int)),
-                    }),
-                    prog: |_| vec![ BuiltinInstr::Eq ],
-                }
+                    ty: || {
+                        TypeVar::constant(BuiltinType::Fun {
+                            args: vec![
+                                TypeVar::constant(BuiltinType::Int),
+                                TypeVar::constant(BuiltinType::Int),
+                            ],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Int)),
+                        })
+                    },
+                    prog: |_| vec![BuiltinInstr::Eq],
+                },
             );
             self.vars.insert(
                 "id".to_string(),
@@ -144,9 +155,10 @@ mod built_in {
                         TypeVar::constant(BuiltinType::Fun {
                             args: vec![tvar.make_ref()],
                             ret: Box::new(tvar),
-                        })},
-                    prog: |_| vec![]
-                }
+                        })
+                    },
+                    prog: |_| vec![],
+                },
             );
         }
     }

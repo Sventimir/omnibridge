@@ -1,5 +1,8 @@
-use crate::{ast::AST, type_error::TypeError, type_var::{PrimType, TypeVar}};
-
+use crate::{
+    ast::AST,
+    type_error::TypeError,
+    type_var::{PrimType, TypeVar},
+};
 
 pub trait Typed {
     type Type;
@@ -23,9 +26,10 @@ pub trait Environment<T, I> {
     fn get_instr(&self, name: &str, ty: &T) -> Option<Vec<I>>;
 }
 
-fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeVar<T> 
-where M: Typed<Type = T>,
-      T: PrimType
+fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeVar<T>
+where
+    M: Typed<Type = T>,
+    T: PrimType,
 {
     let v = TypeVar::constant(ty);
     let refv = v.make_ref();
@@ -34,31 +38,34 @@ where M: Typed<Type = T>,
 }
 
 pub fn typecheck<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeVar<T>, TypeError<M, T>>
-where E: Environment<T, I>,
-      M: Clone + Typed<Type = T>,
-      T: Clone + PrimType
+where
+    E: Environment<T, I>,
+    M: Clone + Typed<Type = T>,
+    T: Clone + PrimType,
 {
     match ast {
         AST::Nat { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
         AST::Int { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
-        AST::Float { ref mut meta,  .. } => Ok(assign_const_and_return(meta, T::float())),
+        AST::Float { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::float())),
         AST::String { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::string())),
-        AST::Symbol { content, meta } => {
-            match env.type_of(content) {
-                Some(t) => {
-                    meta.assign_type(t.make_ref());
-                    Ok(t)
-                },
-                None => Err(TypeError::Undefined {
-                    symbol: content.clone(),
-                    meta: meta.clone()
-                }),
+        AST::Symbol { content, meta } => match env.type_of(content) {
+            Some(t) => {
+                meta.assign_type(t.make_ref());
+                Ok(t)
             }
+            None => Err(TypeError::Undefined {
+                symbol: content.clone(),
+                meta: meta.clone(),
+            }),
         },
         AST::Quoted { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::sexp())),
-        AST::QuasiQuoted { meta, .. } | AST::Unquoted { meta, .. } =>
-            Err(TypeError::UnexpectedQuasiquote { meta: meta.clone() }),
-        AST::List { content, ref mut meta } => {
+        AST::QuasiQuoted { meta, .. } | AST::Unquoted { meta, .. } => {
+            Err(TypeError::UnexpectedQuasiquote { meta: meta.clone() })
+        }
+        AST::List {
+            content,
+            ref mut meta,
+        } => {
             let mut cs = content.iter_mut();
             match cs.next() {
                 None => Ok(assign_const_and_return(meta, T::nil())),
@@ -68,7 +75,8 @@ where E: Environment<T, I>,
                         .map(|arg_ast| typecheck(arg_ast, env))
                         .collect::<Result<Vec<_>, _>>()?;
                     let ret_ty = TypeVar::unknown();
-                    let expected_ty = TypeVar::constant(T::fun(arg_tys.as_slice(), ret_ty.make_ref()));
+                    let expected_ty =
+                        TypeVar::constant(T::fun(arg_tys.as_slice(), ret_ty.make_ref()));
                     fun_ty.unify(&expected_ty, meta.clone())?;
                     meta.assign_type(ret_ty.make_ref());
                     Ok(ret_ty)

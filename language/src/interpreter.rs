@@ -23,7 +23,8 @@ impl<V: Clone> Interpreter<V> {
     }
 
     fn exec<I>(&mut self, instr: &I)
-    where I: Instr<Value = V>
+    where
+        I: Instr<Value = V>,
     {
         let args = self.stack.split_off(self.stack.len() - instr.arity());
         let (result, advance) = instr.eval(args.as_slice());
@@ -38,7 +39,7 @@ impl<V: Clone> Interpreter<V> {
         }
         match result {
             Some(v) => self.stack.push(v),
-            None => ()
+            None => (),
         }
     }
 }
@@ -57,8 +58,9 @@ pub trait Instr {
 }
 
 pub fn execute<I, V>(program: &[I]) -> Vec<V>
-where V: Clone,
-      I: Instr<Value = V> 
+where
+    V: Clone,
+    I: Instr<Value = V>,
 {
     let mut interp = Interpreter::new();
     while interp.cursor < program.len() {

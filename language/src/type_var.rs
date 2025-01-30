@@ -18,7 +18,7 @@ pub trait PrimType: Sized {
 enum VarOrRef<T> {
     Val(T),
     Var(String),
-    Ref(TypeVar<T>)
+    Ref(TypeVar<T>),
 }
 
 #[derive(Debug)]
@@ -39,7 +39,6 @@ impl<T> TypeVar<T> {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Val(t))))
     }
 
-
     pub fn make_ref(&self) -> Self {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(self.clone()))))
     }
@@ -51,13 +50,13 @@ impl<T> TypeVar<T> {
             VarOrRef::Val(_) => {
                 match std::mem::replace(&mut *this, VarOrRef::Ref(other.make_ref())) {
                     VarOrRef::Val(value) => Some(value),
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
-            },
+            }
             VarOrRef::Var(_) => {
                 *this = VarOrRef::Ref(other.make_ref());
                 None
-            },
+            }
             VarOrRef::Ref(var) => var.set_ref(other),
         }
     }
@@ -67,10 +66,10 @@ impl<T> TypeVar<T> {
         match &mut *this {
             VarOrRef::Val(ref mut value) => {
                 *value = t;
-            },
+            }
             VarOrRef::Var(_) => {
                 *this = VarOrRef::Val(t);
-            },
+            }
             VarOrRef::Ref(var) => var.set_val(t),
         }
     }
@@ -84,7 +83,7 @@ impl<T> TypeVar<T> {
                     *name = format!("{}", *label_counter as char);
                     *label_counter += 1;
                 }
-            },
+            }
             VarOrRef::Ref(var) => var.label(label_counter),
         }
     }
@@ -109,20 +108,19 @@ impl<T: Clone> TypeVar<T> {
 }
 
 impl<T: Clone + PrimType> TypeVar<T> {
-    pub fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, T>> 
-    where M: Clone
+    pub fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, T>>
+    where
+        M: Clone,
     {
         match self.set_ref(other) {
             None => Ok(()),
-            Some(prev) => {
-                match other.value() {
-                    None => {
-                        other.set_val(prev);
-                        Ok(())
-                    },
-                    Some(t) => t.unify(&prev, meta),
+            Some(prev) => match other.value() {
+                None => {
+                    other.set_val(prev);
+                    Ok(())
                 }
-            }
+                Some(t) => t.unify(&prev, meta),
+            },
         }
     }
 }
@@ -135,7 +133,7 @@ impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
                 let mut v = "?".to_string();
                 v.push_str(&name);
                 S::symbol(v)
-            },
+            }
             VarOrRef::Ref(var) => var.clone().into_sexp(),
         }
     }

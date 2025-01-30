@@ -1,7 +1,9 @@
 use std::{any::Any, sync::Arc};
 
-use crate::{interpreter::{Instr, NextStep}, Expr, IntoSexp, Sexp};
-
+use crate::{
+    interpreter::{Instr, NextStep},
+    Expr, IntoSexp, Sexp,
+};
 
 #[derive(Clone)]
 pub enum BuiltinInstr {
@@ -11,7 +13,7 @@ pub enum BuiltinInstr {
     Or(usize),
     Add(usize),
     Mul(usize),
-    Eq
+    Eq,
 }
 
 impl Instr for BuiltinInstr {
@@ -25,8 +27,7 @@ impl Instr for BuiltinInstr {
             BuiltinInstr::And(arity)
             | BuiltinInstr::Or(arity)
             | BuiltinInstr::Add(arity)
-            | BuiltinInstr::Mul(arity) => 
-                *arity,
+            | BuiltinInstr::Mul(arity) => *arity,
         }
     }
 
@@ -38,23 +39,36 @@ impl Instr for BuiltinInstr {
                 NextStep::Forward,
             ),
             BuiltinInstr::And(_) => (
-                Some(Arc::new(args.iter().fold(true, |l, r| l & r.downcast_ref().unwrap()))),
+                Some(Arc::new(
+                    args.iter().fold(true, |l, r| l & r.downcast_ref().unwrap()),
+                )),
                 NextStep::Forward,
             ),
-            BuiltinInstr::Or(_) =>(
-                Some(Arc::new(args.iter().fold(false, |l, r| l | r.downcast_ref().unwrap()))),
+            BuiltinInstr::Or(_) => (
+                Some(Arc::new(
+                    args.iter()
+                        .fold(false, |l, r| l | r.downcast_ref().unwrap()),
+                )),
                 NextStep::Forward,
             ),
             BuiltinInstr::Add(_) => (
-                Some(Arc::new(args.iter().fold(0 as i64, |l, r| l + r.downcast_ref::<i64>().unwrap()))),
+                Some(Arc::new(
+                    args.iter()
+                        .fold(0 as i64, |l, r| l + r.downcast_ref::<i64>().unwrap()),
+                )),
                 NextStep::Forward,
             ),
             BuiltinInstr::Mul(_) => (
-                Some(Arc::new(args.iter().fold(1 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()))),
+                Some(Arc::new(
+                    args.iter()
+                        .fold(1 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()),
+                )),
                 NextStep::Forward,
             ),
             BuiltinInstr::Eq => (
-                Some(Arc::new(args[0].downcast_ref::<i64>() == args[1].downcast_ref::<i64>())),
+                Some(Arc::new(
+                    args[0].downcast_ref::<i64>() == args[1].downcast_ref::<i64>(),
+                )),
                 NextStep::Forward,
             ),
         }
@@ -86,10 +100,18 @@ impl IntoSexp for BuiltinInstr {
         match self {
             BuiltinInstr::Push(_) => S::symbol("push".to_string()),
             BuiltinInstr::Not => S::symbol("not".to_string()),
-            BuiltinInstr::And(arity) => S::list(vec![S::symbol("and".to_string()), S::nat(arity as u64)]),
-            BuiltinInstr::Or(arity) => S::list(vec![S::symbol("or".to_string()), S::nat(arity as u64)]),
-            BuiltinInstr::Add(arity) => S::list(vec![S::symbol("add".to_string()), S::nat(arity as u64)]),
-            BuiltinInstr::Mul(arity) => S::list(vec![S::symbol("mul".to_string()), S::nat(arity as u64)]),
+            BuiltinInstr::And(arity) => {
+                S::list(vec![S::symbol("and".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::Or(arity) => {
+                S::list(vec![S::symbol("or".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::Add(arity) => {
+                S::list(vec![S::symbol("add".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::Mul(arity) => {
+                S::list(vec![S::symbol("mul".to_string()), S::nat(arity as u64)])
+            }
             BuiltinInstr::Eq => S::symbol("eq".to_string()),
         }
     }
