@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    cmp::Ordering,
+    sync::{Arc, Mutex},
+};
 
 use crate::{type_error::TypeError, IntoSexp, Sexp};
 
@@ -136,5 +139,27 @@ impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
             }
             VarOrRef::Ref(var) => var.clone().into_sexp(),
         }
+    }
+}
+
+// NOTE: This treats all unresolved variables as equal. This is
+// not perfect, but will will suffice to make types map keys.
+impl<T: Clone + PartialEq> PartialEq for TypeVar<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value() == other.value()
+    }
+}
+
+impl<T: Clone + Eq> Eq for TypeVar<T> {}
+
+impl<T: Clone + PartialOrd> PartialOrd for TypeVar<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.value().partial_cmp(&other.value())
+    }
+}
+
+impl<T: Clone + Ord> Ord for TypeVar<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.value().cmp(&other.value())
     }
 }
