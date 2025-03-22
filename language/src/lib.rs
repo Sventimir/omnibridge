@@ -11,6 +11,7 @@ pub mod compiler;
 
 pub mod builtin_instr;
 pub mod builtin_type;
+pub mod constraint;
 pub mod env;
 pub mod interpreter;
 pub mod parser;

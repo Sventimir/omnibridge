@@ -1,22 +1,58 @@
-use std::collections::HashMap;
+use std::{collections::{BTreeMap, HashMap}, sync::Arc};
 
-use crate::{type_checker::Environment, type_var::TypeVar};
+use crate::{
+    constraint::{Constraint, Implementation},
+    type_checker::Environment,
+    type_var::TypeVar,
+};
 
 #[derive(Debug)]
 pub struct Value<T, I> {
     pub ty: fn() -> TypeVar<T>,
-    pub prog: fn(&T) -> Vec<I>,
+    pub prog: fn(&Value<T, I>, &T) -> Vec<I>,
+    impls: Arc<BTreeMap<T, Implementation<I>>>,
+    constr_name: String,
+    meth_name: String,
 }
 
 pub struct Env<T, I> {
     vars: HashMap<String, Value<T, I>>,
+    constraints: HashMap<String, Constraint<T>>,
+    implementations: HashMap<String, Arc<BTreeMap<T, Implementation<I>>>>,
 }
 
-impl<T, I> Env<T, I> {
+impl<T: Clone + Ord, I> Env<T, I> {
     pub fn new() -> Self {
         Env {
             vars: HashMap::new(),
+            constraints: HashMap::new(),
+            implementations: HashMap::new(),
         }
+    }
+
+    fn add_constraint(&mut self, constr: Constraint<T>) {
+        let constr_name = constr.name().to_string();
+        let err_msg = format!("No implementation found for constraint: {}", &constr_name);
+        let impls = self.implementations.get(&constr_name).expect(&err_msg);
+        for meth in constr.iter_methods() {
+            self.vars.insert(
+                meth.0.to_string(),
+                Value {
+                    ty: *meth.1,
+                    meth_name: meth.0.to_string(),
+                    constr_name: constr_name.clone(),
+                    impls: impls.clone(),
+                    prog: |this, t| {
+                        let i = this
+                            .impls
+                            .get(t)
+                            .expect(&format!("No implementation of {} found!.", this.constr_name));
+                        i.get(&this.meth_name).expect(&format!("No method {} found!", this.meth_name))
+                    },
+                },
+            );
+        }
+        self.constraints.insert(constr.name().to_string(), constr);
     }
 }
 
@@ -26,38 +62,89 @@ impl<T, I> Environment<T, I> for Env<T, I> {
     }
 
     fn get_instr(&self, name: &str, ty: &T) -> Option<Vec<I>> {
-        self.vars.get(name).map(|v| (v.prog)(ty))
+        self.vars.get(name).map(|v| (v.prog)(&v, ty))
     }
 }
 
 mod built_in {
-    use std::sync::Arc;
+    use std::{collections::BTreeMap, sync::Arc};
 
-    use crate::{builtin_instr::BuiltinInstr, builtin_type::BuiltinType, type_var::TypeVar};
+    use crate::{
+        builtin_instr::BuiltinInstr, builtin_type::BuiltinType, constraint::{Constraint, Implementation},
+        type_var::TypeVar,
+    };
 
     use super::{Env, Value};
 
     impl Env<BuiltinType, BuiltinInstr> {
         pub fn init(&mut self) {
+            let no_impls: Arc<BTreeMap<BuiltinType, Implementation<BuiltinInstr>>> = 
+                Arc::new(BTreeMap::new());
+            let mut additive_impl: BTreeMap<BuiltinType, Implementation <BuiltinInstr>>
+                = BTreeMap::new();
+            let mut additive_nat: Implementation<BuiltinInstr> =
+                Implementation::new();
+            additive_nat.add_method(
+                "+".to_string(),
+                || vec![BuiltinInstr::Add(2)]
+            );
+            additive_impl.insert(BuiltinType::Nat, additive_nat);
+
+            let mut additive_int: Implementation<BuiltinInstr> =
+                Implementation::new();
+            additive_int.add_method(
+                "+".to_string(),
+                || vec![BuiltinInstr::Add(2)]
+            );
+            additive_impl.insert(BuiltinType::Nat, additive_int);
+
+            let mut additive_float: Implementation<BuiltinInstr> =
+                Implementation::new();
+            additive_float.add_method(
+                "+".to_string(),
+                || vec![BuiltinInstr::Add(2)]
+            );
+            additive_impl.insert(BuiltinType::Nat, additive_float);
+            self.implementations.insert("Additive".to_string(), Arc::new(additive_impl));
+
+            let mut additive = Constraint::new("Additive".to_string());
+            additive.add_method("+".to_string(), || {
+                let t = TypeVar::unknown();
+                TypeVar::constant(BuiltinType::Fun {
+                    args: vec![t.make_ref(), t.make_ref()],
+                    ret: Box::new(t),
+                })
+            });
+            self.add_constraint(additive);
+
             self.vars.insert(
                 "t".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Bool),
-                    prog: |_| vec![BuiltinInstr::Push(Arc::new(true))],
+                    prog: |_, _| vec![BuiltinInstr::Push(Arc::new(true))],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "t".to_string(),
                 },
             );
             self.vars.insert(
                 "f".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Bool),
-                    prog: |_| vec![BuiltinInstr::Push(Arc::new(false))],
+                    prog: |_, _| vec![BuiltinInstr::Push(Arc::new(false))],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "f".to_string(),
                 },
             );
             self.vars.insert(
                 "nil".to_string(),
                 Value {
                     ty: || TypeVar::constant(BuiltinType::Nil),
-                    prog: |_| vec![BuiltinInstr::Push(Arc::new(false))],
+                    prog: |_, _| vec![BuiltinInstr::Push(Arc::new(false))],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "nil".to_string(),
                 },
             );
             self.vars.insert(
@@ -69,7 +156,10 @@ mod built_in {
                             ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
                         })
                     },
-                    prog: |_| vec![BuiltinInstr::Not],
+                    prog: |_, _| vec![BuiltinInstr::Not],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "not".to_string(),
                 },
             );
             self.vars.insert(
@@ -84,7 +174,10 @@ mod built_in {
                             ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
                         })
                     },
-                    prog: |_| vec![BuiltinInstr::And(2)],
+                    prog: |_, _| vec![BuiltinInstr::And(2)],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "and".to_string(),
                 },
             );
             self.vars.insert(
@@ -99,7 +192,10 @@ mod built_in {
                             ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
                         })
                     },
-                    prog: |_| vec![BuiltinInstr::Or(2)],
+                    prog: |_, _| vec![BuiltinInstr::Or(2)],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "or".to_string(),
                 },
             );
             self.vars.insert(
@@ -114,7 +210,10 @@ mod built_in {
                             ret: Box::new(TypeVar::constant(BuiltinType::Int)),
                         })
                     },
-                    prog: |_| vec![BuiltinInstr::Add(2)],
+                    prog: |_, _| vec![BuiltinInstr::Add(2)],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "+".to_string(),
                 },
             );
             self.vars.insert(
@@ -129,7 +228,10 @@ mod built_in {
                             ret: Box::new(TypeVar::constant(BuiltinType::Int)),
                         })
                     },
-                    prog: |_| vec![BuiltinInstr::Mul(2)],
+                    prog: |_, _| vec![BuiltinInstr::Mul(2)],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "*".to_string(),
                 },
             );
             self.vars.insert(
@@ -144,7 +246,10 @@ mod built_in {
                             ret: Box::new(TypeVar::constant(BuiltinType::Int)),
                         })
                     },
-                    prog: |_| vec![BuiltinInstr::Eq],
+                    prog: |_, _| vec![BuiltinInstr::Eq],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "=".to_string(),
                 },
             );
             self.vars.insert(
@@ -157,7 +262,10 @@ mod built_in {
                             ret: Box::new(tvar),
                         })
                     },
-                    prog: |_| vec![],
+                    prog: |_, _| vec![],
+                    impls: no_impls.clone(),
+                    constr_name: "".to_string(),
+                    meth_name: "id".to_string(),
                 },
             );
         }
