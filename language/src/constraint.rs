@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 use crate::type_var::TypeVar;
 
@@ -23,9 +23,16 @@ impl<I> Implementation<I> {
     }
 }
 
+#[derive(Debug)]
+pub struct ConstrainedTypeVar<T> {
+    pub constraints: Vec<Arc<Constraint<T>>>,
+    pub fresh: fn(Arc<ConstrainedTypeVar<T>>) -> TypeVar<T>,
+}
+
+#[derive(Debug)]
 pub struct Constraint<T> {
     name: String,
-    methods: BTreeMap<String, fn() -> TypeVar<T>>,
+    methods: BTreeMap<String, Arc<ConstrainedTypeVar<T>>>,
 }
 
 impl<T> Constraint<T> {
@@ -40,11 +47,11 @@ impl<T> Constraint<T> {
         &self.name
     }
 
-    pub fn add_method(&mut self, name: String, method: fn() -> TypeVar<T>) {
+    pub fn add_method(&mut self, name: String, method: Arc<ConstrainedTypeVar<T>>) {
         self.methods.insert(name, method);
     }
 
-    pub fn iter_methods(&self) -> impl Iterator<Item = (&String, &fn() -> TypeVar<T>)> {
+    pub fn iter_methods(&self) -> impl Iterator<Item = (&String, &Arc<ConstrainedTypeVar<T>>)> {
         self.methods.iter()
     }
 }

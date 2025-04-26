@@ -74,7 +74,7 @@ where
                     let arg_tys = cs
                         .map(|arg_ast| typecheck(arg_ast, env))
                         .collect::<Result<Vec<_>, _>>()?;
-                    let ret_ty = TypeVar::unknown();
+                    let ret_ty = TypeVar::unknown(&[]);
                     let expected_ty =
                         TypeVar::constant(T::fun(arg_tys.as_slice(), ret_ty.make_ref()));
                     fun_ty.unify(&expected_ty, meta.clone())?;

@@ -40,7 +40,7 @@ impl Default for Meta {
     fn default() -> Self {
         Meta {
             loc: 0..0,
-            ty: TypeVar::unknown(),
+            ty: TypeVar::unknown(&[]),
         }
     }
 }

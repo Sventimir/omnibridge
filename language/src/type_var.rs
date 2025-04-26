@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{type_error::TypeError, IntoSexp, Sexp};
+use crate::{constraint::Constraint, type_error::TypeError, IntoSexp, Sexp};
 
 pub trait PrimType: Sized {
     fn nat() -> Self;
@@ -20,7 +20,7 @@ pub trait PrimType: Sized {
 #[derive(Debug)]
 enum VarOrRef<T> {
     Val(T),
-    Var(String),
+    Var(String, Vec<Arc<Constraint<T>>>),
     Ref(TypeVar<T>),
 }
 
@@ -34,8 +34,8 @@ impl<T> Clone for TypeVar<T> {
 }
 
 impl<T> TypeVar<T> {
-    pub fn unknown() -> Self {
-        TypeVar(Arc::new(Mutex::new(VarOrRef::Var("".to_string()))))
+    pub fn unknown(constraints: &[Arc<Constraint<T>>]) -> Self {
+        TypeVar(Arc::new(Mutex::new(VarOrRef::Var("".to_string(), constraints.to_vec()))))
     }
 
     pub fn constant(t: T) -> Self {
@@ -47,6 +47,7 @@ impl<T> TypeVar<T> {
     }
 
     // If self held a value previously, that value is returned.
+    // NOTE: If self is a variable - its constraints are ignored!
     fn set_ref(&self, other: &Self) -> Option<T> {
         let mut this = self.0.lock().unwrap();
         match &*this {
@@ -56,7 +57,7 @@ impl<T> TypeVar<T> {
                     _ => unreachable!(),
                 }
             }
-            VarOrRef::Var(_) => {
+            VarOrRef::Var(_, _) => {
                 *this = VarOrRef::Ref(other.make_ref());
                 None
             }
@@ -64,13 +65,14 @@ impl<T> TypeVar<T> {
         }
     }
 
+    // NOTE: Constraints are NOT checked here!
     fn set_val(&self, t: T) {
         let mut this = self.0.lock().unwrap();
         match &mut *this {
             VarOrRef::Val(ref mut value) => {
                 *value = t;
             }
-            VarOrRef::Var(_) => {
+            VarOrRef::Var(_, _) => {
                 *this = VarOrRef::Val(t);
             }
             VarOrRef::Ref(var) => var.set_val(t),
@@ -81,7 +83,7 @@ impl<T> TypeVar<T> {
         let mut this = self.0.lock().unwrap();
         match &mut *this {
             VarOrRef::Val(_) => (),
-            VarOrRef::Var(ref mut name) => {
+            VarOrRef::Var(ref mut name, _) => {
                 if name.is_empty() {
                     *name = format!("{}", *label_counter as char);
                     *label_counter += 1;
@@ -96,7 +98,7 @@ impl<T: Clone> TypeVar<T> {
     pub fn value(&self) -> Option<T> {
         match &*self.0.lock().unwrap() {
             VarOrRef::Val(t) => Some(t.clone()),
-            VarOrRef::Var(_) => None,
+            VarOrRef::Var(_, _) => None,
             VarOrRef::Ref(var) => var.value(),
         }
     }
@@ -104,7 +106,7 @@ impl<T: Clone> TypeVar<T> {
     pub fn name(&self) -> String {
         match &*self.0.lock().unwrap() {
             VarOrRef::Val(_) => "<const>".to_string(),
-            VarOrRef::Var(name) => name.clone(),
+            VarOrRef::Var(name, _) => name.clone(),
             VarOrRef::Ref(var) => var.name(),
         }
     }
@@ -129,10 +131,11 @@ impl<T: Clone + PrimType> TypeVar<T> {
 }
 
 impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
+    // NOTE: Constraints are not being serialized!
     fn into_sexp<S: Sexp>(self) -> S {
         match &*self.0.lock().unwrap() {
             VarOrRef::Val(t) => t.clone().into_sexp(),
-            VarOrRef::Var(name) => {
+            VarOrRef::Var(name, _) => {
                 let mut v = "?".to_string();
                 v.push_str(&name);
                 S::symbol(v)
