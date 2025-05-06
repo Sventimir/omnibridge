@@ -1,9 +1,7 @@
 use std::{collections::{BTreeMap, HashMap}, fmt::Debug, sync::Arc};
 
 use crate::{
-    constraint::{ConstrainedTypeVar, Constraint, Implementation},
-    type_checker::Environment,
-    type_var::TypeVar,
+    constraint::{ConstrainedTypeVar, Constraint, Implementation}, type_checker::Environment, type_error::TypeError, type_var::{TypeEnv, TypeVar}
 };
 
 #[derive(Debug)]
@@ -17,8 +15,16 @@ pub struct Value<T, I> {
 
 pub struct Env<T, I> {
     vars: HashMap<String, Value<T, I>>,
-    constraints: HashMap<String, Arc<Constraint<T>>>,
+    constraints: HashMap<String, Constraint<T>>,
     implementations: HashMap<String, Arc<BTreeMap<T, Implementation<I>>>>,
+}
+
+impl<T: Clone + Ord, I> TypeEnv<T> for Env<T, I> {
+    fn check_constraint<M: Clone>(&self, c: &str, t: &T, meta: &M) -> Result<(), TypeError<M, T>> {
+        let i = self.implementations.get(c).ok_or(TypeError::Undefined { symbol: c.to_string(), meta: meta.clone() })?;
+        i.get(t).ok_or(TypeError::Unimplemented { constraint: c.to_string(), t: t.clone(), meta: meta.clone() })?;
+        Ok(())
+    }
 }
 
 impl<T: Clone + Debug + Ord, I> Env<T, I> {
@@ -30,7 +36,7 @@ impl<T: Clone + Debug + Ord, I> Env<T, I> {
         }
     }
 
-    fn add_constraint(&mut self, constr: Arc<Constraint<T>>) {
+    fn add_constraint(&mut self, constr: Constraint<T>) {
         let constr_name = constr.name().to_string();
         let err_msg = format!("No implementation found for constraint: {}", &constr_name);
         let impls = self.implementations.get(&constr_name).expect(&err_msg);
@@ -58,7 +64,7 @@ impl<T: Clone + Debug + Ord, I> Env<T, I> {
 
 impl<T, I> Environment<T, I> for Env<T, I> {
     fn type_of(&self, name: &str) -> Option<TypeVar<T>> {
-        self.vars.get(name).map(|v| (v.ty.fresh)(v.ty.clone()))
+        self.vars.get(name).map(|v| (v.ty.fresh)(v.ty.as_ref()))
     }
 
     fn get_instr(&self, name: &str, ty: &T) -> Option<Vec<I>> {
@@ -108,17 +114,22 @@ mod built_in {
             additive_impl.insert(BuiltinType::Nat, additive_float);
             self.implementations.insert("Additive".to_string(), Arc::new(additive_impl));
 
-            let mut additive = Arc::new(Constraint::new("Additive".to_string()));
-            let binop_t = Arc::new(ConstrainedTypeVar {
-                constraints: vec![ additive.clone() ],
+            let mut additive = Constraint::new("Additive".to_string());
+            let plus_t = ConstrainedTypeVar {
+                constraints: vec![ ],
                 fresh: |this| {
                     let t = TypeVar::unknown(&[ this.constraints[0].clone() ]);
                     TypeVar::constant(BuiltinType::Fun {
                         args: vec![ t.make_ref(), t.make_ref() ],
                         ret: Box::new(t),
                     })}
-            });
-            Arc::get_mut(&mut additive).unwrap().add_method("+".to_string(), binop_t);
+            };
+            {
+                additive.add_method("+".to_string(), plus_t);
+                additive.add_impl(BuiltinType::Nat);
+                additive.add_impl(BuiltinType::Int);
+                additive.add_impl(BuiltinType::Float);
+            }
             self.add_constraint(additive);
 
             self.vars.insert(

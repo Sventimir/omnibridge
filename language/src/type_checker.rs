@@ -1,7 +1,7 @@
 use crate::{
     ast::AST,
     type_error::TypeError,
-    type_var::{PrimType, TypeVar},
+    type_var::{PrimType, TypeEnv, TypeVar},
 };
 
 pub trait Typed {
@@ -39,7 +39,7 @@ where
 
 pub fn typecheck<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeVar<T>, TypeError<M, T>>
 where
-    E: Environment<T, I>,
+    E: Environment<T, I> + TypeEnv<T>,
     M: Clone + Typed<Type = T>,
     T: Clone + PrimType,
 {
@@ -77,7 +77,7 @@ where
                     let ret_ty = TypeVar::unknown(&[]);
                     let expected_ty =
                         TypeVar::constant(T::fun(arg_tys.as_slice(), ret_ty.make_ref()));
-                    fun_ty.unify(&expected_ty, meta.clone())?;
+                    fun_ty.unify(&expected_ty, env, meta)?;
                     meta.assign_type(ret_ty.make_ref());
                     Ok(ret_ty)
                 }

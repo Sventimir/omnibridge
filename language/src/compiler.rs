@@ -67,7 +67,7 @@ pub fn compile<M, I, T>(
 where
     M: Typed<Type = T> + Clone,
     I: Instr,
-    T: PrimType + Clone,
+    T: PrimType + Ord + Clone,
 {
     let mut prog = Vec::new();
     for ast in src {

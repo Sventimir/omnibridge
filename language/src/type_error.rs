@@ -12,6 +12,7 @@ pub enum TypeError<M, T> {
     Mismatch { expected: T, found: T, meta: M },
     Undefined { symbol: String, meta: M },
     UnexpectedQuasiquote { meta: M },
+    Unimplemented { constraint: String, t: T, meta: M },
 }
 
 impl<M, T> Display for TypeError<M, T>
@@ -35,6 +36,9 @@ where
             }
             TypeError::UnexpectedQuasiquote { meta } => {
                 write!(f, "Unexpected quasiquote at {}", meta)
+            }
+            TypeError::Unimplemented { constraint, t, meta } => {
+                write!(f, "Type '{}' does not meet constraint '{}' at {}", constraint, t, meta)
             }
         }
     }
@@ -75,6 +79,12 @@ where
             ]),
             TypeError::UnexpectedQuasiquote { meta } => S::list(vec![
                 S::symbol("unexpected-quasi-quote".to_string()),
+                meta.into_sexp(),
+            ]),
+            TypeError::Unimplemented { constraint, t, meta } => S::list(vec![
+                S::symbol("unimplemented-contraint".to_string()),
+                S::symbol(constraint),
+                t.into_sexp(),
                 meta.into_sexp(),
             ]),
         }
@@ -123,6 +133,13 @@ where
                 S::symbol("unexpected-quasiquote".to_string()),
                 location_sexp(meta, src),
             ]),
+            TypeError::Unimplemented { constraint, t, meta } => S::list(vec![
+                header,
+                S::symbol("unimplemented-constraint".to_string()),
+                S::symbol(constraint.clone()),
+                named_value("type", (*t).clone()),
+                location_sexp(meta, src),
+            ]),
         }
     }
 }
@@ -140,6 +157,9 @@ where
                 meta.label_type_vars(label_index);
             }
             TypeError::UnexpectedQuasiquote { meta } => {
+                meta.label_type_vars(label_index);
+            }
+            TypeError::Unimplemented { meta, .. } => {
                 meta.label_type_vars(label_index);
             }
         }

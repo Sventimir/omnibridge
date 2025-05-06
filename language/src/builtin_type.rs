@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::{
     type_error::TypeError,
-    type_var::{PrimType, TypeVar},
+    type_var::{PrimType, TypeEnv, TypeVar},
     IntoSexp, Sexp,
 };
 
@@ -135,9 +135,10 @@ impl PrimType for BuiltinType {
         }
     }
 
-    fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, Self>>
+    fn unify<M: Clone, E>(&self, other: &Self, env: &E, meta: &M) -> Result<(), TypeError<M, Self>>
     where
         M: Clone,
+        E: TypeEnv<Self>
     {
         match (self, other) {
             (BuiltinType::Bool, BuiltinType::Bool)
@@ -161,18 +162,18 @@ impl PrimType for BuiltinType {
                     return Err(TypeError::Mismatch {
                         expected: self.clone(),
                         found: other.clone(),
-                        meta,
+                        meta: meta.clone(),
                     });
                 }
                 for (arg_l, arg_r) in args_l.iter().zip(args_r.iter()) {
-                    arg_l.unify(arg_r, meta.clone())?;
+                    arg_l.unify(arg_r, env, meta)?;
                 }
-                ret_l.unify(ret_r, meta)
+                ret_l.unify(ret_r, env, meta)
             }
             _ => Err(TypeError::Mismatch {
                 expected: self.clone(),
                 found: other.clone(),
-                meta,
+                meta: meta.clone(),
             }),
         }
     }

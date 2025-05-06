@@ -2,8 +2,13 @@ use std::{
     cmp::Ordering,
     sync::{Arc, Mutex},
 };
+use either::Either;
 
-use crate::{constraint::Constraint, type_error::TypeError, IntoSexp, Sexp};
+use crate::{type_error::TypeError, IntoSexp, Sexp};
+
+pub trait TypeEnv<T> {
+    fn check_constraint<M: Clone>(&self, name: &str, t: &T, meta: &M) -> Result<(), TypeError<M, T>>;
+}
 
 pub trait PrimType: Sized {
     fn nat() -> Self;
@@ -14,13 +19,13 @@ pub trait PrimType: Sized {
     fn nil() -> Self;
     fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self;
 
-    fn unify<M: Clone>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, Self>>;
+    fn unify<M: Clone, E: TypeEnv<Self>>(&self, other: &Self, env: &E, meta: &M) -> Result<(), TypeError<M, Self>>;
 }
 
 #[derive(Debug)]
 enum VarOrRef<T> {
     Val(T),
-    Var(String, Vec<Arc<Constraint<T>>>),
+    Var(String, Vec<String>),
     Ref(TypeVar<T>),
 }
 
@@ -34,7 +39,7 @@ impl<T> Clone for TypeVar<T> {
 }
 
 impl<T> TypeVar<T> {
-    pub fn unknown(constraints: &[Arc<Constraint<T>>]) -> Self {
+    pub fn unknown(constraints: &[String]) -> Self {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Var("".to_string(), constraints.to_vec()))))
     }
 
@@ -44,39 +49,6 @@ impl<T> TypeVar<T> {
 
     pub fn make_ref(&self) -> Self {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(self.clone()))))
-    }
-
-    // If self held a value previously, that value is returned.
-    // NOTE: If self is a variable - its constraints are ignored!
-    fn set_ref(&self, other: &Self) -> Option<T> {
-        let mut this = self.0.lock().unwrap();
-        match &*this {
-            VarOrRef::Val(_) => {
-                match std::mem::replace(&mut *this, VarOrRef::Ref(other.make_ref())) {
-                    VarOrRef::Val(value) => Some(value),
-                    _ => unreachable!(),
-                }
-            }
-            VarOrRef::Var(_, _) => {
-                *this = VarOrRef::Ref(other.make_ref());
-                None
-            }
-            VarOrRef::Ref(var) => var.set_ref(other),
-        }
-    }
-
-    // NOTE: Constraints are NOT checked here!
-    fn set_val(&self, t: T) {
-        let mut this = self.0.lock().unwrap();
-        match &mut *this {
-            VarOrRef::Val(ref mut value) => {
-                *value = t;
-            }
-            VarOrRef::Var(_, _) => {
-                *this = VarOrRef::Val(t);
-            }
-            VarOrRef::Ref(var) => var.set_val(t),
-        }
     }
 
     pub fn label(&self, label_counter: &mut u8) {
@@ -113,21 +85,64 @@ impl<T: Clone> TypeVar<T> {
 }
 
 impl<T: Clone + PrimType> TypeVar<T> {
-    pub fn unify<M>(&self, other: &Self, meta: M) -> Result<(), TypeError<M, T>>
+    pub fn unify<M: Clone, E: TypeEnv<T>>(&self, other: &Self, env: &E, meta: &M) -> Result<(), TypeError<M, T>>
     where
         M: Clone,
     {
-        match self.set_ref(other) {
-            None => Ok(()),
-            Some(prev) => match other.value() {
-                None => {
-                    other.set_val(prev);
-                    Ok(())
-                }
-                Some(t) => t.unify(&prev, meta),
-            },
+        match (self.deref(), other.deref()) {
+            (Either::Left(this_t), Either::Left(that_t)) => this_t.unify(&that_t, env, meta),
+            (Either::Left(t), Either::Right(constraints)) => {
+                check_constraints(env, &t, &constraints, meta)?;
+                other.set_val(&t);
+                Ok(())
+            }
+            (Either::Right(constraints), Either::Left(t)) => {
+                check_constraints(env, &t, &constraints, meta)?;
+                self.set_val(&t);
+                Ok(())
+            }
+            (Either::Right(_), Either::Right(mut those_constraints)) => {
+                self.merge_constraints(&mut those_constraints);
+                let mut that = other.0.lock().unwrap();
+                *that = VarOrRef::Ref(self.clone());
+                Ok(())
+            }
         }
     }
+
+    fn deref(&self) -> Either<T, Vec<String>> {
+        let this = self.0.lock().unwrap();
+        match &*this {
+            VarOrRef::Ref(v) => v.deref(),
+            VarOrRef::Val(t) => Either::Left(t.clone()),
+            VarOrRef::Var(_name, constraints) => Either::Right(constraints.clone()),
+        }
+    }
+
+    fn merge_constraints(&self, new_constraints: &mut Vec<String>) {
+        let mut this = self.0.lock().unwrap();
+        match &mut *this {
+            VarOrRef::Ref(v) => v.merge_constraints(new_constraints),
+            VarOrRef::Val(_) => unreachable!(),
+            VarOrRef::Var(_, ref mut old_constraints) => old_constraints.append(new_constraints)
+        }
+    }
+
+    fn set_val(&self, t: &T) {
+        let mut this = self.0.lock().unwrap();
+        *this = VarOrRef::Val(t.clone())
+    }
+}
+
+fn check_constraints<E, T, M>(env: &E, t: &T, cs: &[String], meta: &M) -> Result<(), TypeError<M, T>>
+    where T: Clone + PrimType,
+          E: TypeEnv<T>,
+          M: Clone,
+{
+    for c in cs {
+        env.check_constraint(c, t, meta)?
+    }
+    Ok(())
 }
 
 impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
