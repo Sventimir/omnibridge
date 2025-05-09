@@ -5,9 +5,9 @@ use crate::{
     env::Env,
     interpreter::Instr,
     pair,
-    type_checker::{typecheck, Environment, Typed},
+    type_checker::{typecheck, Environment},
     type_error::TypeError,
-    type_var::PrimType,
+    type_var::{PrimType, TypedMeta},
     Expr, IntoSexp, Sexp,
 };
 
@@ -19,7 +19,7 @@ pub enum CompilationError<M, T> {
 
 impl<M, T> CompilationError<M, T>
 where
-    M: Typed,
+    M: TypedMeta,
 {
     fn label_type_vars(&self) {
         let mut label_index: u8 = 'a' as u8;
@@ -32,7 +32,7 @@ where
 
 impl<M, T> IntoSexp for CompilationError<M, T>
 where
-    M: Clone + Typed + IntoSexp,
+    M: Clone + TypedMeta + IntoSexp,
     T: Clone + IntoSexp,
 {
     fn into_sexp<S: Sexp>(self) -> S {
@@ -48,7 +48,7 @@ where
 
 impl<M, T> Debug for CompilationError<M, T>
 where
-    M: Clone + Typed + IntoSexp,
+    M: Clone + TypedMeta + IntoSexp,
     T: Clone + IntoSexp,
 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -65,7 +65,7 @@ pub fn compile<M, I, T>(
     env: &mut Env<T, I>,
 ) -> Result<Vec<I>, CompilationError<M, T>>
 where
-    M: Typed<Type = T> + Clone,
+    M: TypedMeta<Type = T> + Clone,
     I: Instr,
     T: PrimType + Ord + Clone,
 {
@@ -85,7 +85,7 @@ fn compile_ast<E, M, I, T>(
 ) -> Result<(), CompilationError<M, T>>
 where
     E: Environment<T, I>,
-    M: Typed<Type = T> + Clone,
+    M: TypedMeta<Type = T> + Clone,
     I: Instr,
     T: PrimType + Clone,
 {

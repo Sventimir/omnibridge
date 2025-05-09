@@ -2,7 +2,7 @@ use std::{any::Any, ops::Range, sync::Arc};
 
 use crate::{
     ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env,
-    interpreter, parse, src_location::WithLocation, type_checker::Typed, type_var::TypeVar,
+    interpreter, parse, src_location::WithLocation, type_var::TypedMeta, type_var::TypeVar,
     IntoSexp, Sexp,
 };
 
@@ -12,7 +12,7 @@ pub struct Meta {
     ty: TypeVar<BuiltinType>,
 }
 
-impl Typed for Meta {
+impl TypedMeta for Meta {
     type Type = BuiltinType;
 
     fn get_type(&self) -> TypeVar<Self::Type> {

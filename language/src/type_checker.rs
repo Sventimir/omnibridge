@@ -1,25 +1,8 @@
 use crate::{
     ast::AST,
     type_error::TypeError,
-    type_var::{PrimType, TypeEnv, TypeVar},
+    type_var::{PrimType, TypeEnv, TypeVar, TypedMeta},
 };
-
-pub trait Typed {
-    type Type;
-
-    fn assign_type(&mut self, ty: TypeVar<Self::Type>);
-    fn get_type(&self) -> TypeVar<Self::Type>;
-
-    fn label_type_vars(&self, label_index: Option<&mut u8>) {
-        match label_index {
-            Some(index) => self.get_type().label(index),
-            None => {
-                let mut label_index: u8 = 'a' as u8;
-                self.get_type().label(&mut label_index);
-            }
-        }
-    }
-}
 
 pub trait Environment<T, I> {
     fn type_of(&self, name: &str) -> Option<TypeVar<T>>;
@@ -28,7 +11,7 @@ pub trait Environment<T, I> {
 
 fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeVar<T>
 where
-    M: Typed<Type = T>,
+    M: TypedMeta<Type = T>,
     T: PrimType,
 {
     let v = TypeVar::constant(ty);
@@ -40,7 +23,7 @@ where
 pub fn typecheck<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeVar<T>, TypeError<M, T>>
 where
     E: Environment<T, I> + TypeEnv<T>,
-    M: Clone + Typed<Type = T>,
+    M: Clone + TypedMeta<Type = T>,
     T: Clone + PrimType,
 {
     match ast {

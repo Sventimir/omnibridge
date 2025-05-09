@@ -2,9 +2,8 @@ use std::fmt::{self, Debug, Formatter};
 
 use crate::{
     builtin_type::BuiltinType,
-    type_checker::Typed,
     type_error::TypeError,
-    type_var::{TypeEnv, TypeVar},
+    type_var::{TypeEnv, TypeVar, TypedMeta},
     IntoSexp, Sexp,
 };
 
@@ -23,7 +22,7 @@ impl IntoSexp for Meta {
     }
 }
 
-impl Typed for Meta {
+impl TypedMeta for Meta {
     type Type = BuiltinType;
     fn get_type(&self) -> TypeVar<BuiltinType> {
         self.0.clone()

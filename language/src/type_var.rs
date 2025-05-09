@@ -6,6 +6,23 @@ use either::Either;
 
 use crate::{type_error::TypeError, IntoSexp, Sexp};
 
+pub trait TypedMeta {
+    type Type;
+
+    fn assign_type(&mut self, ty: TypeVar<Self::Type>);
+    fn get_type(&self) -> TypeVar<Self::Type>;
+
+    fn label_type_vars(&self, label_index: Option<&mut u8>) {
+        match label_index {
+            Some(index) => self.get_type().label(index),
+            None => {
+                let mut label_index: u8 = 'a' as u8;
+                self.get_type().label(&mut label_index);
+            }
+        }
+    }
+}
+
 pub trait TypeEnv<T> {
     fn check_constraint<M: Clone>(&self, name: &str, t: &T, meta: &M) -> Result<(), TypeError<M, T>>;
 }

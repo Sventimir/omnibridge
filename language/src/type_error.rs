@@ -3,7 +3,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use crate::{
     pair,
     src_location::{SrcLocation, WithLocation},
-    type_checker::Typed,
+    type_var::TypedMeta,
     IntoSexp, Sexp,
 };
 
@@ -47,7 +47,7 @@ where
 impl<M, T> Debug for TypeError<M, T>
 where
     T: Clone + IntoSexp,
-    M: Clone + Typed + IntoSexp,
+    M: Clone + TypedMeta + IntoSexp,
 {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "TypeError: {}", self.clone().into_sexp::<String>())
@@ -56,7 +56,7 @@ where
 
 impl<M, T> IntoSexp for TypeError<M, T>
 where
-    M: IntoSexp + Typed,
+    M: IntoSexp + TypedMeta,
     T: IntoSexp,
 {
     fn into_sexp<S: Sexp>(self) -> S {
@@ -146,7 +146,7 @@ where
 
 impl<M, T> TypeError<M, T>
 where
-    M: Typed,
+    M: TypedMeta,
 {
     pub fn label_type_vars(&self, label_index: Option<&mut u8>) {
         match self {
