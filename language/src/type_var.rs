@@ -1,7 +1,6 @@
 use either::Either;
 use std::{
-    cmp::Ordering,
-    sync::{Arc, Mutex},
+    cmp::Ordering, collections::BTreeSet, sync::{Arc, Mutex}
 };
 
 use crate::{type_error::TypeError, IntoSexp, Sexp};
@@ -61,7 +60,7 @@ pub trait PrimType: Sized {
 #[derive(Debug)]
 enum VarOrRef<T> {
     Val(T),
-    Var(String, Vec<String>),
+    Var(String, BTreeSet<String>),
     Ref(TypeVar<T>),
 }
 
@@ -75,10 +74,10 @@ impl<T> Clone for TypeVar<T> {
 }
 
 impl<T> TypeVar<T> {
-    pub fn unknown(constraints: &[String]) -> Self {
+    pub fn unknown(constraints: Vec<String>) -> Self {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Var(
             "".to_string(),
-            constraints.to_vec(),
+            constraints.into_iter().collect(),
         ))))
     }
 
@@ -137,12 +136,12 @@ impl<T: Clone + PrimType> TypeVar<T> {
         match (self.deref(), other.deref()) {
             (Either::Left(this_t), Either::Left(that_t)) => this_t.unify(&that_t, env, meta),
             (Either::Left(t), Either::Right(constraints)) => {
-                check_constraints(env, &t, &constraints, meta)?;
+                check_constraints(env, &t, constraints, meta)?;
                 other.set_ref(self.clone());
                 Ok(())
             }
             (Either::Right(constraints), Either::Left(t)) => {
-                check_constraints(env, &t, &constraints, meta)?;
+                check_constraints(env, &t, constraints, meta)?;
                 self.set_ref(other.clone());
                 Ok(())
             }
@@ -154,7 +153,7 @@ impl<T: Clone + PrimType> TypeVar<T> {
         }
     }
 
-    fn deref(&self) -> Either<T, Vec<String>> {
+    fn deref(&self) -> Either<T, BTreeSet<String>> {
         let this = self.0.lock().unwrap();
         match &*this {
             VarOrRef::Ref(v) => v.deref(),
@@ -163,7 +162,7 @@ impl<T: Clone + PrimType> TypeVar<T> {
         }
     }
 
-    fn merge_constraints(&self, new_constraints: &mut Vec<String>) {
+    fn merge_constraints(&self, new_constraints: &mut BTreeSet<String>) {
         let mut this = self.0.lock().unwrap();
         match &mut *this {
             VarOrRef::Ref(v) => v.merge_constraints(new_constraints),
@@ -184,7 +183,7 @@ impl<T: Clone + PrimType> TypeVar<T> {
 fn check_constraints<E, T, M>(
     env: &E,
     t: &T,
-    cs: &[String],
+    cs: BTreeSet<String>,
     meta: &M,
 ) -> Result<(), TypeError<M, T>>
 where
@@ -192,7 +191,7 @@ where
     E: TypeEnv<T>,
     M: Clone,
 {
-    for c in cs {
+    for c in cs.iter() {
         env.check_constraint(c, t, meta)?
     }
     Ok(())

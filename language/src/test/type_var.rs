@@ -47,8 +47,8 @@ impl TypeEnv<BuiltinType> for () {
 #[test]
 fn unification_propagates() {
     let num = TypeVar::constant(BuiltinType::Nat);
-    let a: TypeVar<BuiltinType> = TypeVar::unknown(&[]);
-    let b: TypeVar<BuiltinType> = TypeVar::unknown(&[]);
+    let a: TypeVar<BuiltinType> = TypeVar::unknown(vec![]);
+    let b: TypeVar<BuiltinType> = TypeVar::unknown(vec![]);
     b.unify(&a, &(), &Meta(b.make_ref()))
         .expect("B unified successfully with A.");
     assert_eq!(a.value(), None);

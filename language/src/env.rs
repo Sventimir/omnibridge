@@ -112,11 +112,11 @@ mod built_in {
 
             let mut additive_int: Implementation<BuiltinInstr> = Implementation::new();
             additive_int.add_method("+".to_string(), || vec![BuiltinInstr::Add(2)]);
-            additive_impl.insert(BuiltinType::Nat, additive_int);
+            additive_impl.insert(BuiltinType::Int, additive_int);
 
             let mut additive_float: Implementation<BuiltinInstr> = Implementation::new();
             additive_float.add_method("+".to_string(), || vec![BuiltinInstr::Add(2)]);
-            additive_impl.insert(BuiltinType::Nat, additive_float);
+            additive_impl.insert(BuiltinType::Float, additive_float);
             self.implementations
                 .insert("Additive".to_string(), Arc::new(additive_impl));
 
@@ -124,7 +124,7 @@ mod built_in {
             let plus_t = ConstrainedTypeVar {
                 constraints: vec!["Additive".to_string()],
                 fresh: |this| {
-                    let t = TypeVar::unknown(&[this.constraints[0].clone()]);
+                    let t = TypeVar::unknown(vec![this.constraints[0].clone()]);
                     TypeVar::constant(BuiltinType::Fun {
                         args: vec![t.make_ref(), t.make_ref()],
                         ret: Box::new(t),
@@ -286,7 +286,7 @@ mod built_in {
                     ty: Arc::new(ConstrainedTypeVar {
                         constraints: vec![],
                         fresh: |_| {
-                            let tvar = TypeVar::unknown(&[]);
+                            let tvar = TypeVar::unknown(vec![]);
                             TypeVar::constant(BuiltinType::Fun {
                                 args: vec![tvar.make_ref()],
                                 ret: Box::new(tvar),
