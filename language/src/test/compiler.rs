@@ -5,7 +5,7 @@ use proptest_derive::Arbitrary;
 
 use crate::{
     ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, env::Env, parse,
-    test_utils::Meta, type_checker::typecheck, IntoSexp, Sexp,
+    test_utils::Meta, type_checker::typecheck, type_var::VarLabeler, IntoSexp, Sexp,
 };
 
 fn test_typechecker<F>(src: &str, check_result: F)
@@ -19,13 +19,15 @@ where
         .map_err(|e| e.into_sexp())
         .and_then(|tvar| {
             tvar.value()
-                .ok_or(String::symbol("unresolved-type-var".to_string()))
+                .ok_or(String::symbol(format!("unresolved-type-var: {:?}", tvar)))
         })
         .and_then(check_result);
     match ret {
         Ok(()) => (),
         Err(e) => {
-            println!("AST:{:?}", ast[0]);
+            let mut labeler = VarLabeler::new();
+            ast[0].label_type_vars(&mut labeler);
+            println!("AST: {}", ast[0].clone().into_sexp_debug::<String>());
             panic!("typecheck failed with error: {}", e)
         }
     }

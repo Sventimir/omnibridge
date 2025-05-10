@@ -1,30 +1,43 @@
+use either::Either;
 use std::{
     cmp::Ordering,
     sync::{Arc, Mutex},
 };
-use either::Either;
 
 use crate::{type_error::TypeError, IntoSexp, Sexp};
 
+pub struct VarLabeler(u8);
+
+impl VarLabeler {
+    pub fn new() -> Self {
+        Self('a' as u8)
+    }
+
+    pub fn next(&mut self) -> String {
+        let ret = format!("{}", self.0 as char);
+        self.0 += 1;
+        ret
+    }
+}
+
 pub trait TypedMeta {
-    type Type;
+    type Type: PrimType;
 
     fn assign_type(&mut self, ty: TypeVar<Self::Type>);
     fn get_type(&self) -> TypeVar<Self::Type>;
 
-    fn label_type_vars(&self, label_index: Option<&mut u8>) {
-        match label_index {
-            Some(index) => self.get_type().label(index),
-            None => {
-                let mut label_index: u8 = 'a' as u8;
-                self.get_type().label(&mut label_index);
-            }
-        }
+    fn label_type_vars(&self, labeler: &mut VarLabeler) {
+        self.get_type().label(labeler)
     }
 }
 
 pub trait TypeEnv<T> {
-    fn check_constraint<M: Clone>(&self, name: &str, t: &T, meta: &M) -> Result<(), TypeError<M, T>>;
+    fn check_constraint<M: Clone>(
+        &self,
+        name: &str,
+        t: &T,
+        meta: &M,
+    ) -> Result<(), TypeError<M, T>>;
 }
 
 pub trait PrimType: Sized {
@@ -36,7 +49,13 @@ pub trait PrimType: Sized {
     fn nil() -> Self;
     fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self;
 
-    fn unify<M: Clone, E: TypeEnv<Self>>(&self, other: &Self, env: &E, meta: &M) -> Result<(), TypeError<M, Self>>;
+    fn label_type_vars(&mut self, labeler: &mut VarLabeler);
+    fn unify<M: Clone, E: TypeEnv<Self>>(
+        &self,
+        other: &Self,
+        env: &E,
+        meta: &M,
+    ) -> Result<(), TypeError<M, Self>>;
 }
 
 #[derive(Debug)]
@@ -57,7 +76,10 @@ impl<T> Clone for TypeVar<T> {
 
 impl<T> TypeVar<T> {
     pub fn unknown(constraints: &[String]) -> Self {
-        TypeVar(Arc::new(Mutex::new(VarOrRef::Var("".to_string(), constraints.to_vec()))))
+        TypeVar(Arc::new(Mutex::new(VarOrRef::Var(
+            "".to_string(),
+            constraints.to_vec(),
+        ))))
     }
 
     pub fn constant(t: T) -> Self {
@@ -67,18 +89,19 @@ impl<T> TypeVar<T> {
     pub fn make_ref(&self) -> Self {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(self.clone()))))
     }
+}
 
-    pub fn label(&self, label_counter: &mut u8) {
+impl<T: PrimType> TypeVar<T> {
+    pub fn label(&self, labeler: &mut VarLabeler) {
         let mut this = self.0.lock().unwrap();
         match &mut *this {
-            VarOrRef::Val(_) => (),
+            VarOrRef::Val(t) => t.label_type_vars(labeler),
             VarOrRef::Var(ref mut name, _) => {
                 if name.is_empty() {
-                    *name = format!("{}", *label_counter as char);
-                    *label_counter += 1;
+                    *name = labeler.next()
                 }
             }
-            VarOrRef::Ref(var) => var.label(label_counter),
+            VarOrRef::Ref(var) => var.label(labeler),
         }
     }
 }
@@ -102,7 +125,12 @@ impl<T: Clone> TypeVar<T> {
 }
 
 impl<T: Clone + PrimType> TypeVar<T> {
-    pub fn unify<M: Clone, E: TypeEnv<T>>(&self, other: &Self, env: &E, meta: &M) -> Result<(), TypeError<M, T>>
+    pub fn unify<M: Clone, E: TypeEnv<T>>(
+        &self,
+        other: &Self,
+        env: &E,
+        meta: &M,
+    ) -> Result<(), TypeError<M, T>>
     where
         M: Clone,
     {
@@ -110,18 +138,17 @@ impl<T: Clone + PrimType> TypeVar<T> {
             (Either::Left(this_t), Either::Left(that_t)) => this_t.unify(&that_t, env, meta),
             (Either::Left(t), Either::Right(constraints)) => {
                 check_constraints(env, &t, &constraints, meta)?;
-                other.set_val(&t);
+                other.set_ref(self.clone());
                 Ok(())
             }
             (Either::Right(constraints), Either::Left(t)) => {
                 check_constraints(env, &t, &constraints, meta)?;
-                self.set_val(&t);
+                self.set_ref(other.clone());
                 Ok(())
             }
             (Either::Right(_), Either::Right(mut those_constraints)) => {
                 self.merge_constraints(&mut those_constraints);
-                let mut that = other.0.lock().unwrap();
-                *that = VarOrRef::Ref(self.clone());
+                other.set_ref(self.clone());
                 Ok(())
             }
         }
@@ -141,20 +168,29 @@ impl<T: Clone + PrimType> TypeVar<T> {
         match &mut *this {
             VarOrRef::Ref(v) => v.merge_constraints(new_constraints),
             VarOrRef::Val(_) => unreachable!(),
-            VarOrRef::Var(_, ref mut old_constraints) => old_constraints.append(new_constraints)
+            VarOrRef::Var(_, ref mut old_constraints) => old_constraints.append(new_constraints),
         }
     }
 
-    fn set_val(&self, t: &T) {
+    fn set_ref(&self, src: Self) {
         let mut this = self.0.lock().unwrap();
-        *this = VarOrRef::Val(t.clone())
+        match &*this {
+            VarOrRef::Ref(v) => v.set_ref(src),
+            _ => *this = VarOrRef::Ref(src),
+        }
     }
 }
 
-fn check_constraints<E, T, M>(env: &E, t: &T, cs: &[String], meta: &M) -> Result<(), TypeError<M, T>>
-    where T: Clone + PrimType,
-          E: TypeEnv<T>,
-          M: Clone,
+fn check_constraints<E, T, M>(
+    env: &E,
+    t: &T,
+    cs: &[String],
+    meta: &M,
+) -> Result<(), TypeError<M, T>>
+where
+    T: Clone + PrimType,
+    E: TypeEnv<T>,
+    M: Clone,
 {
     for c in cs {
         env.check_constraint(c, t, meta)?
@@ -167,11 +203,7 @@ impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
     fn into_sexp<S: Sexp>(self) -> S {
         match &*self.0.lock().unwrap() {
             VarOrRef::Val(t) => t.clone().into_sexp(),
-            VarOrRef::Var(name, _) => {
-                let mut v = "?".to_string();
-                v.push_str(&name);
-                S::symbol(v)
-            }
+            VarOrRef::Var(name, _) => S::symbol(format!("?{}", name)),
             VarOrRef::Ref(var) => var.clone().into_sexp(),
         }
     }

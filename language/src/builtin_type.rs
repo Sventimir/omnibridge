@@ -32,8 +32,14 @@ impl PartialEq for BuiltinType {
             | (BuiltinType::Expr, BuiltinType::Expr)
             | (BuiltinType::Nil, BuiltinType::Nil) => true,
             (
-                BuiltinType::Fun { args: argl, ret: retl },
-                BuiltinType::Fun { args: argr, ret: retr }
+                BuiltinType::Fun {
+                    args: argl,
+                    ret: retl,
+                },
+                BuiltinType::Fun {
+                    args: argr,
+                    ret: retr,
+                },
             ) => {
                 if argl.len() != argr.len() {
                     return false;
@@ -83,26 +89,30 @@ impl Ord for BuiltinType {
             (BuiltinType::Expr, _) => Ordering::Less,
             (_, BuiltinType::Expr) => Ordering::Greater,
             (
-                BuiltinType::Fun { args: argl, ret: retl },
-                BuiltinType::Fun { args: argr, ret: retr }
-            ) => {
-                match argl.len().cmp(&argr.len()) {
-                    Ordering::Equal => {
-                        for (arg_l, arg_r) in argl.iter().zip(argr.iter()) {
-                            match arg_l.cmp(arg_r) {
-                                Ordering::Equal => continue,
-                                ord => return ord,
-                            }
+                BuiltinType::Fun {
+                    args: argl,
+                    ret: retl,
+                },
+                BuiltinType::Fun {
+                    args: argr,
+                    ret: retr,
+                },
+            ) => match argl.len().cmp(&argr.len()) {
+                Ordering::Equal => {
+                    for (arg_l, arg_r) in argl.iter().zip(argr.iter()) {
+                        match arg_l.cmp(arg_r) {
+                            Ordering::Equal => continue,
+                            ord => return ord,
                         }
-                        retl.cmp(retr)
-                    },
-                    ord => return ord,
+                    }
+                    retl.cmp(retr)
                 }
+                ord => return ord,
             },
         }
     }
 }
- 
+
 impl PrimType for BuiltinType {
     fn nat() -> Self {
         BuiltinType::Nat
@@ -135,10 +145,28 @@ impl PrimType for BuiltinType {
         }
     }
 
+    fn label_type_vars(&mut self, labeler: &mut crate::type_var::VarLabeler) {
+        match self {
+            BuiltinType::Bool
+            | BuiltinType::Nat
+            | BuiltinType::Int
+            | BuiltinType::Float
+            | BuiltinType::String
+            | BuiltinType::Expr
+            | BuiltinType::Nil => (),
+            BuiltinType::Fun { args, ret } => {
+                for arg in args {
+                    arg.label(labeler)
+                }
+                ret.label(labeler)
+            }
+        }
+    }
+
     fn unify<M: Clone, E>(&self, other: &Self, env: &E, meta: &M) -> Result<(), TypeError<M, Self>>
     where
         M: Clone,
-        E: TypeEnv<Self>
+        E: TypeEnv<Self>,
     {
         match (self, other) {
             (BuiltinType::Bool, BuiltinType::Bool)

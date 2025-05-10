@@ -7,7 +7,7 @@ use crate::{
     pair,
     type_checker::{typecheck, Environment},
     type_error::TypeError,
-    type_var::{PrimType, TypedMeta},
+    type_var::{PrimType, TypedMeta, VarLabeler},
     Expr, IntoSexp, Sexp,
 };
 
@@ -19,13 +19,14 @@ pub enum CompilationError<M, T> {
 
 impl<M, T> CompilationError<M, T>
 where
+    T: Clone,
     M: TypedMeta,
 {
     fn label_type_vars(&self) {
-        let mut label_index: u8 = 'a' as u8;
+        let mut labeler = VarLabeler::new();
         match self {
-            CompilationError::TypeError(e) => e.label_type_vars(Some(&mut label_index)),
-            CompilationError::UnresolvedTypeVar(m) => m.get_type().label(&mut label_index),
+            CompilationError::TypeError(e) => e.label_type_vars(&mut labeler),
+            CompilationError::UnresolvedTypeVar(m) => m.get_type().label(&mut labeler),
         }
     }
 }

@@ -3,7 +3,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use crate::{
     pair,
     src_location::{SrcLocation, WithLocation},
-    type_var::TypedMeta,
+    type_var::{TypedMeta, VarLabeler},
     IntoSexp, Sexp,
 };
 
@@ -37,8 +37,16 @@ where
             TypeError::UnexpectedQuasiquote { meta } => {
                 write!(f, "Unexpected quasiquote at {}", meta)
             }
-            TypeError::Unimplemented { constraint, t, meta } => {
-                write!(f, "Type '{}' does not meet constraint '{}' at {}", constraint, t, meta)
+            TypeError::Unimplemented {
+                constraint,
+                t,
+                meta,
+            } => {
+                write!(
+                    f,
+                    "Type '{}' does not meet constraint '{}' at {}",
+                    constraint, t, meta
+                )
             }
         }
     }
@@ -60,7 +68,8 @@ where
     T: IntoSexp,
 {
     fn into_sexp<S: Sexp>(self) -> S {
-        self.label_type_vars(None);
+        let mut labeler = VarLabeler::new();
+        self.label_type_vars(&mut labeler);
         match self {
             TypeError::Mismatch {
                 expected,
@@ -81,8 +90,12 @@ where
                 S::symbol("unexpected-quasi-quote".to_string()),
                 meta.into_sexp(),
             ]),
-            TypeError::Unimplemented { constraint, t, meta } => S::list(vec![
-                S::symbol("unimplemented-contraint".to_string()),
+            TypeError::Unimplemented {
+                constraint,
+                t,
+                meta,
+            } => S::list(vec![
+                S::symbol("unimplemented-constraint".to_string()),
                 S::symbol(constraint),
                 t.into_sexp(),
                 meta.into_sexp(),
@@ -133,7 +146,11 @@ where
                 S::symbol("unexpected-quasiquote".to_string()),
                 location_sexp(meta, src),
             ]),
-            TypeError::Unimplemented { constraint, t, meta } => S::list(vec![
+            TypeError::Unimplemented {
+                constraint,
+                t,
+                meta,
+            } => S::list(vec![
                 header,
                 S::symbol("unimplemented-constraint".to_string()),
                 S::symbol(constraint.clone()),
@@ -148,7 +165,7 @@ impl<M, T> TypeError<M, T>
 where
     M: TypedMeta,
 {
-    pub fn label_type_vars(&self, label_index: Option<&mut u8>) {
+    pub fn label_type_vars(&self, label_index: &mut VarLabeler) {
         match self {
             TypeError::Mismatch { meta, .. } => {
                 meta.label_type_vars(label_index);
