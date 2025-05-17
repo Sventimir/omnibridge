@@ -107,15 +107,15 @@ mod built_in {
             let mut additive_impl: BTreeMap<BuiltinType, Implementation<BuiltinInstr>> =
                 BTreeMap::new();
             let mut additive_nat: Implementation<BuiltinInstr> = Implementation::new();
-            additive_nat.add_method("+".to_string(), || vec![BuiltinInstr::Add(2)]);
+            additive_nat.add_method("+".to_string(), || vec![BuiltinInstr::AddNat(2)]);
             additive_impl.insert(BuiltinType::Nat, additive_nat);
 
             let mut additive_int: Implementation<BuiltinInstr> = Implementation::new();
-            additive_int.add_method("+".to_string(), || vec![BuiltinInstr::Add(2)]);
+            additive_int.add_method("+".to_string(), || vec![BuiltinInstr::AddInt(2)]);
             additive_impl.insert(BuiltinType::Int, additive_int);
 
             let mut additive_float: Implementation<BuiltinInstr> = Implementation::new();
-            additive_float.add_method("+".to_string(), || vec![BuiltinInstr::Add(2)]);
+            additive_float.add_method("+".to_string(), || vec![BuiltinInstr::AddFlt(2)]);
             additive_impl.insert(BuiltinType::Float, additive_float);
             self.implementations
                 .insert("Additive".to_string(), Arc::new(additive_impl));

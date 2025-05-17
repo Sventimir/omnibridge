@@ -11,7 +11,9 @@ pub enum BuiltinInstr {
     Not,
     And(usize),
     Or(usize),
-    Add(usize),
+    AddNat(usize),
+    AddInt(usize),
+    AddFlt(usize),
     Mul(usize),
     Eq,
 }
@@ -26,7 +28,9 @@ impl Instr for BuiltinInstr {
             BuiltinInstr::Eq => 2,
             BuiltinInstr::And(arity)
             | BuiltinInstr::Or(arity)
-            | BuiltinInstr::Add(arity)
+            | BuiltinInstr::AddNat(arity)
+            | BuiltinInstr::AddInt(arity)
+            | BuiltinInstr::AddFlt(arity)
             | BuiltinInstr::Mul(arity) => *arity,
         }
     }
@@ -51,10 +55,24 @@ impl Instr for BuiltinInstr {
                 )),
                 NextStep::Forward,
             ),
-            BuiltinInstr::Add(_) => (
+            BuiltinInstr::AddNat(_) => (
+                Some(Arc::new(
+                    args.iter()
+                        .fold(0 as u64, |l, r| l + r.downcast_ref::<u64>().unwrap()),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::AddInt(_) => (
                 Some(Arc::new(
                     args.iter()
                         .fold(0 as i64, |l, r| l + r.downcast_ref::<i64>().unwrap()),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::AddFlt(_) => (
+                Some(Arc::new(
+                    args.iter()
+                        .fold(0 as f64, |l, r| l + r.downcast_ref::<f64>().unwrap()),
                 )),
                 NextStep::Forward,
             ),
@@ -106,8 +124,14 @@ impl IntoSexp for BuiltinInstr {
             BuiltinInstr::Or(arity) => {
                 S::list(vec![S::symbol("or".to_string()), S::nat(arity as u64)])
             }
-            BuiltinInstr::Add(arity) => {
-                S::list(vec![S::symbol("add".to_string()), S::nat(arity as u64)])
+            BuiltinInstr::AddNat(arity) => {
+                S::list(vec![S::symbol("add-nat".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::AddInt(arity) => {
+                S::list(vec![S::symbol("add-int".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::AddFlt(arity) => {
+                S::list(vec![S::symbol("add-float".to_string()), S::nat(arity as u64)])
             }
             BuiltinInstr::Mul(arity) => {
                 S::list(vec![S::symbol("mul".to_string()), S::nat(arity as u64)])
