@@ -2,24 +2,23 @@ use std::{any::Any, ops::Range, sync::Arc};
 
 use crate::{
     ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env,
-    interpreter, parse, src_location::WithLocation, type_var::TypeVar, type_var::TypedMeta,
-    IntoSexp, Sexp,
+    interpreter, parse, src_location::WithLocation, type_var::{TypeExpr, TypeVar, TypedMeta}, IntoSexp, Sexp,
 };
 
 #[derive(Clone, Debug)]
 pub struct Meta {
     loc: Range<usize>,
-    ty: TypeVar<BuiltinType>,
+    ty: TypeExpr<BuiltinType>,
 }
 
 impl TypedMeta for Meta {
     type Type = BuiltinType;
 
-    fn get_type(&self) -> TypeVar<Self::Type> {
+    fn get_type(&self) -> TypeExpr<Self::Type> {
         self.ty.clone()
     }
 
-    fn assign_type(&mut self, ty: TypeVar<Self::Type>) {
+    fn assign_type(&mut self, ty: TypeExpr<Self::Type>) {
         self.ty = ty;
     }
 }
@@ -38,9 +37,10 @@ impl WithLocation for Meta {
 
 impl Default for Meta {
     fn default() -> Self {
+        let v = TypeVar::unknown(vec![]);
         Meta {
             loc: 0..0,
-            ty: TypeVar::unknown(vec![]),
+            ty: TypeExpr { body: v.make_ref(), vars: vec![ v ] }
         }
     }
 }

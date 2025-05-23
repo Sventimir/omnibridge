@@ -22,11 +22,11 @@ impl VarLabeler {
 pub trait TypedMeta {
     type Type: PrimType;
 
-    fn assign_type(&mut self, ty: TypeVar<Self::Type>);
-    fn get_type(&self) -> TypeVar<Self::Type>;
+    fn assign_type(&mut self, ty: TypeExpr<Self::Type>);
+    fn get_type(&self) -> TypeExpr<Self::Type>;
 
     fn label_type_vars(&self, labeler: &mut VarLabeler) {
-        self.get_type().label(labeler)
+        self.get_type().label_type_vars(labeler)
     }
 }
 
@@ -227,5 +227,63 @@ impl<T: Clone + PartialOrd> PartialOrd for TypeVar<T> {
 impl<T: Clone + Ord> Ord for TypeVar<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.value().cmp(&other.value())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TypeExpr<T> {
+    pub body: TypeVar<T>,
+    pub vars: Vec<TypeVar<T>>,
+}
+
+impl<T> TypeExpr<T> {
+    pub fn constant(t: T) -> Self {
+        Self {
+            body: TypeVar::constant(t),
+            vars: vec![],
+        }
+    }
+
+    pub fn make_ref(&self) -> Self {
+        Self {
+            body: self.body.make_ref(),
+            vars: self.vars.iter().map(|v| v.make_ref()).collect()
+        }
+    }
+}
+
+impl<T: PrimType> TypeExpr<T> {
+    pub fn label_type_vars(&mut self, labeler: &mut VarLabeler) {
+        for v in self.vars.iter_mut() {
+            v.label(labeler)
+        }
+    }
+}
+
+impl<T: Clone + PrimType> TypeExpr<T> {
+    pub fn unify<M: Clone, E: TypeEnv<T>>(
+        &self,
+        other: &Self,
+        env: &E,
+        meta: &M,
+    ) -> Result<(), TypeError<M, T>> {
+        self.body.unify(&other.body, env, meta)
+    }
+}
+
+impl<T: Clone + IntoSexp> IntoSexp for TypeExpr<T> {
+    fn into_sexp<S: Sexp>(self) -> S {
+        self.body.into_sexp()
+    }
+}
+
+#[derive(Debug)]
+pub struct TypeExprGen<T> {
+    pub gen: fn(&TypeExprGen<T>) -> TypeExpr<T>,
+}
+
+impl<T> TypeExprGen<T> {
+    pub fn make(&self) -> TypeExpr<T> {
+        (self.gen)(self)
     }
 }

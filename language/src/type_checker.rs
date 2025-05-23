@@ -1,26 +1,26 @@
 use crate::{
     ast::AST,
     type_error::TypeError,
-    type_var::{PrimType, TypeEnv, TypeVar, TypedMeta},
+    type_var::{PrimType, TypeEnv, TypeExpr, TypeVar, TypedMeta},
 };
 
 pub trait Environment<T, I> {
-    fn type_of(&self, name: &str) -> Option<TypeVar<T>>;
-    fn get_instr(&self, name: &str, ty: &T) -> Option<Vec<I>>;
+    fn type_of(&self, name: &str) -> Option<TypeExpr<T>>;
+    fn get_instr(&self, name: &str, ty: &TypeExpr<T>) -> Option<Vec<I>>;
 }
 
-fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeVar<T>
+fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeExpr<T>
 where
     M: TypedMeta<Type = T>,
     T: PrimType,
 {
-    let v = TypeVar::constant(ty);
+    let v = TypeExpr::constant(ty);
     let refv = v.make_ref();
     meta.assign_type(v);
     refv
 }
 
-pub fn typecheck<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeVar<T>, TypeError<M, T>>
+pub fn typecheck<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeExpr<T>, TypeError<M, T>>
 where
     E: Environment<T, I> + TypeEnv<T>,
     M: Clone + TypedMeta<Type = T>,
@@ -58,11 +58,23 @@ where
                         .map(|arg_ast| typecheck(arg_ast, env))
                         .collect::<Result<Vec<_>, _>>()?;
                     let ret_ty = TypeVar::unknown(vec![]);
-                    let expected_ty =
-                        TypeVar::constant(T::fun(arg_tys.as_slice(), ret_ty.make_ref()));
+                    let mut arg_bodys: Vec<TypeVar<T>> = vec![];
+                    let mut arg_vars: Vec<TypeVar<T>> = vec![];
+                    for expr in arg_tys.iter() {
+                        arg_bodys.push(expr.body.make_ref());
+                        arg_vars.extend_from_slice(&expr.vars);
+                    }
+                    let expected_ty = TypeExpr {
+                        body: TypeVar::constant(T::fun(arg_bodys.as_slice(), ret_ty.make_ref())),
+                        vars: arg_vars,
+                    };
                     fun_ty.unify(&expected_ty, env, meta)?;
-                    meta.assign_type(ret_ty.make_ref());
-                    Ok(ret_ty)
+                    let ret_expr = TypeExpr {
+                        body: ret_ty.make_ref(),
+                        vars: vec![ret_ty.make_ref()],
+                    };
+                    meta.assign_type(ret_expr.make_ref());
+                    Ok(ret_expr)
                 }
             }
         }

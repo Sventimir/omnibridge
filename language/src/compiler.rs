@@ -26,7 +26,7 @@ where
         let mut labeler = VarLabeler::new();
         match self {
             CompilationError::TypeError(e) => e.label_type_vars(&mut labeler),
-            CompilationError::UnresolvedTypeVar(m) => m.get_type().label(&mut labeler),
+            CompilationError::UnresolvedTypeVar(m) => m.get_type().label_type_vars(&mut labeler),
         }
     }
 }
@@ -100,10 +100,7 @@ where
         }
         AST::Unquoted { content, .. } => compile_ast(content, prog, env),
         AST::Symbol { content, meta } => {
-            let t = meta
-                .get_type()
-                .value()
-                .ok_or(CompilationError::UnresolvedTypeVar(meta.clone()))?;
+            let t = meta.get_type();
             let ins = env.get_instr(content, &t).unwrap();
             prog.extend(ins);
             Ok(())

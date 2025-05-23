@@ -3,12 +3,12 @@ use std::fmt::{self, Debug, Formatter};
 use crate::{
     builtin_type::BuiltinType,
     type_error::TypeError,
-    type_var::{TypeEnv, TypeVar, TypedMeta},
+    type_var::{TypeEnv, TypeExpr, TypeVar, TypedMeta},
     IntoSexp, Sexp,
 };
 
 #[derive(Clone)]
-struct Meta(TypeVar<BuiltinType>);
+struct Meta(TypeExpr<BuiltinType>);
 
 impl Debug for Meta {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -24,11 +24,11 @@ impl IntoSexp for Meta {
 
 impl TypedMeta for Meta {
     type Type = BuiltinType;
-    fn get_type(&self) -> TypeVar<BuiltinType> {
+    fn get_type(&self) -> TypeExpr<BuiltinType> {
         self.0.clone()
     }
 
-    fn assign_type(&mut self, ty: TypeVar<BuiltinType>) {
+    fn assign_type(&mut self, ty: TypeExpr<BuiltinType>) {
         self.0 = ty;
     }
 }
@@ -49,11 +49,11 @@ fn unification_propagates() {
     let num = TypeVar::constant(BuiltinType::Nat);
     let a: TypeVar<BuiltinType> = TypeVar::unknown(vec![]);
     let b: TypeVar<BuiltinType> = TypeVar::unknown(vec![]);
-    b.unify(&a, &(), &Meta(b.make_ref()))
+    b.unify(&a, &(), &Meta(TypeExpr { body: b.make_ref(), vars: vec![ b.make_ref() ] }))
         .expect("B unified successfully with A.");
     assert_eq!(a.value(), None);
     assert_eq!(b.value(), None);
-    a.unify(&num, &(), &Meta(a.make_ref()))
+    a.unify(&num, &(), &Meta(TypeExpr { body: a.make_ref(), vars: vec![ a.make_ref() ] }))
         .expect("A unified successfully with Num.");
     assert_eq!(a.value(), Some(BuiltinType::Nat));
     assert_eq!(b.value(), Some(BuiltinType::Nat));
