@@ -122,17 +122,105 @@ mod built_in {
                             args: vec![ t.make_ref(), t.make_ref() ],
                             ret: Box::new(t.make_ref())
                         }),
-                        vars: vec![t],
+                        vars: vec![ t ],
                     }
                 }
             };
-            {
-                additive.add_method("+".to_string(), plus_t);
-                additive.add_impl(BuiltinType::Nat);
-                additive.add_impl(BuiltinType::Int);
-                additive.add_impl(BuiltinType::Float);
-            }
+            additive.add_method("+".to_string(), plus_t);
+            additive.add_impl(BuiltinType::Nat);
+            additive.add_impl(BuiltinType::Int);
+            additive.add_impl(BuiltinType::Float);
             self.add_constraint(additive, |this, t| {
+                let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
+                    "No implementation of {} found for {:?}!.",
+                    this.constr_name, &t
+                ));
+                i.get(&this.meth_name)
+                    .expect(&format!("No method {} found!", this.meth_name))
+            });
+
+            let mut multiplicative_impl: BTreeMap<BuiltinType, Implementation<BuiltinInstr>> =
+                BTreeMap::new();
+            let mut multiplicative_nat: Implementation<BuiltinInstr> = Implementation::new();
+            multiplicative_nat.add_method("*".to_string(), || vec![BuiltinInstr::MulNat(2)]);
+            multiplicative_impl.insert(BuiltinType::Nat, multiplicative_nat);
+
+            let mut multiplicative_int: Implementation<BuiltinInstr> = Implementation::new();
+            multiplicative_int.add_method("*".to_string(), || vec![BuiltinInstr::MulInt(2)]);
+            multiplicative_impl.insert(BuiltinType::Int, multiplicative_int);
+
+            let mut multiplicative_float: Implementation<BuiltinInstr> = Implementation::new();
+            multiplicative_float.add_method("*".to_string(), || vec![BuiltinInstr::MulFlt(2)]);
+            multiplicative_impl.insert(BuiltinType::Float, multiplicative_float);
+            self.implementations
+                .insert("Multiplicative".to_string(), Arc::new(multiplicative_impl));
+
+            let mut multiplicative = Constraint::new("Multiplicative".to_string());
+            let mult_t = TypeExprGen {
+                gen: |_this| {
+                    let t = TypeVar::unknown(vec!["Multiplicative".to_string()]);
+                    TypeExpr {
+                        body: TypeVar::constant(BuiltinType::Fun {
+                            args: vec![ t.make_ref(), t.make_ref() ],
+                            ret: Box::new(t.make_ref())
+                        }),
+                        vars: vec![ t ],
+                    }
+                }
+            };
+            multiplicative.add_method("*".to_string(), mult_t);
+            multiplicative.add_impl(BuiltinType::Nat);
+            multiplicative.add_impl(BuiltinType::Int);
+            multiplicative.add_impl(BuiltinType::Float);
+            self.add_constraint(multiplicative, |this, t| {
+                let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
+                    "No implementation of {} found for {:?}!.",
+                    this.constr_name, &t
+                ));
+                i.get(&this.meth_name)
+                    .expect(&format!("No method {} found!", this.meth_name))
+            });
+
+            let mut equality_impl: BTreeMap<BuiltinType, Implementation<BuiltinInstr>> =
+                BTreeMap::new();
+            let mut equality_nat: Implementation<BuiltinInstr> = Implementation::new();
+            equality_nat.add_method("=".to_string(), || vec![BuiltinInstr::EqNat]);
+            equality_impl.insert(BuiltinType::Nat, equality_nat);
+            let mut equality_int: Implementation<BuiltinInstr> = Implementation::new();
+            equality_int.add_method("=".to_string(), || vec![BuiltinInstr::EqInt]);
+            equality_impl.insert(BuiltinType::Int, equality_int);
+            let mut equality_flt: Implementation<BuiltinInstr> = Implementation::new();
+            equality_flt.add_method("=".to_string(), || vec![BuiltinInstr::EqFlt]);
+            equality_impl.insert(BuiltinType::Float, equality_flt);
+            let mut equality_bool: Implementation<BuiltinInstr> = Implementation::new();
+            equality_bool.add_method("=".to_string(), || vec![BuiltinInstr::EqBool]);
+            equality_impl.insert(BuiltinType::Bool, equality_bool);
+            let mut equality_str: Implementation<BuiltinInstr> = Implementation::new();
+            equality_str.add_method("=".to_string(), || vec![BuiltinInstr::EqString]);
+            equality_impl.insert(BuiltinType::String, equality_str);
+
+            self.implementations.insert("Equality".to_string(), Arc::new(equality_impl));
+
+            let mut equality = Constraint::new("Equality".to_string());
+            let eq_t = TypeExprGen {
+                gen: |_this| {
+                    let t = TypeVar::unknown(vec!["Equality".to_string()]);
+                    TypeExpr {
+                        body: TypeVar::constant(BuiltinType::Fun {
+                            args: vec![ t.make_ref(), t.make_ref() ],
+                            ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                        }),
+                        vars: vec![ t ],
+                    }
+                }
+            };
+            equality.add_method("=".to_string(), eq_t);
+            equality.add_impl(BuiltinType::Nat);
+            equality.add_impl(BuiltinType::Int);
+            equality.add_impl(BuiltinType::Float);
+            equality.add_impl(BuiltinType::Bool);
+            equality.add_impl(BuiltinType::String);
+            self.add_constraint(equality, |this, t| {
                 let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
                     "No implementation of {} found for {:?}!.",
                     this.constr_name, &t
@@ -253,52 +341,6 @@ mod built_in {
                     impls: no_impls.clone(),
                     constr_name: "".to_string(),
                     meth_name: "or".to_string(),
-                },
-            );
-            self.vars.insert(
-                "*".to_string(),
-                Value {
-                    ty: Arc::new(TypeExprGen {
-                        gen: |_| {
-                            TypeExpr {
-                                body: TypeVar::constant(BuiltinType::Fun {
-                                    args: vec![
-                                        TypeVar::constant(BuiltinType::Int),
-                                        TypeVar::constant(BuiltinType::Int),
-                                    ],
-                                    ret: Box::new(TypeVar::constant(BuiltinType::Int)),
-                                }),
-                                vars: vec![],
-                            }
-                        },
-                    }),
-                    prog: |_, _| vec![BuiltinInstr::Mul(2)],
-                    impls: no_impls.clone(),
-                    constr_name: "".to_string(),
-                    meth_name: "*".to_string(),
-                },
-            );
-            self.vars.insert(
-                "=".to_string(),
-                Value {
-                    ty: Arc::new(TypeExprGen {
-                        gen: |_| {
-                            TypeExpr {
-                                body: TypeVar::constant(BuiltinType::Fun {
-                                    args: vec![
-                                        TypeVar::constant(BuiltinType::Int),
-                                        TypeVar::constant(BuiltinType::Int),
-                                    ],
-                                    ret: Box::new(TypeVar::constant(BuiltinType::Int)),
-                                }),
-                                vars: vec![],
-                            }
-                        }
-                    }),
-                    prog: |_, _| vec![BuiltinInstr::Eq],
-                    impls: no_impls.clone(),
-                    constr_name: "".to_string(),
-                    meth_name: "=".to_string(),
                 },
             );
             self.vars.insert(

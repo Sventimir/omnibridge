@@ -14,8 +14,14 @@ pub enum BuiltinInstr {
     AddNat(usize),
     AddInt(usize),
     AddFlt(usize),
-    Mul(usize),
-    Eq,
+    MulNat(usize),
+    MulInt(usize),
+    MulFlt(usize),
+    EqNat,
+    EqInt,
+    EqFlt,
+    EqBool,
+    EqString,
 }
 
 impl Instr for BuiltinInstr {
@@ -25,13 +31,19 @@ impl Instr for BuiltinInstr {
         match self {
             BuiltinInstr::Push(_) => 0,
             BuiltinInstr::Not => 1,
-            BuiltinInstr::Eq => 2,
+            BuiltinInstr::EqNat
+            | BuiltinInstr::EqInt
+            | BuiltinInstr::EqFlt
+            | BuiltinInstr::EqBool
+            | BuiltinInstr::EqString => 2,
             BuiltinInstr::And(arity)
             | BuiltinInstr::Or(arity)
             | BuiltinInstr::AddNat(arity)
             | BuiltinInstr::AddInt(arity)
             | BuiltinInstr::AddFlt(arity)
-            | BuiltinInstr::Mul(arity) => *arity,
+            | BuiltinInstr::MulNat(arity)
+            | BuiltinInstr::MulInt(arity)
+            | BuiltinInstr::MulFlt(arity) => *arity,
         }
     }
 
@@ -76,16 +88,54 @@ impl Instr for BuiltinInstr {
                 )),
                 NextStep::Forward,
             ),
-            BuiltinInstr::Mul(_) => (
+            BuiltinInstr::MulNat(_) => (
                 Some(Arc::new(
                     args.iter()
-                        .fold(1 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()),
+                        .fold(0 as u64, |l, r| l * r.downcast_ref::<u64>().unwrap()),
                 )),
                 NextStep::Forward,
             ),
-            BuiltinInstr::Eq => (
+            BuiltinInstr::MulInt(_) => (
+                Some(Arc::new(
+                    args.iter()
+                        .fold(0 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::MulFlt(_) => (
+                Some(Arc::new(
+                    args.iter()
+                        .fold(0 as f64, |l, r| l * r.downcast_ref::<f64>().unwrap()),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::EqNat => (
+                Some(Arc::new(
+                    args[0].downcast_ref::<u64>() == args[1].downcast_ref::<u64>(),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::EqInt => (
                 Some(Arc::new(
                     args[0].downcast_ref::<i64>() == args[1].downcast_ref::<i64>(),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::EqFlt => (
+                Some(Arc::new(
+                    args[0].downcast_ref::<f64>() == args[1].downcast_ref::<f64>(),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::EqBool => (
+                Some(Arc::new(
+                    args[0].downcast_ref::<bool>() == args[1].downcast_ref::<bool>(),
+                )),
+                NextStep::Forward,
+            ),
+            BuiltinInstr::EqString => (
+                Some(Arc::new(
+                    args[0].downcast_ref::<String>() == args[1].downcast_ref::<String>(),
                 )),
                 NextStep::Forward,
             ),
@@ -133,10 +183,20 @@ impl IntoSexp for BuiltinInstr {
             BuiltinInstr::AddFlt(arity) => {
                 S::list(vec![S::symbol("add-float".to_string()), S::nat(arity as u64)])
             }
-            BuiltinInstr::Mul(arity) => {
-                S::list(vec![S::symbol("mul".to_string()), S::nat(arity as u64)])
+            BuiltinInstr::MulNat(arity) => {
+                S::list(vec![S::symbol("mul-nat".to_string()), S::nat(arity as u64)])
             }
-            BuiltinInstr::Eq => S::symbol("eq".to_string()),
+            BuiltinInstr::MulInt(arity) => {
+                S::list(vec![S::symbol("mul-int".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::MulFlt(arity) => {
+                S::list(vec![S::symbol("mul-float".to_string()), S::nat(arity as u64)])
+            }
+            BuiltinInstr::EqNat => S::symbol("eq-nat".to_string()),
+            BuiltinInstr::EqInt => S::symbol("eq-int".to_string()),
+            BuiltinInstr::EqFlt => S::symbol("eq-float".to_string()),
+            BuiltinInstr::EqBool => S::symbol("eq-bool".to_string()),
+            BuiltinInstr::EqString => S::symbol("eq-string".to_string()),
         }
     }
 }
