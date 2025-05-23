@@ -50,7 +50,7 @@ impl<T: Clone + Debug + Ord, I> Env<T, I> {
         }
     }
 
-    fn add_constraint(&mut self, constr: Constraint<T>) {
+    fn add_constraint(&mut self, constr: Constraint<T>, prog: fn(&Value<T, I>, &TypeExpr<T>) -> Vec<I>) {
         let constr_name = constr.name().to_string();
         let err_msg = format!("No implementation found for constraint: {}", &constr_name);
         let impls = self.implementations.get(&constr_name).expect(&err_msg);
@@ -62,15 +62,7 @@ impl<T: Clone + Debug + Ord, I> Env<T, I> {
                     meth_name: meth.0.to_string(),
                     constr_name: constr_name.clone(),
                     impls: impls.clone(),
-                    prog: |this, t| {
-                        // FIXME: this is a horrible hack, but will work for the moment.
-                        let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
-                            "No implementation of {} found for {:?}!.",
-                            this.constr_name, &t
-                        ));
-                        i.get(&this.meth_name)
-                            .expect(&format!("No method {} found!", this.meth_name))
-                    },
+                    prog,
                 },
             );
         }
@@ -140,7 +132,14 @@ mod built_in {
                 additive.add_impl(BuiltinType::Int);
                 additive.add_impl(BuiltinType::Float);
             }
-            self.add_constraint(additive);
+            self.add_constraint(additive, |this, t| {
+                let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
+                    "No implementation of {} found for {:?}!.",
+                    this.constr_name, &t
+                ));
+                i.get(&this.meth_name)
+                    .expect(&format!("No method {} found!", this.meth_name))
+            });
 
             self.vars.insert(
                 "t".to_string(),
