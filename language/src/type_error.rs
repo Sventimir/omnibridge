@@ -13,6 +13,7 @@ pub enum TypeError<M, T> {
     Undefined { symbol: String, meta: M },
     UnexpectedQuasiquote { meta: M },
     Unimplemented { constraint: String, t: T, meta: M },
+    Unresolved { meta: M }, // Note: meta holds the reference to the unresolved var.
 }
 
 impl<M, T> Display for TypeError<M, T>
@@ -48,6 +49,8 @@ where
                     constraint, t, meta
                 )
             }
+            TypeError::Unresolved { meta } =>
+                write!(f, "Unresolved type variable at {}", meta),
         }
     }
 }
@@ -100,6 +103,10 @@ where
                 t.into_sexp(),
                 meta.into_sexp(),
             ]),
+            TypeError::Unresolved { meta } => S::list(vec![
+                S::symbol("unresolved-type-var".to_string()),
+                meta.into_sexp(),
+            ])
         }
     }
 }
@@ -157,6 +164,11 @@ where
                 named_value("type", (*t).clone()),
                 location_sexp(meta, src),
             ]),
+            TypeError::Unresolved { meta } => S::list(vec![
+                header,
+                S::symbol("unresolved-type-var".to_string()),
+                location_sexp(meta, src),
+            ])
         }
     }
 }
@@ -167,18 +179,16 @@ where
 {
     pub fn label_type_vars(&self, label_index: &mut VarLabeler) {
         match self {
-            TypeError::Mismatch { meta, .. } => {
-                meta.label_type_vars(label_index);
-            }
-            TypeError::Undefined { meta, .. } => {
-                meta.label_type_vars(label_index);
-            }
-            TypeError::UnexpectedQuasiquote { meta } => {
-                meta.label_type_vars(label_index);
-            }
-            TypeError::Unimplemented { meta, .. } => {
-                meta.label_type_vars(label_index);
-            }
+            TypeError::Mismatch { meta, .. } =>
+                meta.label_type_vars(label_index),
+            TypeError::Undefined { meta, .. } =>
+                meta.label_type_vars(label_index),
+            TypeError::UnexpectedQuasiquote { meta } =>
+                meta.label_type_vars(label_index),
+            TypeError::Unimplemented { meta, .. } =>
+                meta.label_type_vars(label_index),
+            TypeError::Unresolved { meta } =>
+                meta.label_type_vars(label_index),
         }
     }
 }

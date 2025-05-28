@@ -22,6 +22,7 @@ pub enum BuiltinInstr {
     EqFlt,
     EqBool,
     EqString,
+    Conv(fn(Arc<dyn Any>) -> Arc<dyn Any>),
 }
 
 impl Instr for BuiltinInstr {
@@ -44,6 +45,7 @@ impl Instr for BuiltinInstr {
             | BuiltinInstr::MulNat(arity)
             | BuiltinInstr::MulInt(arity)
             | BuiltinInstr::MulFlt(arity) => *arity,
+            BuiltinInstr::Conv(_) => 1,
         }
     }
 
@@ -139,6 +141,7 @@ impl Instr for BuiltinInstr {
                 )),
                 NextStep::Forward,
             ),
+            BuiltinInstr::Conv(f) => (Some(f(args[0].clone())), NextStep::Forward),
         }
     }
 
@@ -197,6 +200,7 @@ impl IntoSexp for BuiltinInstr {
             BuiltinInstr::EqFlt => S::symbol("eq-float".to_string()),
             BuiltinInstr::EqBool => S::symbol("eq-bool".to_string()),
             BuiltinInstr::EqString => S::symbol("eq-string".to_string()),
+            BuiltinInstr::Conv(_) => S::symbol("conv".to_string()),
         }
     }
 }

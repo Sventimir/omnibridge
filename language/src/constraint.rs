@@ -43,6 +43,10 @@ impl<'a, T> Constraint<T> {
         self.impls.push(t);
     }
 
+    pub fn iter_impls(&self) -> impl Iterator<Item = &T> {
+        self.impls.iter()
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

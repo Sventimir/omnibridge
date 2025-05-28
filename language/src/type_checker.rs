@@ -7,6 +7,8 @@ use crate::{
 pub trait Environment<T, I> {
     fn type_of(&self, name: &str) -> Option<TypeExpr<T>>;
     fn get_instr(&self, name: &str, ty: &TypeExpr<T>) -> Option<Vec<I>>;
+
+    fn poly_float(&self) -> TypeExpr<T>;
 }
 
 fn assign_const_and_return<M, T>(meta: &mut M, ty: T) -> TypeExpr<T>
@@ -26,10 +28,25 @@ where
     M: Clone + TypedMeta<Type = T>,
     T: Clone + PrimType,
 {
+    let t = typecheck_ast(ast, env)?;
+    select_default_instances(ast, env)?;
+    Ok(t)
+}
+
+pub fn typecheck_ast<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<TypeExpr<T>, TypeError<M, T>>
+where
+    E: Environment<T, I> + TypeEnv<T>,
+    M: Clone + TypedMeta<Type = T>,
+    T: Clone + PrimType,
+{
     match ast {
         AST::Nat { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
         AST::Int { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
-        AST::Float { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::float())),
+        AST::Float { ref mut meta, .. } => {
+            let t = env.poly_float();
+            meta.assign_type(t.make_ref());
+            Ok(t)
+        }
         AST::String { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::string())),
         AST::Symbol { content, meta } => match env.type_of(content) {
             Some(t) => {
@@ -79,4 +96,48 @@ where
             }
         }
     }
+}
+
+fn select_default_instances<E, M, I, T>(ast: &mut AST<M>, env: &E) -> Result<(), TypeError<M, T>>
+where
+    E: Environment<T, I> + TypeEnv<T>,
+    M: Clone + TypedMeta<Type = T>,
+    T: Clone + PrimType,
+{
+    match ast {
+        AST::Nat { ref mut meta, .. }
+        | AST::Int { ref mut meta, .. }
+        | AST::Float { ref mut meta, .. }
+        | AST::String { ref mut meta, .. }
+        | AST::Symbol { ref mut meta, .. }
+        | AST::Quoted { ref mut meta, .. }
+        | AST::QuasiQuoted { ref mut meta, .. }
+        | AST::Unquoted { ref mut meta, .. } => {
+            ensure_type_selected(meta, env)
+        }
+        AST::List {
+            content,
+            ref mut meta,
+        } => {
+            ensure_type_selected(meta, env)?;
+            for sub_ast in content.iter_mut() {
+                select_default_instances(sub_ast, env)?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn ensure_type_selected<E, M, I, T>(meta: &mut M, env: &E) -> Result<(), TypeError<M, T>>
+where
+    E: Environment<T, I> + TypeEnv<T>,
+    M: Clone + TypedMeta<Type = T>,
+    T: Clone + PrimType,
+{
+    for var in meta.get_type().vars.iter() {
+        if let None = var.value() {
+            env.set_default_type(var, meta)?;
+        }
+    }
+    Ok(())
 }

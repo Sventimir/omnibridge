@@ -34,6 +34,12 @@ impl TypedMeta for Meta {
 }
 
 impl TypeEnv<BuiltinType> for () {
+    fn set_default_type<M>(&self, var: &TypeVar<BuiltinType>, _meta: &mut M) -> Result<(), TypeError<M, BuiltinType>>
+    where M: Clone + TypedMeta<Type = BuiltinType> {
+        var.set_val(BuiltinType::Nil);
+        Ok(())
+    }
+
     fn check_constraint<M: Clone>(
         &self,
         _name: &str,

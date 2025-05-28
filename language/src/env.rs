@@ -8,7 +8,7 @@ use crate::{
     constraint::{Constraint, Implementation},
     type_checker::Environment,
     type_error::TypeError,
-    type_var::{TypeEnv, TypeExpr, TypeExprGen},
+    type_var::{PrimType, TypeEnv, TypeExpr, TypeExprGen, TypeVar, TypedMeta},
 };
 
 #[derive(Debug)]
@@ -26,7 +26,31 @@ pub struct Env<T, I> {
     implementations: HashMap<String, Arc<BTreeMap<T, Implementation<I>>>>,
 }
 
-impl<T: Clone + Ord, I> TypeEnv<T> for Env<T, I> {
+impl<T: Clone + Ord + PrimType, I> TypeEnv<T> for Env<T, I> {
+    fn set_default_type<M>(&self, var: &TypeVar<T>, meta: &mut M) -> Result<(), TypeError<M, T>>
+    where M: Clone + TypedMeta<Type = T>,
+    {
+        let mut cs = var.constraints();
+        if let Some(cname) = cs.pop_first() {
+            if let Some(constr) = self.constraints.get(&cname) {
+                for t in constr.iter_impls() {
+                    if let Ok(()) = all_ok(
+                        cs.iter()
+                            .map(|c| self.check_constraint(c, t, meta))
+                    ) {
+                        return Ok(var.set_val(t.clone()))
+                    }
+                }
+                Err(TypeError::Unresolved { meta: meta.clone() })
+            } else {
+                Err(TypeError::Undefined { symbol: cname.to_string(), meta: meta.clone() })
+            }
+        } else {
+            var.set_val(T::nil());
+            Ok(())
+        }
+    }
+
     fn check_constraint<M: Clone>(&self, c: &str, t: &T, meta: &M) -> Result<(), TypeError<M, T>> {
         let i = self.implementations.get(c).ok_or(TypeError::Undefined {
             symbol: c.to_string(),
@@ -39,6 +63,17 @@ impl<T: Clone + Ord, I> TypeEnv<T> for Env<T, I> {
         })?;
         Ok(())
     }
+}
+
+
+fn all_ok<I: Iterator<Item = Result<(), E>>, E>(it: I) -> Result<(), E> {
+    for elem in it {
+        match elem {
+            Ok(_) => (),
+            Err(e) => return Err(e)
+        }
+    }
+    return Ok(())
 }
 
 impl<T: Clone + Debug + Ord, I> Env<T, I> {
@@ -77,6 +112,11 @@ impl<T, I> Environment<T, I> for Env<T, I> {
 
     fn get_instr(&self, name: &str, ty: &TypeExpr<T>) -> Option<Vec<I>> {
         self.vars.get(name).map(|v| (v.prog)(&v, ty))
+    }
+
+    fn poly_float(&self) -> TypeExpr<T> {
+        let t = TypeVar::unknown(vec![ "FromFloat".to_string() ]);
+        TypeExpr { body: t.make_ref(), vars: vec![ t ] }
     }
 }
 
@@ -221,6 +261,38 @@ mod built_in {
             equality.add_impl(BuiltinType::Bool);
             equality.add_impl(BuiltinType::String);
             self.add_constraint(equality, |this, t| {
+                let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
+                    "No implementation of {} found for {:?}!.",
+                    this.constr_name, &t
+                ));
+                i.get(&this.meth_name)
+                    .expect(&format!("No method {} found!", this.meth_name))
+            });
+
+            let mut from_flt_impl: BTreeMap<BuiltinType, Implementation<BuiltinInstr>> =
+                BTreeMap::new();
+            let mut from_flt_float: Implementation<BuiltinInstr> = Implementation::new();
+            from_flt_float.add_method("from-float".to_string(), || vec![]);
+            from_flt_impl.insert(BuiltinType::Float, from_flt_float);
+
+            self.implementations.insert("FromFloat".to_string(), Arc::new(from_flt_impl));
+
+            let mut from_flt = Constraint::new("FromFloat".to_string());
+            let from_flt_t = TypeExprGen {
+                gen: |_this| {
+                    let t = TypeVar::unknown(vec!["FromFloat".to_string()]);
+                    TypeExpr {
+                        body: TypeVar::constant(BuiltinType::Fun {
+                            args: vec![ TypeVar::constant(BuiltinType::Float) ],
+                            ret: Box::new(t.make_ref()),
+                        }),
+                        vars: vec![ t ],
+                    }
+                }
+            };
+            from_flt.add_method("from-float".to_string(), from_flt_t);
+            from_flt.add_impl(BuiltinType::Float);
+            self.add_constraint(from_flt, |this, t| {
                 let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
                     "No implementation of {} found for {:?}!.",
                     this.constr_name, &t

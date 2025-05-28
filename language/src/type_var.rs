@@ -31,6 +31,9 @@ pub trait TypedMeta {
 }
 
 pub trait TypeEnv<T> {
+    fn set_default_type<M>(&self, var: &TypeVar<T>, meta: &mut M) -> Result<(), TypeError<M, T>>
+    where M: Clone + TypedMeta<Type = T>;
+
     fn check_constraint<M: Clone>(
         &self,
         name: &str,
@@ -87,6 +90,15 @@ impl<T> TypeVar<T> {
 
     pub fn make_ref(&self) -> Self {
         TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(self.clone()))))
+    }
+
+    pub fn constraints(&self) -> BTreeSet<String> {
+        let this = self.0.lock().unwrap();
+        match &*this {
+            VarOrRef::Val(_) => BTreeSet::new(),
+            VarOrRef::Var(_, constraints) => constraints.clone(),
+            VarOrRef::Ref(v) => v.constraints(),
+        }
     }
 }
 
@@ -176,6 +188,14 @@ impl<T: Clone + PrimType> TypeVar<T> {
         match &*this {
             VarOrRef::Ref(v) => v.set_ref(src),
             _ => *this = VarOrRef::Ref(src),
+        }
+    }
+
+    pub fn set_val(&self, t: T) {
+        let mut this = self.0.lock().unwrap();
+        match &*this {
+            VarOrRef::Ref(v) => v.set_val(t),
+            _ => *this = VarOrRef::Val(t),
         }
     }
 }

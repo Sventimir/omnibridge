@@ -93,7 +93,13 @@ where
     match ast {
         AST::Nat { content, .. } => Ok(prog.push(I::push_int(*content as i64))),
         AST::Int { content, .. } => Ok(prog.push(I::push_int(*content))),
-        AST::Float { content, .. } => Ok(prog.push(I::push_float(*content))),
+        AST::Float { content, meta } => {
+            let t = meta.get_type();
+            let ins = env.get_instr("from-float", &t).unwrap();
+            prog.push(I::push_float(*content));
+            prog.extend(ins);
+            Ok(())
+        }
         AST::String { content, .. } => Ok(prog.push(I::push_str(content.clone()))),
         AST::Quoted { content, .. } | AST::QuasiQuoted { content, .. } => {
             Ok(prog.push(I::push_sexp(content.clone().into_sexp::<Expr>())))
