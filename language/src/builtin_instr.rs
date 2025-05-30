@@ -183,18 +183,20 @@ impl IntoSexp for BuiltinInstr {
             BuiltinInstr::AddInt(arity) => {
                 S::list(vec![S::symbol("add-int".to_string()), S::nat(arity as u64)])
             }
-            BuiltinInstr::AddFlt(arity) => {
-                S::list(vec![S::symbol("add-float".to_string()), S::nat(arity as u64)])
-            }
+            BuiltinInstr::AddFlt(arity) => S::list(vec![
+                S::symbol("add-float".to_string()),
+                S::nat(arity as u64),
+            ]),
             BuiltinInstr::MulNat(arity) => {
                 S::list(vec![S::symbol("mul-nat".to_string()), S::nat(arity as u64)])
             }
             BuiltinInstr::MulInt(arity) => {
                 S::list(vec![S::symbol("mul-int".to_string()), S::nat(arity as u64)])
             }
-            BuiltinInstr::MulFlt(arity) => {
-                S::list(vec![S::symbol("mul-float".to_string()), S::nat(arity as u64)])
-            }
+            BuiltinInstr::MulFlt(arity) => S::list(vec![
+                S::symbol("mul-float".to_string()),
+                S::nat(arity as u64),
+            ]),
             BuiltinInstr::EqNat => S::symbol("eq-nat".to_string()),
             BuiltinInstr::EqInt => S::symbol("eq-int".to_string()),
             BuiltinInstr::EqFlt => S::symbol("eq-float".to_string()),

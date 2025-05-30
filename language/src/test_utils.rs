@@ -1,8 +1,15 @@
 use std::{any::Any, ops::Range, sync::Arc};
 
 use crate::{
-    ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env,
-    interpreter, parse, src_location::WithLocation, type_var::{TypeExpr, TypeVar, TypedMeta}, IntoSexp, Sexp,
+    ast::AST,
+    builtin_instr::BuiltinInstr,
+    builtin_type::BuiltinType,
+    compile,
+    env::Env,
+    interpreter, parse,
+    src_location::WithLocation,
+    type_var::{TypeExpr, TypeVar, TypedMeta},
+    IntoSexp, Sexp,
 };
 
 #[derive(Clone, Debug)]
@@ -40,7 +47,10 @@ impl Default for Meta {
         let v = TypeVar::unknown(vec![]);
         Meta {
             loc: 0..0,
-            ty: TypeExpr { body: v.make_ref(), vars: vec![ v ] }
+            ty: TypeExpr {
+                body: v.make_ref(),
+                vars: vec![v],
+            },
         }
     }
 }

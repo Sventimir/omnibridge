@@ -34,8 +34,14 @@ impl TypedMeta for Meta {
 }
 
 impl TypeEnv<BuiltinType> for () {
-    fn set_default_type<M>(&self, var: &TypeVar<BuiltinType>, _meta: &mut M) -> Result<(), TypeError<M, BuiltinType>>
-    where M: Clone + TypedMeta<Type = BuiltinType> {
+    fn set_default_type<M>(
+        &self,
+        var: &TypeVar<BuiltinType>,
+        _meta: &mut M,
+    ) -> Result<(), TypeError<M, BuiltinType>>
+    where
+        M: Clone + TypedMeta<Type = BuiltinType>,
+    {
         var.set_val(BuiltinType::Nil);
         Ok(())
     }
@@ -55,12 +61,26 @@ fn unification_propagates() {
     let num = TypeVar::constant(BuiltinType::Nat);
     let a: TypeVar<BuiltinType> = TypeVar::unknown(vec![]);
     let b: TypeVar<BuiltinType> = TypeVar::unknown(vec![]);
-    b.unify(&a, &(), &Meta(TypeExpr { body: b.make_ref(), vars: vec![ b.make_ref() ] }))
-        .expect("B unified successfully with A.");
+    b.unify(
+        &a,
+        &(),
+        &Meta(TypeExpr {
+            body: b.make_ref(),
+            vars: vec![b.make_ref()],
+        }),
+    )
+    .expect("B unified successfully with A.");
     assert_eq!(a.value(), None);
     assert_eq!(b.value(), None);
-    a.unify(&num, &(), &Meta(TypeExpr { body: a.make_ref(), vars: vec![ a.make_ref() ] }))
-        .expect("A unified successfully with Num.");
+    a.unify(
+        &num,
+        &(),
+        &Meta(TypeExpr {
+            body: a.make_ref(),
+            vars: vec![a.make_ref()],
+        }),
+    )
+    .expect("A unified successfully with Num.");
     assert_eq!(a.value(), Some(BuiltinType::Nat));
     assert_eq!(b.value(), Some(BuiltinType::Nat));
 }

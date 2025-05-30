@@ -49,8 +49,7 @@ where
                     constraint, t, meta
                 )
             }
-            TypeError::Unresolved { meta } =>
-                write!(f, "Unresolved type variable at {}", meta),
+            TypeError::Unresolved { meta } => write!(f, "Unresolved type variable at {}", meta),
         }
     }
 }
@@ -106,7 +105,7 @@ where
             TypeError::Unresolved { meta } => S::list(vec![
                 S::symbol("unresolved-type-var".to_string()),
                 meta.into_sexp(),
-            ])
+            ]),
         }
     }
 }
@@ -168,7 +167,7 @@ where
                 header,
                 S::symbol("unresolved-type-var".to_string()),
                 location_sexp(meta, src),
-            ])
+            ]),
         }
     }
 }
@@ -179,16 +178,11 @@ where
 {
     pub fn label_type_vars(&self, label_index: &mut VarLabeler) {
         match self {
-            TypeError::Mismatch { meta, .. } =>
-                meta.label_type_vars(label_index),
-            TypeError::Undefined { meta, .. } =>
-                meta.label_type_vars(label_index),
-            TypeError::UnexpectedQuasiquote { meta } =>
-                meta.label_type_vars(label_index),
-            TypeError::Unimplemented { meta, .. } =>
-                meta.label_type_vars(label_index),
-            TypeError::Unresolved { meta } =>
-                meta.label_type_vars(label_index),
+            TypeError::Mismatch { meta, .. } => meta.label_type_vars(label_index),
+            TypeError::Undefined { meta, .. } => meta.label_type_vars(label_index),
+            TypeError::UnexpectedQuasiquote { meta } => meta.label_type_vars(label_index),
+            TypeError::Unimplemented { meta, .. } => meta.label_type_vars(label_index),
+            TypeError::Unresolved { meta } => meta.label_type_vars(label_index),
         }
     }
 }

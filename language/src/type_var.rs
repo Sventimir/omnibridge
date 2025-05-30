@@ -1,6 +1,8 @@
 use either::Either;
 use std::{
-    cmp::Ordering, collections::BTreeSet, sync::{Arc, Mutex}
+    cmp::Ordering,
+    collections::BTreeSet,
+    sync::{Arc, Mutex},
 };
 
 use crate::{type_error::TypeError, IntoSexp, Sexp};
@@ -32,7 +34,8 @@ pub trait TypedMeta {
 
 pub trait TypeEnv<T> {
     fn set_default_type<M>(&self, var: &TypeVar<T>, meta: &mut M) -> Result<(), TypeError<M, T>>
-    where M: Clone + TypedMeta<Type = T>;
+    where
+        M: Clone + TypedMeta<Type = T>;
 
     fn check_constraint<M: Clone>(
         &self,
@@ -267,7 +270,7 @@ impl<T> TypeExpr<T> {
     pub fn make_ref(&self) -> Self {
         Self {
             body: self.body.make_ref(),
-            vars: self.vars.iter().map(|v| v.make_ref()).collect()
+            vars: self.vars.iter().map(|v| v.make_ref()).collect(),
         }
     }
 }

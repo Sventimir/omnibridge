@@ -18,7 +18,8 @@ where
     let ret: Result<(), String> = typecheck_ast(&mut ast[0], &env)
         .map_err(|e| e.into_sexp())
         .and_then(|tvar| {
-            tvar.body.value()
+            tvar.body
+                .value()
                 .ok_or(String::symbol(format!("unresolved-type-var: {:?}", tvar)))
         })
         .and_then(check_result);

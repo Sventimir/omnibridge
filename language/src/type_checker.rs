@@ -112,9 +112,7 @@ where
         | AST::Symbol { ref mut meta, .. }
         | AST::Quoted { ref mut meta, .. }
         | AST::QuasiQuoted { ref mut meta, .. }
-        | AST::Unquoted { ref mut meta, .. } => {
-            ensure_type_selected(meta, env)
-        }
+        | AST::Unquoted { ref mut meta, .. } => ensure_type_selected(meta, env),
         AST::List {
             content,
             ref mut meta,

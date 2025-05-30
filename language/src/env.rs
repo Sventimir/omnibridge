@@ -28,22 +28,23 @@ pub struct Env<T, I> {
 
 impl<T: Clone + Ord + PrimType, I> TypeEnv<T> for Env<T, I> {
     fn set_default_type<M>(&self, var: &TypeVar<T>, meta: &mut M) -> Result<(), TypeError<M, T>>
-    where M: Clone + TypedMeta<Type = T>,
+    where
+        M: Clone + TypedMeta<Type = T>,
     {
         let mut cs = var.constraints();
         if let Some(cname) = cs.pop_first() {
             if let Some(constr) = self.constraints.get(&cname) {
                 for t in constr.iter_impls() {
-                    if let Ok(()) = all_ok(
-                        cs.iter()
-                            .map(|c| self.check_constraint(c, t, meta))
-                    ) {
-                        return Ok(var.set_val(t.clone()))
+                    if let Ok(()) = all_ok(cs.iter().map(|c| self.check_constraint(c, t, meta))) {
+                        return Ok(var.set_val(t.clone()));
                     }
                 }
                 Err(TypeError::Unresolved { meta: meta.clone() })
             } else {
-                Err(TypeError::Undefined { symbol: cname.to_string(), meta: meta.clone() })
+                Err(TypeError::Undefined {
+                    symbol: cname.to_string(),
+                    meta: meta.clone(),
+                })
             }
         } else {
             var.set_val(T::nil());
@@ -65,15 +66,14 @@ impl<T: Clone + Ord + PrimType, I> TypeEnv<T> for Env<T, I> {
     }
 }
 
-
 fn all_ok<I: Iterator<Item = Result<(), E>>, E>(it: I) -> Result<(), E> {
     for elem in it {
         match elem {
             Ok(_) => (),
-            Err(e) => return Err(e)
+            Err(e) => return Err(e),
         }
     }
-    return Ok(())
+    return Ok(());
 }
 
 impl<T: Clone + Debug + Ord, I> Env<T, I> {
@@ -85,7 +85,11 @@ impl<T: Clone + Debug + Ord, I> Env<T, I> {
         }
     }
 
-    fn add_constraint(&mut self, constr: Constraint<T>, prog: fn(&Value<T, I>, &TypeExpr<T>) -> Vec<I>) {
+    fn add_constraint(
+        &mut self,
+        constr: Constraint<T>,
+        prog: fn(&Value<T, I>, &TypeExpr<T>) -> Vec<I>,
+    ) {
         let constr_name = constr.name().to_string();
         let err_msg = format!("No implementation found for constraint: {}", &constr_name);
         let impls = self.implementations.get(&constr_name).expect(&err_msg);
@@ -115,8 +119,11 @@ impl<T, I> Environment<T, I> for Env<T, I> {
     }
 
     fn poly_float(&self) -> TypeExpr<T> {
-        let t = TypeVar::unknown(vec![ "FromFloat".to_string() ]);
-        TypeExpr { body: t.make_ref(), vars: vec![ t ] }
+        let t = TypeVar::unknown(vec!["FromFloat".to_string()]);
+        TypeExpr {
+            body: t.make_ref(),
+            vars: vec![t],
+        }
     }
 }
 
@@ -159,12 +166,12 @@ mod built_in {
                     let t = TypeVar::unknown(vec!["Additive".to_string()]);
                     TypeExpr {
                         body: TypeVar::constant(BuiltinType::Fun {
-                            args: vec![ t.make_ref(), t.make_ref() ],
-                            ret: Box::new(t.make_ref())
+                            args: vec![t.make_ref(), t.make_ref()],
+                            ret: Box::new(t.make_ref()),
                         }),
-                        vars: vec![ t ],
+                        vars: vec![t],
                     }
-                }
+                },
             };
             additive.add_method("+".to_string(), plus_t);
             additive.add_impl(BuiltinType::Nat);
@@ -201,12 +208,12 @@ mod built_in {
                     let t = TypeVar::unknown(vec!["Multiplicative".to_string()]);
                     TypeExpr {
                         body: TypeVar::constant(BuiltinType::Fun {
-                            args: vec![ t.make_ref(), t.make_ref() ],
-                            ret: Box::new(t.make_ref())
+                            args: vec![t.make_ref(), t.make_ref()],
+                            ret: Box::new(t.make_ref()),
                         }),
-                        vars: vec![ t ],
+                        vars: vec![t],
                     }
-                }
+                },
             };
             multiplicative.add_method("*".to_string(), mult_t);
             multiplicative.add_impl(BuiltinType::Nat);
@@ -239,7 +246,8 @@ mod built_in {
             equality_str.add_method("=".to_string(), || vec![BuiltinInstr::EqString]);
             equality_impl.insert(BuiltinType::String, equality_str);
 
-            self.implementations.insert("Equality".to_string(), Arc::new(equality_impl));
+            self.implementations
+                .insert("Equality".to_string(), Arc::new(equality_impl));
 
             let mut equality = Constraint::new("Equality".to_string());
             let eq_t = TypeExprGen {
@@ -247,12 +255,12 @@ mod built_in {
                     let t = TypeVar::unknown(vec!["Equality".to_string()]);
                     TypeExpr {
                         body: TypeVar::constant(BuiltinType::Fun {
-                            args: vec![ t.make_ref(), t.make_ref() ],
+                            args: vec![t.make_ref(), t.make_ref()],
                             ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
                         }),
-                        vars: vec![ t ],
+                        vars: vec![t],
                     }
-                }
+                },
             };
             equality.add_method("=".to_string(), eq_t);
             equality.add_impl(BuiltinType::Nat);
@@ -275,7 +283,8 @@ mod built_in {
             from_flt_float.add_method("from-float".to_string(), || vec![]);
             from_flt_impl.insert(BuiltinType::Float, from_flt_float);
 
-            self.implementations.insert("FromFloat".to_string(), Arc::new(from_flt_impl));
+            self.implementations
+                .insert("FromFloat".to_string(), Arc::new(from_flt_impl));
 
             let mut from_flt = Constraint::new("FromFloat".to_string());
             let from_flt_t = TypeExprGen {
@@ -283,12 +292,12 @@ mod built_in {
                     let t = TypeVar::unknown(vec!["FromFloat".to_string()]);
                     TypeExpr {
                         body: TypeVar::constant(BuiltinType::Fun {
-                            args: vec![ TypeVar::constant(BuiltinType::Float) ],
+                            args: vec![TypeVar::constant(BuiltinType::Float)],
                             ret: Box::new(t.make_ref()),
                         }),
-                        vars: vec![ t ],
+                        vars: vec![t],
                     }
-                }
+                },
             };
             from_flt.add_method("from-float".to_string(), from_flt_t);
             from_flt.add_impl(BuiltinType::Float);
@@ -305,13 +314,10 @@ mod built_in {
                 "t".to_string(),
                 Value {
                     ty: Arc::new(TypeExprGen {
-                        gen: |_| {
-                            TypeExpr {
-                                body: TypeVar::constant(BuiltinType::Bool),
-                                vars: vec![],
-                            }
-                            
-                        }
+                        gen: |_| TypeExpr {
+                            body: TypeVar::constant(BuiltinType::Bool),
+                            vars: vec![],
+                        },
                     }),
                     prog: |_, _| vec![BuiltinInstr::Push(Arc::new(true))],
                     impls: no_impls.clone(),
@@ -326,7 +332,7 @@ mod built_in {
                         gen: |_| TypeExpr {
                             body: TypeVar::constant(BuiltinType::Bool),
                             vars: vec![],
-                        }
+                        },
                     }),
                     prog: |_, _| vec![BuiltinInstr::Push(Arc::new(false))],
                     impls: no_impls.clone(),
@@ -341,7 +347,7 @@ mod built_in {
                         gen: |_| TypeExpr {
                             body: TypeVar::constant(BuiltinType::Nil),
                             vars: vec![],
-                        }
+                        },
                     }),
                     prog: |_, _| vec![BuiltinInstr::Push(Arc::new(false))],
                     impls: no_impls.clone(),
@@ -353,14 +359,12 @@ mod built_in {
                 "not".to_string(),
                 Value {
                     ty: Arc::new(TypeExprGen {
-                        gen: |_| {
-                            TypeExpr {
-                                body: TypeVar::constant(BuiltinType::Fun {
-                                    args: vec![TypeVar::constant(BuiltinType::Bool)],
-                                    ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
-                                }),
-                                vars: vec![],
-                            }
+                        gen: |_| TypeExpr {
+                            body: TypeVar::constant(BuiltinType::Fun {
+                                args: vec![TypeVar::constant(BuiltinType::Bool)],
+                                ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                            }),
+                            vars: vec![],
                         },
                     }),
                     prog: |_, _| vec![BuiltinInstr::Not],
@@ -373,17 +377,15 @@ mod built_in {
                 "and".to_string(),
                 Value {
                     ty: Arc::new(TypeExprGen {
-                        gen: |_| {
-                            TypeExpr {
-                                body: TypeVar::constant(BuiltinType::Fun {
-                                    args: vec![
-                                        TypeVar::constant(BuiltinType::Bool),
-                                        TypeVar::constant(BuiltinType::Bool),
-                                    ],
-                                    ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
-                                }),
-                                vars: vec![],
-                            }
+                        gen: |_| TypeExpr {
+                            body: TypeVar::constant(BuiltinType::Fun {
+                                args: vec![
+                                    TypeVar::constant(BuiltinType::Bool),
+                                    TypeVar::constant(BuiltinType::Bool),
+                                ],
+                                ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                            }),
+                            vars: vec![],
                         },
                     }),
                     prog: |_, _| vec![BuiltinInstr::And(2)],
@@ -396,18 +398,16 @@ mod built_in {
                 "or".to_string(),
                 Value {
                     ty: Arc::new(TypeExprGen {
-                        gen: |_| {
-                            TypeExpr {
-                                body: TypeVar::constant(BuiltinType::Fun {
-                                    args: vec![
-                                        TypeVar::constant(BuiltinType::Bool),
-                                        TypeVar::constant(BuiltinType::Bool),
-                                    ],
-                                    ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
-                                }),
-                                vars: vec![],
-                            }
-                        }
+                        gen: |_| TypeExpr {
+                            body: TypeVar::constant(BuiltinType::Fun {
+                                args: vec![
+                                    TypeVar::constant(BuiltinType::Bool),
+                                    TypeVar::constant(BuiltinType::Bool),
+                                ],
+                                ret: Box::new(TypeVar::constant(BuiltinType::Bool)),
+                            }),
+                            vars: vec![],
+                        },
                     }),
                     prog: |_, _| vec![BuiltinInstr::Or(2)],
                     impls: no_impls.clone(),
@@ -426,8 +426,8 @@ mod built_in {
                                     args: vec![tvar.make_ref()],
                                     ret: Box::new(tvar.make_ref()),
                                 }),
-                                vars: vec![tvar]
-                            }                            
+                                vars: vec![tvar],
+                            }
                         },
                     }),
                     prog: |_, _| vec![],
