@@ -8,7 +8,7 @@ use crate::{
     env::Env,
     interpreter, parse,
     src_location::WithLocation,
-    type_var::{TypeExpr, TypeVar, TypedMeta},
+    type_var::{TypeExpr, TypeVar, TypedMeta, VarLabeler},
     IntoSexp, Sexp,
 };
 
@@ -79,8 +79,18 @@ pub fn exec<T: Any + Clone>(src: &str) -> T {
     let mut ast: Vec<AST<Meta>> = parse(src).unwrap();
     let mut env: Env<BuiltinType, BuiltinInstr> = Env::new();
     env.init();
-    let prog: Vec<BuiltinInstr> = compile(&mut ast, &mut env).unwrap();
-    println!("{:?}", prog.clone().into_sexp::<String>());
-    let stack = interpreter::execute(prog.as_slice());
-    get_result::<T>(stack.as_slice())
+    match compile(&mut ast, &mut env) {
+        Ok(prog) => {
+            println!("{:?}", prog.clone().into_sexp::<String>());
+            let stack = interpreter::execute(prog.as_slice());
+            get_result::<T>(stack.as_slice())
+        }
+        Err(e) => {
+            let mut labeler = VarLabeler::new();
+            ast[0].label_type_vars(&mut labeler);
+            println!("{}", ast[0].clone().into_sexp_debug::<String>());
+            println!("{}", e.into_sexp::<String>());
+            panic!("Failed to compile the program!")
+        }
+    }
 }

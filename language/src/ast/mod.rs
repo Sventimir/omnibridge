@@ -79,7 +79,8 @@ impl<M> AST<M> {
 }
 
 impl<M: TypedMeta> AST<M> {
-    pub fn label_type_vars(&self, labeler: &mut VarLabeler) {
+    pub fn label_type_vars(&mut self, labeler: &mut VarLabeler) {
+        self.meta_mut().label_type_vars(labeler);
         match self {
             AST::Symbol { meta, .. }
             | AST::String { meta, .. }

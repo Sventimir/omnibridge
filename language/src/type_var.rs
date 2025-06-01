@@ -221,11 +221,21 @@ where
 }
 
 impl<T: Clone + IntoSexp> IntoSexp for TypeVar<T> {
-    // NOTE: Constraints are not being serialized!
     fn into_sexp<S: Sexp>(self) -> S {
         match &*self.0.lock().unwrap() {
             VarOrRef::Val(t) => t.clone().into_sexp(),
-            VarOrRef::Var(name, _) => S::symbol(format!("?{}", name)),
+            VarOrRef::Var(name, constraints) => {
+                let name = S::symbol(format!("?{}", name));
+                if constraints.len() > 0 {
+                    let mut ret = vec![ name ];
+                    for c in constraints {
+                        ret.push(S::symbol(c.to_string()))
+                    }
+                    S::list(ret)
+                } else {
+                    name
+                }
+            },
             VarOrRef::Ref(var) => var.clone().into_sexp(),
         }
     }
