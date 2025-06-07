@@ -54,6 +54,7 @@ pub trait PrimType: Sized {
     fn nil() -> Self;
     fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self;
 
+    fn as_callable<M: Clone>(&self, arity: usize, meta: &M) -> Result<(Vec<TypeVar<Self>>, TypeVar<Self>), TypeError<M, Self>>;
     fn label_type_vars(&mut self, labeler: &mut VarLabeler);
     fn unify<M: Clone, E: TypeEnv<Self>>(
         &self,
@@ -139,6 +140,23 @@ impl<T: Clone> TypeVar<T> {
 }
 
 impl<T: Clone + PrimType> TypeVar<T> {
+    pub fn as_callable<M: Clone>(&self, arity: usize, meta: &M) -> Result<(Vec<Self>, Self), TypeError<M, T>> {
+        let mut this = self.0.lock().unwrap();
+        match &mut *this {
+            VarOrRef::Ref(v) => v.as_callable(arity, meta),
+            VarOrRef::Val(t) => t.as_callable(arity, meta),
+            VarOrRef::Var(_, _) => {
+                let mut args = Vec::with_capacity(arity);
+                for _ in 1..arity {
+                    args.push(Self::unknown(vec![]));
+                }
+                let ret = Self::unknown(vec![]);
+                *this = VarOrRef::Val(T::fun(&args, ret.make_ref()));
+                Ok((args, ret))
+            }
+        }
+    }
+
     pub fn unify<M: Clone, E: TypeEnv<T>>(
         &self,
         other: &Self,

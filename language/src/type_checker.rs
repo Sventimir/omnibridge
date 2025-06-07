@@ -1,7 +1,7 @@
 use crate::{
     ast::AST,
     type_error::TypeError,
-    type_var::{PrimType, TypeEnv, TypeExpr, TypeVar, TypedMeta},
+    type_var::{PrimType, TypeEnv, TypeExpr, TypedMeta},
 };
 
 pub trait Environment<T, I> {
@@ -71,27 +71,20 @@ where
                 None => Ok(assign_const_and_return(meta, T::nil())),
                 Some(mut call_ast) => {
                     let fun_ty = typecheck(&mut call_ast, env)?;
-                    let arg_tys = cs
-                        .map(|arg_ast| typecheck(arg_ast, env))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    let ret_ty = TypeVar::unknown(vec![]);
-                    let mut arg_bodys: Vec<TypeVar<T>> = vec![];
-                    let mut arg_vars: Vec<TypeVar<T>> = vec![];
-                    for expr in arg_tys.iter() {
-                        arg_bodys.push(expr.body.make_ref());
-                        arg_vars.extend_from_slice(&expr.vars);
+                    let mut vars: Vec<_> = fun_ty.vars.iter().map(|v| v.make_ref()).collect();
+                    let mut act_arg_tys = vec![];
+                    for mut arg_ast in cs {
+                        let t = typecheck(&mut arg_ast, env)?;
+                        act_arg_tys.push(t);
                     }
-                    let expected_ty = TypeExpr {
-                        body: TypeVar::constant(T::fun(arg_bodys.as_slice(), ret_ty.make_ref())),
-                        vars: arg_vars,
-                    };
-                    fun_ty.unify(&expected_ty, env, meta)?;
-                    let ret_expr = TypeExpr {
-                        body: ret_ty.make_ref(),
-                        vars: vec![ret_ty.make_ref()],
-                    };
-                    meta.assign_type(ret_expr.make_ref());
-                    Ok(ret_expr)
+                    let (exp_arg_tys, ret_ty) = fun_ty.body.as_callable(act_arg_tys.len(), meta)?;
+                    for (act, exp) in act_arg_tys.iter().zip(exp_arg_tys.iter()) {
+                        exp.unify(&act.body, env, meta)?;
+                        for v in act.vars.iter() {
+                            vars.push(v.make_ref());
+                        }
+                    }
+                    Ok(TypeExpr { body: ret_ty, vars: vars })
                 }
             }
         }

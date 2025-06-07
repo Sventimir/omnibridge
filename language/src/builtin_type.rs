@@ -140,8 +140,26 @@ impl PrimType for BuiltinType {
 
     fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self {
         BuiltinType::Fun {
-            args: args.iter().map(|arg| arg.clone()).collect(),
-            ret: Box::new(ret.clone()),
+            args: args.iter().map(|arg| arg.make_ref()).collect(),
+            ret: Box::new(ret.make_ref()),
+        }
+    }
+
+    fn as_callable<M: Clone>(&self, arity: usize, meta: &M) -> Result<(Vec<TypeVar<Self>>, TypeVar<Self>), TypeError<M, Self>> {
+        match self {
+            BuiltinType::Fun { args, ret } if args.len() == arity =>
+                Ok((args.iter().map(|arg| arg.make_ref()).collect(), ret.make_ref())),
+            _ => {
+                let mut args = Vec::with_capacity(arity);
+                for _ in 1..arity {
+                    args.push(TypeVar::unknown(vec![]));
+                }
+                Err(TypeError::Mismatch {
+                    expected: BuiltinType::Fun { args, ret: Box::new(TypeVar::unknown(vec![])) },
+                    found: self.clone(),
+                    meta: meta.clone(),
+                })
+            }
         }
     }
 
