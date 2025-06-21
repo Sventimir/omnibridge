@@ -93,7 +93,10 @@ impl<T> TypeVar<T> {
     }
 
     pub fn make_ref(&self) -> Self {
-        TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(self.clone()))))
+        match &*self.0.lock().unwrap() {
+            VarOrRef::Ref(v) => v.make_ref(),
+            _ => TypeVar(Arc::new(Mutex::new(VarOrRef::Ref(Self(self.0.clone()))))),
+        }
     }
 
     pub fn constraints(&self) -> BTreeSet<String> {
@@ -170,17 +173,17 @@ impl<T: Clone + PrimType> TypeVar<T> {
             (Either::Left(this_t), Either::Left(that_t)) => this_t.unify(&that_t, env, meta),
             (Either::Left(t), Either::Right(constraints)) => {
                 check_constraints(env, &t, constraints, meta)?;
-                other.set_ref(self.clone());
+                other.set_ref(self.make_ref());
                 Ok(())
             }
             (Either::Right(constraints), Either::Left(t)) => {
                 check_constraints(env, &t, constraints, meta)?;
-                self.set_ref(other.clone());
+                self.set_ref(other.make_ref());
                 Ok(())
             }
             (Either::Right(_), Either::Right(mut those_constraints)) => {
                 self.merge_constraints(&mut those_constraints);
-                other.set_ref(self.clone());
+                other.set_ref(self.make_ref());
                 Ok(())
             }
         }
@@ -281,10 +284,23 @@ impl<T: Clone + Ord> Ord for TypeVar<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TypeExpr<T> {
     pub body: TypeVar<T>,
     pub vars: Vec<TypeVar<T>>,
+}
+
+impl<T: Clone> Clone for TypeExpr<T> {
+    fn clone(&self) -> Self {
+        let mut vars = Vec::with_capacity(self.vars.len());
+        for v in self.vars.iter() {
+            vars.push(v.make_ref());
+        }
+        TypeExpr {
+            body: self.body.make_ref(),
+            vars
+        }
+    }
 }
 
 impl<T> TypeExpr<T> {
