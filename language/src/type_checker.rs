@@ -8,6 +8,8 @@ pub trait Environment<T, I> {
     fn type_of(&self, name: &str) -> Option<TypeExpr<T>>;
     fn get_instr(&self, name: &str, ty: &TypeExpr<T>) -> Option<Vec<I>>;
 
+    fn poly_nat(&self) -> TypeExpr<T>;
+    fn poly_int(&self) -> TypeExpr<T>;
     fn poly_float(&self) -> TypeExpr<T>;
 }
 
@@ -43,13 +45,21 @@ where
     T: Clone + PrimType,
 {
     match ast {
-        AST::Nat { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
-        AST::Int { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::int())),
+        AST::Nat { ref mut meta, .. } => {
+            let t = env.poly_nat();
+            meta.assign_type(t.make_ref());
+            Ok(t)
+        },
+        AST::Int { ref mut meta, .. } => {
+            let t = env.poly_int();
+            meta.assign_type(t.make_ref());
+            Ok(t)
+        },
         AST::Float { ref mut meta, .. } => {
             let t = env.poly_float();
             meta.assign_type(t.make_ref());
             Ok(t)
-        }
+        },
         AST::String { ref mut meta, .. } => Ok(assign_const_and_return(meta, T::string())),
         AST::Symbol { content, meta } => match env.type_of(content) {
             Some(t) => {

@@ -91,8 +91,20 @@ where
     T: PrimType + Clone,
 {
     match ast {
-        AST::Nat { content, .. } => Ok(prog.push(I::push_int(*content as i64))),
-        AST::Int { content, .. } => Ok(prog.push(I::push_int(*content))),
+        AST::Nat { content, meta } => {
+            let t = meta.get_type();
+            let ins = env.get_instr("from-nat", &t).unwrap();
+            prog.push(I::push_nat(*content));
+            prog.extend(ins);
+            Ok(())
+        }
+        AST::Int { content, meta } => {
+            let t = meta.get_type();
+            let ins = env.get_instr("from-int", &t).unwrap();
+            prog.push(I::push_int(*content));
+            prog.extend(ins);
+            Ok(())
+        }
         AST::Float { content, meta } => {
             let t = meta.get_type();
             let ins = env.get_instr("from-float", &t).unwrap();

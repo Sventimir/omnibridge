@@ -41,7 +41,7 @@ fn typecheck_a_bool_expr() {
         _ => Err(String::list(vec![
             String::symbol("result-type-mismatch".to_string()),
             String::symbol("bool".to_string()),
-            String::symbol(ty.into_sexp()),
+            ty.into_sexp(),
         ])),
     })
 }
@@ -49,10 +49,10 @@ fn typecheck_a_bool_expr() {
 #[test]
 fn typecheck_a_polymorphic_function_call() {
     test_typechecker("(id (+ 3 (* 2 (id 7))))", |ty| match ty {
-        BuiltinType::Int => Ok(()),
+        BuiltinType::Nat => Ok(()),
         _ => Err(String::list(vec![
             String::symbol("result-type-mismatch".to_string()),
-            String::symbol("int".to_string()),
+            String::symbol("nat".to_string()),
             String::symbol(ty.into_sexp()),
         ])),
     })
@@ -66,11 +66,24 @@ fn test_floating_point_arithmetic() {
         _ => Err(String::list(vec![
             String::symbol("result-type-mismatch".to_string()),
             String::symbol("float".to_string()),
-            String::symbol(ty.into_sexp()),
+            ty.into_sexp(),
         ])),
     });
     let result: f64 = crate::test_utils::exec(expr);
     assert_eq!(result, 0.75)
+}
+
+#[test]
+fn test_arithmetic_with_constants_of_many_types() {
+    let expr = "(* (+ 3.1 7) (-2))";
+    test_typechecker(expr, |ty| match ty {
+        BuiltinType::Float => Ok(()),
+        _ => Err(String::list(vec![
+            String::symbol("result-type-mismatch".to_string()),
+            String::symbol("float".to_string()),
+            ty.into_sexp(),
+        ]))
+    });
 }
 
 /* This property is not true in general with respect to floating-point
@@ -155,7 +168,7 @@ proptest! {
 
     #[ignore]
     #[test]
-    fn test_polymorhic_identity(any_num: AnyNumber) {
+    fn test_polymorphic_identity(any_num: AnyNumber) {
         match any_num {
             AnyNumber::Nat(n) => {
                 let result: u64 = crate::test_utils::exec(&format!("(id {})", n));

@@ -118,6 +118,16 @@ impl<T, I> Environment<T, I> for Env<T, I> {
         self.vars.get(name).map(|v| (v.prog)(&v, ty))
     }
 
+    fn poly_nat(&self) -> TypeExpr<T> {
+        let t = TypeVar::unknown(vec!["FromNat".to_string()]);
+        TypeExpr { body: t.make_ref(), vars: vec![t] }
+    }
+
+    fn poly_int(&self) -> TypeExpr<T> {
+        let t = TypeVar::unknown(vec!["FromInt".to_string()]);
+        TypeExpr { body: t.make_ref(), vars: vec![t] }
+    }
+
     fn poly_float(&self) -> TypeExpr<T> {
         let t = TypeVar::unknown(vec!["FromFloat".to_string()]);
         TypeExpr {
@@ -302,6 +312,93 @@ mod built_in {
             from_flt.add_method("from-float".to_string(), from_flt_t);
             from_flt.add_impl(BuiltinType::Float);
             self.add_constraint(from_flt, |this, t| {
+                let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
+                    "No implementation of {} found for {:?}!.",
+                    this.constr_name, &t
+                ));
+                i.get(&this.meth_name)
+                    .expect(&format!("No method {} found!", this.meth_name))
+            });
+
+            let mut from_int_impl: BTreeMap<BuiltinType, Implementation<BuiltinInstr>> =
+                BTreeMap::new();
+            let mut from_int_float: Implementation<BuiltinInstr> = Implementation::new();
+            from_int_float.add_method("from-int".to_string(), || vec![
+                BuiltinInstr::Conv(|a| Arc::new(a.downcast_ref::<i64>().unwrap().clone() as f64))
+            ]);
+            from_int_impl.insert(BuiltinType::Float, from_int_float);
+
+            let mut from_int_int: Implementation<BuiltinInstr> = Implementation::new();
+            from_int_int.add_method("from-int".to_string(), || vec![]);
+            from_int_impl.insert(BuiltinType::Int, from_int_int);
+
+            self.implementations
+                .insert("FromInt".to_string(), Arc::new(from_int_impl));
+
+            let mut from_int = Constraint::new("FromInt".to_string());
+            let from_int_t = TypeExprGen {
+                gen: |_this| {
+                    let t = TypeVar::unknown(vec!["FromInt".to_string()]);
+                    TypeExpr {
+                        body: TypeVar::constant(BuiltinType::Fun {
+                            args: vec![TypeVar::constant(BuiltinType::Int)],
+                            ret: Box::new(t.make_ref()),
+                        }),
+                        vars: vec![t],
+                    }
+                },
+            };
+            from_int.add_method("from-int".to_string(), from_int_t);
+            from_int.add_impl(BuiltinType::Float);
+            from_int.add_impl(BuiltinType::Int);
+            self.add_constraint(from_int, |this, t| {
+                let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
+                    "No implementation of {} found for {:?}!.",
+                    this.constr_name, &t
+                ));
+                i.get(&this.meth_name)
+                    .expect(&format!("No method {} found!", this.meth_name))
+            });
+
+            let mut from_nat_impl: BTreeMap<BuiltinType, Implementation<BuiltinInstr>> =
+                BTreeMap::new();
+            let mut from_nat_float: Implementation<BuiltinInstr> = Implementation::new();
+            from_nat_float.add_method("from-nat".to_string(), || vec![
+                BuiltinInstr::Conv(|a| Arc::new(a.downcast_ref::<u64>().unwrap().clone() as f64))
+            ]);
+            from_nat_impl.insert(BuiltinType::Float, from_nat_float);
+
+            let mut from_nat_int: Implementation<BuiltinInstr> = Implementation::new();
+            from_nat_int.add_method("from-nat".to_string(), || vec![
+                BuiltinInstr::Conv(|a| Arc::new(a.downcast_ref::<u64>().unwrap().clone() as i64))
+            ]);
+            from_nat_impl.insert(BuiltinType::Int, from_nat_int);
+
+            let mut from_nat_nat: Implementation<BuiltinInstr> = Implementation::new();
+            from_nat_nat.add_method("from-nat".to_string(), || vec![]);
+            from_nat_impl.insert(BuiltinType::Nat, from_nat_nat);
+
+            self.implementations
+                .insert("FromNat".to_string(), Arc::new(from_nat_impl));
+
+            let mut from_nat = Constraint::new("FromNat".to_string());
+            let from_nat_t = TypeExprGen {
+                gen: |_this| {
+                    let t = TypeVar::unknown(vec!["FromNat".to_string()]);
+                    TypeExpr {
+                        body: TypeVar::constant(BuiltinType::Fun {
+                            args: vec![TypeVar::constant(BuiltinType::Nat)],
+                            ret: Box::new(t.make_ref()),
+                        }),
+                        vars: vec![t],
+                    }
+                },
+            };
+            from_nat.add_method("from-nat".to_string(), from_nat_t);
+            from_nat.add_impl(BuiltinType::Float);
+            from_nat.add_impl(BuiltinType::Int);
+            from_nat.add_impl(BuiltinType::Nat);
+            self.add_constraint(from_nat, |this, t| {
                 let i = this.impls.get(&t.vars[0].value().unwrap()).expect(&format!(
                     "No implementation of {} found for {:?}!.",
                     this.constr_name, &t
