@@ -84,3 +84,12 @@ fn unification_propagates() {
     assert_eq!(a.value(), Some(BuiltinType::Nat));
     assert_eq!(b.value(), Some(BuiltinType::Nat));
 }
+
+#[test]
+fn setting_value_propagates() {
+    let a = TypeVar::unknown(vec![]);
+    let b = a.make_ref();
+    a.set_val(BuiltinType::Nat);
+    assert_eq!(a.value(), Some(BuiltinType::Nat));
+    assert_eq!(b.value(), Some(BuiltinType::Nat));
+}
