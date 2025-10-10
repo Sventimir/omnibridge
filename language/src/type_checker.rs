@@ -29,6 +29,9 @@ where
     T: Clone + PrimType,
 {
     let t = typecheck_ast(ast, env)?;
+    let meta = ast.meta_mut();
+    let meta_t = meta.get_type();
+    let _ = meta_t.unify(&t, env, meta);
     select_default_instances(ast, env)?;
     Ok(t)
 }
@@ -70,11 +73,11 @@ where
             match cs.next() {
                 None => Ok(assign_const_and_return(meta, T::nil())),
                 Some(mut call_ast) => {
-                    let fun_ty = typecheck(&mut call_ast, env)?;
+                    let fun_ty = typecheck_ast(&mut call_ast, env)?;
                     let mut vars: Vec<_> = fun_ty.vars.iter().map(|v| v.make_ref()).collect();
                     let mut act_arg_tys = vec![];
                     for mut arg_ast in cs {
-                        let t = typecheck(&mut arg_ast, env)?;
+                        let t = typecheck_ast(&mut arg_ast, env)?;
                         act_arg_tys.push(t);
                     }
                     let (exp_arg_tys, ret_ty) = fun_ty.body.as_callable(act_arg_tys.len(), meta)?;

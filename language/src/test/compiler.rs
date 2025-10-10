@@ -5,7 +5,7 @@ use proptest_derive::Arbitrary;
 
 use crate::{
     ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, env::Env, parse,
-    test_utils::Meta, type_checker::typecheck_ast, type_var::VarLabeler, IntoSexp, Sexp,
+    test_utils::Meta, type_checker::typecheck, type_var::VarLabeler, IntoSexp, Sexp,
 };
 
 fn test_typechecker<F>(src: &str, check_result: F)
@@ -15,7 +15,7 @@ where
     let mut env: Env<BuiltinType, BuiltinInstr> = Env::new();
     let mut ast: Vec<AST<Meta>> = parse(&src).unwrap();
     env.init();
-    let ret: Result<(), String> = typecheck_ast(&mut ast[0], &env)
+    let ret: Result<(), String> = typecheck(&mut ast[0], &env)
         .map_err(|e| e.into_sexp())
         .and_then(|tvar| {
             tvar.body
@@ -69,8 +69,8 @@ fn test_floating_point_arithmetic() {
             String::symbol(ty.into_sexp()),
         ])),
     });
-    // let result: f64 = crate::test_utils::exec(expr);
-    // assert_eq!(result, 0.75)
+    let result: f64 = crate::test_utils::exec(expr);
+    assert_eq!(result, 0.75)
 }
 
 /* This property is not true in general with respect to floating-point
