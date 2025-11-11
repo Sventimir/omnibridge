@@ -1,9 +1,7 @@
-use std::cmp::Ordering;
+use std::{any::Any, cmp::Ordering, sync::Arc};
 
 use crate::{
-    type_error::TypeError,
-    type_var::{PrimType, TypeEnv, TypeVar},
-    IntoSexp, Sexp,
+    Expr, IntoSexp, Sexp, sexp::nil, type_error::TypeError, type_var::{PrimType, TypeEnv, TypeVar}
 };
 
 #[derive(Clone, Debug)]
@@ -136,6 +134,22 @@ impl PrimType for BuiltinType {
 
     fn nil() -> Self {
         BuiltinType::Nil
+    }
+
+    fn repr<S: Sexp>(&self, v: Arc<dyn Any>) -> S {
+        match self {
+            BuiltinType::Nil => nil(),
+            BuiltinType::Bool => v.downcast_ref::<bool>().expect("cast to bool failed").into_sexp(),
+            BuiltinType::Nat => v.downcast_ref::<u64>().expect("cast to nat failed").into_sexp(),
+            BuiltinType::Int => v.downcast_ref::<i64>().expect("cast to int failed").into_sexp(),
+            BuiltinType::Float => v.downcast_ref::<f64>().expect("cast to float failed").into_sexp(),
+            BuiltinType::String => v.downcast_ref::<&str>().expect("cast to string failed").into_sexp(),
+            BuiltinType::Expr => v.downcast_ref::<Expr>().expect("cast to expr failed").clone().into_sexp(),
+            BuiltinType::Fun { .. } => S::list(vec![
+                "function".into_sexp(),
+                self.clone().into_sexp(),
+            ])
+        }
     }
 
     fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self {

@@ -1,8 +1,6 @@
 use either::Either;
 use std::{
-    cmp::Ordering,
-    collections::BTreeSet,
-    sync::{Arc, Mutex},
+    any::Any, cmp::Ordering, collections::BTreeSet, sync::{Arc, Mutex}
 };
 
 use crate::{type_error::TypeError, IntoSexp, Sexp};
@@ -53,6 +51,8 @@ pub trait PrimType: Sized {
     fn sexp() -> Self;
     fn nil() -> Self;
     fn fun(args: &[TypeVar<Self>], ret: TypeVar<Self>) -> Self;
+
+    fn repr<S: Sexp>(&self, v: Arc<dyn Any>) -> S;
 
     fn as_callable<M: Clone>(&self, arity: usize, meta: &M) -> Result<(Vec<TypeVar<Self>>, TypeVar<Self>), TypeError<M, Self>>;
     fn label_type_vars(&mut self, labeler: &mut VarLabeler);

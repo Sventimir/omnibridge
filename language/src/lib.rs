@@ -22,15 +22,20 @@ mod core_lisp;
 mod expr;
 mod full_lisp;
 mod sexp;
+mod source_meta;
 mod type_checker;
 mod type_var;
 
-pub use compiler::compile;
+pub use builtin_instr::BuiltinInstr;
+pub use builtin_type::BuiltinType;
+pub use compiler::{CompilationError, compile};
 pub use core_lisp::CoreLisp;
 pub use expr::Expr;
 pub use full_lisp::Lisp;
+pub use interpreter::Program;
 pub use parser::parse;
 pub use sexp::{int, nil, pair, IntoSexp, Sexp, SexpError};
+pub use source_meta::Meta;
 
 #[cfg(test)]
 mod test;

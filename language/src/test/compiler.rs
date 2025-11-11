@@ -5,7 +5,7 @@ use proptest_derive::Arbitrary;
 
 use crate::{
     ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, env::Env, parse,
-    test_utils::Meta, type_checker::typecheck, type_var::VarLabeler, IntoSexp, Sexp,
+    source_meta::Meta, type_checker::typecheck, type_var::VarLabeler, IntoSexp, Sexp,
 };
 
 fn test_typechecker<F>(src: &str, check_result: F)

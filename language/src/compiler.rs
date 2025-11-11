@@ -1,14 +1,7 @@
 use std::fmt::{self, Debug, Formatter};
 
 use crate::{
-    ast::AST,
-    env::Env,
-    interpreter::Instr,
-    pair,
-    type_checker::{typecheck, Environment},
-    type_error::TypeError,
-    type_var::{PrimType, TypedMeta, VarLabeler},
-    Expr, IntoSexp, Sexp,
+    Expr, IntoSexp, Program, Sexp, ast::AST, env::Env, interpreter::Instr, pair, type_checker::{Environment, typecheck}, type_error::TypeError, type_var::{PrimType, TypedMeta, VarLabeler}
 };
 
 #[derive(Clone)]
@@ -64,19 +57,21 @@ where
 pub fn compile<M, I, T>(
     src: &mut Vec<AST<M>>,
     env: &mut Env<T, I>,
-) -> Result<Vec<I>, CompilationError<M, T>>
+) -> Result<Program<T, I>, CompilationError<M, T>>
 where
     M: TypedMeta<Type = T> + Clone,
     I: Instr,
     T: PrimType + Ord + Clone,
 {
-    let mut prog = Vec::new();
+    let mut instr = Vec::new();
+    // only retain the type of the last expression
+    let mut ret = T::nil();
     for ast in src {
         // typechecking annotates the AST with type information.
-        typecheck(ast, env).map_err(CompilationError::TypeError)?;
-        compile_ast(ast, &mut prog, env)?;
+        ret = typecheck(ast, env).map_err(CompilationError::TypeError)?.body.value().unwrap();
+        compile_ast(ast, &mut instr, env)?;
     }
-    Ok(prog)
+    Ok(Program { instr, ret })
 }
 
 fn compile_ast<E, M, I, T>(

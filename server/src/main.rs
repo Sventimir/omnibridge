@@ -5,32 +5,30 @@ mod protocol;
 mod state;
 
 use hex::ToHex;
-use language::{self, ast::expect::ExpectError, pair, IntoSexp, Sexp};
+use language::{self, pair, IntoSexp, Sexp};
 use ring::digest::{digest, Digest, SHA256};
 use state::State;
-use std::{io, ops::Range, sync::Mutex};
+use std::{io, sync::Mutex};
 
-use command::{Cmd, CommandError, CommandResult};
+type Env = language::env::Env<language::BuiltinType, language::BuiltinInstr>;
 
 #[derive(Debug, Clone)]
 enum ServerError {
-    CommandError(CommandError),
     LexerError(language::parser::ParseError),
-    SexprError(ExpectError<Range<usize>>),
+    CompilationError(language::CompilationError<language::Meta, language::BuiltinType>),
 }
 
 impl IntoSexp for ServerError {
     fn into_sexp<S: Sexp>(self) -> S {
         match self {
-            ServerError::CommandError(err) => err.into_sexp(),
             ServerError::LexerError(err) => err.into_sexp(),
-            ServerError::SexprError(err) => err.into_sexp(),
+            ServerError::CompilationError(err) => err.into_sexp(),
         }
     }
 }
 
 struct Response {
-    result: Result<CommandResult, ServerError>,
+    result: Result<String, ServerError>,
     request_id: Digest,
 }
 
@@ -50,22 +48,18 @@ impl IntoSexp for Response {
     }
 }
 
-fn interpret(expr: &str, state: &mut Mutex<State>) -> Response {
+fn eval_lisp(src: &str, mut env: Env) -> Result<String, ServerError> {
+    let mut ast = language::parse(src).map_err(ServerError::LexerError)?;
+    let prog = language::compile(&mut ast, &mut env)
+        .map_err(|e| ServerError::CompilationError(e))?;
+    Ok(prog.eval())
+}
+
+fn interpret(expr: &str, _state: &mut Mutex<State>) -> Response {
     let request_id = digest(&SHA256, expr.as_bytes());
-    let result = language::parser::parse(expr)
-        .map_err(|e| ServerError::LexerError(e))
-        .and_then(|sexp| match sexp.as_slice() {
-            [s] => Cmd::try_from(s).map_err(ServerError::SexprError),
-            _ => Err(ServerError::SexprError(ExpectError::WrongLength(
-                0,
-                sexp.clone(),
-                std::ops::Range {
-                    start: 0,
-                    end: expr.len(),
-                },
-            ))),
-        })
-        .and_then(|cmd| cmd.execute(state).map_err(ServerError::CommandError));
+    let mut env = Env::new();
+    env.init();
+    let result = eval_lisp(expr, env);
     Response { result, request_id }
 }
 

@@ -1,4 +1,6 @@
-use crate::Expr;
+use std::{any::Any, sync::Arc};
+
+use crate::{Expr, IntoSexp, Sexp, nil, type_var::PrimType};
 
 pub enum NextStep {
     Forward,
@@ -7,13 +9,13 @@ pub enum NextStep {
     AddReturn,
 }
 
-struct Interpreter<V: Clone> {
-    stack: Vec<V>,
+struct Interpreter {
+    stack: Vec<Arc<dyn Any>>,
     returns: Vec<usize>,
     cursor: usize,
 }
 
-impl<V: Clone> Interpreter<V> {
+impl Interpreter {
     fn new() -> Self {
         Interpreter {
             stack: Vec::new(),
@@ -24,7 +26,7 @@ impl<V: Clone> Interpreter<V> {
 
     fn exec<I>(&mut self, instr: &I)
     where
-        I: Instr<Value = V>,
+        I: Instr,
     {
         let args = self.stack.split_off(self.stack.len() - instr.arity());
         let (result, advance) = instr.eval(args.as_slice());
@@ -45,10 +47,8 @@ impl<V: Clone> Interpreter<V> {
 }
 
 pub trait Instr {
-    type Value: Clone;
-
     fn arity(&self) -> usize;
-    fn eval(&self, args: &[Self::Value]) -> (Option<Self::Value>, NextStep);
+    fn eval(&self, args: &[Arc<dyn Any>]) -> (Option<Arc<dyn Any>>, NextStep);
 
     fn push_nat(v: u64) -> Self;
     fn push_int(v: i64) -> Self;
@@ -57,14 +57,32 @@ pub trait Instr {
     fn push_sexp(v: Expr) -> Self;
 }
 
-pub fn execute<I, V>(program: &[I]) -> Vec<V>
-where
-    V: Clone,
-    I: Instr<Value = V>,
-{
-    let mut interp = Interpreter::new();
-    while interp.cursor < program.len() {
-        interp.exec(&program[interp.cursor]);
+#[derive(Clone)]
+pub struct Program<T, I> {
+    pub instr: Vec<I>,
+    pub ret: T,
+}
+
+impl<T: PrimType, I: Instr> Program<T, I> {
+    pub fn execute(&self) -> Vec<Arc<dyn Any>>
+    where
+        I: Instr,
+    {
+        let mut interp = Interpreter::new();
+        while interp.cursor < self.instr.len() {
+            interp.exec(&self.instr[interp.cursor]);
+        }
+        interp.stack.clone()
     }
-    interp.stack.clone()
+
+    pub fn eval<S: Sexp>(&self) -> S {
+        let stack = self.execute();
+        stack.last().map(|v| self.ret.repr(v.clone())).unwrap_or(nil())
+    }
+}
+
+impl<T, I: IntoSexp> IntoSexp for Program<T, I> {
+    fn into_sexp<S: Sexp>(self) -> S {
+        self.instr.into_sexp()
+    }
 }

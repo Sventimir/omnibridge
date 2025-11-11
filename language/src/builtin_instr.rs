@@ -26,8 +26,6 @@ pub enum BuiltinInstr {
 }
 
 impl Instr for BuiltinInstr {
-    type Value = Arc<dyn Any>;
-
     fn arity(&self) -> usize {
         match self {
             BuiltinInstr::Push(_) => 0,
@@ -49,7 +47,7 @@ impl Instr for BuiltinInstr {
         }
     }
 
-    fn eval(&self, args: &[Self::Value]) -> (Option<Self::Value>, NextStep) {
+    fn eval(&self, args: &[Arc<dyn Any>]) -> (Option<Arc<dyn Any>>, NextStep) {
         match self {
             BuiltinInstr::Push(v) => (Some(v.clone()), NextStep::Forward),
             BuiltinInstr::Not => (

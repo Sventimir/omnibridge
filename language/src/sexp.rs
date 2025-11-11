@@ -95,15 +95,33 @@ impl IntoSexp for u8 {
     }
 }
 
-impl IntoSexp for usize {
+impl IntoSexp for u64 {
     fn into_sexp<S: Sexp>(self) -> S {
-        S::nat(self as u64)
+        S::nat(self)
+    }
+}
+
+impl IntoSexp for i64 {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::int(self)
     }
 }
 
 impl IntoSexp for f64 {
     fn into_sexp<S: Sexp>(self) -> S {
         S::float(self)
+    }
+}
+
+impl IntoSexp for usize {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::nat(self as u64)
+    }
+}
+
+impl IntoSexp for &str {
+    fn into_sexp<S: Sexp>(self) -> S {
+        S::string(self.to_string())
     }
 }
 

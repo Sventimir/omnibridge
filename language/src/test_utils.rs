@@ -1,69 +1,13 @@
-use std::{any::Any, ops::Range, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use crate::{
-    ast::AST,
-    builtin_instr::BuiltinInstr,
-    builtin_type::BuiltinType,
-    compile,
-    env::Env,
-    interpreter, parse,
-    src_location::WithLocation,
-    type_var::{TypeExpr, TypeVar, TypedMeta, VarLabeler},
-    IntoSexp, Sexp,
+    IntoSexp, Program, ast::AST, builtin_instr::BuiltinInstr, builtin_type::BuiltinType, compile, env::Env, parse, source_meta::Meta, type_var::VarLabeler
 };
 
-#[derive(Clone, Debug)]
-pub struct Meta {
-    loc: Range<usize>,
-    ty: TypeExpr<BuiltinType>,
+pub fn bool_prog(instr: Vec<BuiltinInstr>) -> Program<BuiltinType, BuiltinInstr> {
+    Program { instr, ret: BuiltinType::Bool }
 }
 
-impl TypedMeta for Meta {
-    type Type = BuiltinType;
-
-    fn get_type(&self) -> TypeExpr<Self::Type> {
-        self.ty.clone()
-    }
-
-    fn assign_type(&mut self, ty: TypeExpr<Self::Type>) {
-        self.ty = ty;
-    }
-}
-
-impl WithLocation for Meta {
-    type Loc = Range<usize>;
-
-    fn get_location(&self) -> Range<usize> {
-        self.loc.clone()
-    }
-
-    fn annot(&mut self, loc: Range<usize>) {
-        self.loc = loc;
-    }
-}
-
-impl Default for Meta {
-    fn default() -> Self {
-        let v = TypeVar::unknown(vec![]);
-        Meta {
-            loc: 0..0,
-            ty: TypeExpr {
-                body: v.make_ref(),
-                vars: vec![v],
-            },
-        }
-    }
-}
-
-impl IntoSexp for Meta {
-    fn into_sexp<S: Sexp>(self) -> S {
-        S::list(vec![
-            S::symbol("meta".to_string()),
-            self.ty.into_sexp(),
-            S::list(vec![self.loc.start.into_sexp(), self.loc.end.into_sexp()]),
-        ])
-    }
-}
 
 pub fn get_result<T: Clone + 'static>(stack: &[Arc<dyn Any>]) -> T {
     stack
@@ -82,7 +26,7 @@ pub fn exec<T: Any + Clone>(src: &str) -> T {
     match compile(&mut ast, &mut env) {
         Ok(prog) => {
             println!("{:?}", prog.clone().into_sexp::<String>());
-            let stack = interpreter::execute(prog.as_slice());
+            let stack = prog.execute();
             get_result::<T>(stack.as_slice())
         }
         Err(e) => {
