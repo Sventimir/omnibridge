@@ -91,21 +91,21 @@ impl Instr for BuiltinInstr {
             BuiltinInstr::MulNat(_) => (
                 Some(Arc::new(
                     args.iter()
-                        .fold(0 as u64, |l, r| l * r.downcast_ref::<u64>().unwrap()),
+                        .fold(1 as u64, |l, r| l * r.downcast_ref::<u64>().unwrap()),
                 )),
                 NextStep::Forward,
             ),
             BuiltinInstr::MulInt(_) => (
                 Some(Arc::new(
                     args.iter()
-                        .fold(0 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()),
+                        .fold(1 as i64, |l, r| l * r.downcast_ref::<i64>().unwrap()),
                 )),
                 NextStep::Forward,
             ),
             BuiltinInstr::MulFlt(_) => (
                 Some(Arc::new(
                     args.iter()
-                        .fold(0 as f64, |l, r| l * r.downcast_ref::<f64>().unwrap()),
+                        .fold(1 as f64, |l, r| l * r.downcast_ref::<f64>().unwrap()),
                 )),
                 NextStep::Forward,
             ),
